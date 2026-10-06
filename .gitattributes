@@ -1,0 +1,3 @@
+# Fixture CSVs carry line breaks inside quoted cells: keep them LF everywhere.
+tests/fixtures/**/*.csv text eol=lf
+tests/fixtures/**/*.nt text eol=lf
