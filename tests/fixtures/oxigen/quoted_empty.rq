@@ -1,0 +1,9 @@
+prefix : <https://test.com/d/>
+
+CONSTRUCT {
+    ?component_iri :isOfferedAs ?product_spec_iri .
+}
+WHERE {
+    BIND(tarql:expandPrefixedName(CONCAT(":", ?component_rsid)) AS ?component_iri)
+    BIND(tarql:expandPrefixedName(CONCAT(":", ?product_spec_rsid)) AS ?product_spec_iri)
+}

@@ -1,0 +1,94 @@
+@prefix rt:      <http://example.com/retail/template#> .
+@prefix ottr:    <http://ns.ottr.xyz/0.4/> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema:  <https://schema.org/> .
+@prefix ex:      <http://example.com/ns#> .
+# Prefixes used by prefixed names in the CSV cells. A query composed from these
+# templates declares them, so tarql:expandPrefixedName can resolve the cells.
+@prefix cust:    <http://example.com/customer/> .
+@prefix prod:    <http://example.com/product/> .
+@prefix ord:     <http://example.com/order/> .
+@prefix cat:     <http://example.com/category/> .
+@prefix cur:     <http://example.com/currency/> .
+@prefix country: <http://example.com/country/> .
+@prefix status:  <http://example.com/status/> .
+
+# One root template per CSV file. Each parameter is named after a CSV column, and
+# its type says how a cell is read:
+#   ottr:IRI, owl:Class, ...  a prefixed name or a full IRI
+#   xsd:T (not xsd:string)    a literal of datatype xsd:T
+#   untyped or xsd:string     the cell text as a plain string
+# A typed column must stay typed all the way down; untyped columns may only go to
+# untyped parameters.
+
+rt:CustomerRow [
+    ! ottr:IRI ?id,
+    ? owl:Class ?kind,
+    ? ?name,
+    ? ?legal_name,
+    ? ?email,
+    ? xsd:string ?phone,
+    ? xsd:date ?born,
+    ? xsd:gYear ?founded,
+    ? xsd:string ?street,
+    ? xsd:string ?locality,
+    ? xsd:string ?postcode,
+    ? ottr:IRI ?country,
+    ? ottr:IRI ?homepage,
+    ? ottr:IRI ?parent,
+    ? xsd:boolean ?vip,
+    ? xsd:decimal ?credit_limit,
+    ? xsd:dateTime ?customer_since,
+    ? ?notes
+] :: {
+    rt:Customer(?id, ?kind, ?name, ?legal_name, ?email, ?phone, ?born, ?founded, ?homepage, ?parent, ?notes),
+    rt:Address(?id, ?locality, ?street, ?postcode, ?country),
+    rt:Account(?id, ?customer_since, ?vip, ?credit_limit)
+} .
+
+rt:ProductRow [
+    ! ottr:IRI ?sku,
+    ? xsd:string ?name,
+    ? ?description,
+    ? owl:Class ?category,
+    ? xsd:decimal ?price,
+    !? ottr:IRI ?currency,
+    ? xsd:decimal ?weight_kg,
+    ? xsd:boolean ?in_stock,
+    ? xsd:integer ?stock_qty,
+    ? xsd:date ?released,
+    ? xsd:date ?discontinued,
+    ? ottr:IRI ?supplier,
+    ? ottr:IRI ?replaces,
+    ? xsd:decimal ?rating
+] :: {
+    rt:Product(?sku, ?name, ?description, ?category, ?in_stock, ?stock_qty, ?released, ?rating),
+    rt:Price(?sku, schema:priceSpecification, ?price, ?currency),
+    rt:Quantity(?sku, schema:weight, ?weight_kg, "KGM"),
+    rt:Discontinued(?sku, ?discontinued),
+    rt:Value(?sku, schema:manufacturer, ?supplier),
+    rt:Inverse(?sku, ex:replaces, ex:replacedBy, ?replaces)
+} .
+
+rt:OrderRow [
+    ! ottr:IRI ?order,
+    ? xsd:dateTime ?ordered_at,
+    ? ottr:IRI ?customer,
+    ? ?channel,
+    ? owl:NamedIndividual ?status,
+    ? xsd:integer ?line,
+    ? ottr:IRI ?product,
+    ? xsd:integer ?qty,
+    ? xsd:decimal ?unit_price,
+    !? ottr:IRI ?currency,
+    ? xsd:decimal ?discount_pct,
+    ? xsd:date ?shipped_on,
+    ? xsd:string ?carrier,
+    ? xsd:string ?tracking,
+    ? ?gift_message,
+    ? ?ROWNUM
+] :: {
+    rt:Order(?order, ?ordered_at, ?customer, ?channel, ?status, ?gift_message),
+    rt:OrderLine(?order, ?line, ?product, ?qty, ?unit_price, ?currency, ?discount_pct, ?shipped_on, ?carrier, ?tracking, ?ROWNUM)
+} .

@@ -1,0 +1,10 @@
+order,ordered_at,customer,channel,status,line,product,qty,unit_price,currency,discount_pct,shipped_on,carrier,tracking,gift_message
+ord:O-1001,2024-03-05T10:15:00Z,cust:C003,web,status:Shipped,1,prod:P-200,1,8990,cur:NOK,,2024-03-07,Posten,"NO-123,456",
+ord:O-1001,2024-03-05T10:15:00Z,cust:C003,web,status:Shipped,2,prod:P-201,4,89.50,cur:NOK,10,2024-03-07,Posten,"NO-123,456","Til mor: ""Gratulerer!""
+Klem fra Åsa"
+ord:O-1002,2024-03-06T08:00:00-05:00,cust:C001,phone,status:Processing,1,prod:P-100,2,129.90,cur:USD,5.5,,,,
+ord:O-1002,2024-03-06T08:00:00-05:00,cust:C001,phone,status:Processing,2,prod:P-101,10,1250.00,cur:USD,,,,,
+ord:O-1002,2024-03-06T08:00:00-05:00,cust:C001,phone,status:Processing,3,http://example.com/product/P-301,1,50,,,,,,
+ord:O-1003,2024-04-01T00:00:00+02:00,http://example.com/customer/C005,store,status:Cancelled,,,,,,,,,,
+ord:O-1004,2024-04-02T14:45:30.5Z,cust:C004,web,status:Delivered,1,prod:P-300,3,,,,2024-04-03,DHL Express,JD014600006281234567,"Happy birthday, Zoë! \"🎂\""
+ord:O-1004,2024-04-02T14:45:30.5Z,cust:C004,web,status:Delivered,2,prod:P-099,1,999.99,cur:USD,100,2024-04-03,DHL Express,JD014600006281234567,

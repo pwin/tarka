@@ -1,0 +1,18 @@
+PREFIX e: <http://example.com/ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?o a foaf:Organization ; foaf:name ?label ; foaf:homepage ?site .
+  ?o skos:prefLabel ?label_en , ?label_no .
+  ?o e:category ?cat ; ?prop ?value .
+}
+WHERE {
+  BIND(tarql:expandPrefixedName(?id) AS ?o)
+  BIND(IRI(?homepage) AS ?site)
+  BIND(STRLANG(?label, "en") AS ?label_en)
+  BIND(STRLANG(?label_no_txt, "no") AS ?label_no)
+  BIND(tarql:expandPrefixedName(?category) AS ?cat)
+  BIND(tarql:expandPrefixedName(?extra_prop) AS ?prop)
+}

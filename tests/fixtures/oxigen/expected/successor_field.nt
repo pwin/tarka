@@ -1,0 +1,6 @@
+<https://test.com/d/one> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://test.com/d/Item> .
+<https://test.com/d/one> <https://test.com/d/altLabel> "uno" .
+<https://test.com/d/one> <https://test.com/d/hasSuccessor> <https://test.com/d/two> .
+<https://test.com/d/one> <https://test.com/d/prefLabel> "1" .
+<https://test.com/d/two> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://test.com/d/Item> .
+<https://test.com/d/two> <https://test.com/d/prefLabel> "2" .

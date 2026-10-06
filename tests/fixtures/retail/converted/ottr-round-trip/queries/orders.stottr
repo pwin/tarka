@@ -1,0 +1,68 @@
+@prefix rt: <http://example.com/retail/template#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix cur: <http://example.com/currency/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix prod: <http://example.com/product/> .
+@prefix ord: <http://example.com/order/> .
+@prefix cat: <http://example.com/category/> .
+@prefix country: <http://example.com/country/> .
+@prefix status: <http://example.com/status/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+
+q:orders [
+    ? ottr:IRI ?order_iri,
+    ? xsd:dateTime ?ordered_at_typed,
+    ? ottr:IRI ?customer_iri,
+    ? xsd:string ?channel,
+    ? ottr:IRI ?status_iri,
+    ? xsd:string ?gift_message,
+    ? xsd:integer ?line_typed,
+    ? ottr:IRI ?product_iri,
+    ? xsd:integer ?qty_typed,
+    ? xsd:decimal ?discount_pct_typed,
+    ? xsd:integer ?ROWNUM,
+    ? xsd:decimal ?unit_price_typed,
+    ? ottr:IRI ?currency_iri_d10,
+    ? xsd:date ?shipped_on_typed,
+    ? xsd:string ?carrier,
+    ? xsd:string ?tracking
+]
+  @@ tq:Source("orders.rq"),
+  @@ tq:Prefix("rt", "http://example.com/retail/template#"),
+  @@ tq:Prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+  @@ tq:Prefix("owl", "http://www.w3.org/2002/07/owl#"),
+  @@ tq:Prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("cur", "http://example.com/currency/"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Prefix("prod", "http://example.com/product/"),
+  @@ tq:Prefix("ord", "http://example.com/order/"),
+  @@ tq:Prefix("cat", "http://example.com/category/"),
+  @@ tq:Prefix("country", "http://example.com/country/"),
+  @@ tq:Prefix("status", "http://example.com/status/"),
+  @@ tq:Bind("order_iri", "IF(CONTAINS(STR(?order), \"://\"), IRI(?order), tarql:expandPrefixedName(?order))"),
+  @@ tq:Bind("ordered_at_typed", "STRDT(?ordered_at, xsd:dateTime)"),
+  @@ tq:Bind("customer_iri", "IF(CONTAINS(STR(?customer), \"://\"), IRI(?customer), tarql:expandPrefixedName(?customer))"),
+  @@ tq:Bind("status_iri", "IF(CONTAINS(STR(?status), \"://\"), IRI(?status), tarql:expandPrefixedName(?status))"),
+  @@ tq:Bind("line_typed", "STRDT(?line, xsd:integer)"),
+  @@ tq:Bind("product_iri", "IF(CONTAINS(STR(?product), \"://\"), IRI(?product), tarql:expandPrefixedName(?product))"),
+  @@ tq:Bind("qty_typed", "STRDT(?qty, xsd:integer)"),
+  @@ tq:Bind("unit_price_typed", "STRDT(?unit_price, xsd:decimal)"),
+  @@ tq:Bind("currency_iri", "IF(CONTAINS(STR(?currency), \"://\"), IRI(?currency), tarql:expandPrefixedName(?currency))"),
+  @@ tq:Bind("discount_pct_typed", "STRDT(?discount_pct, xsd:decimal)"),
+  @@ tq:Bind("shipped_on_typed", "STRDT(?shipped_on, xsd:date)"),
+  @@ tq:Bind("currency_iri_d10", "COALESCE(?currency_iri, cur:EUR)")
+:: {
+    tpl:Order(?order_iri, ?ordered_at_typed, ?customer_iri, ?channel, ?status_iri, ?gift_message),
+    tpl:OrderItem(?order_iri, ?line_typed, ?product_iri, ?qty_typed, ?discount_pct_typed, ?ROWNUM, ?unit_price_typed, ?currency_iri_d10, ?shipped_on_typed, ?carrier, ?tracking)
+} .

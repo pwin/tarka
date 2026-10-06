@@ -1,0 +1,49 @@
+@prefix ex:   <http://example.com/ns#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix t:    <http://example.com/templates#> .
+
+/*** A hand-written library: none of this came from TARQL. ***/
+
+t:Labelled [ ottr:IRI ?thing, xsd:string ?label = "unnamed" ] :: {
+  ottr:Triple(?thing, rdfs:label, ?label)
+} .
+
+t:Typed [ ottr:IRI ?thing, ottr:IRI ?class ] :: {
+  ottr:Triple(?thing, rdf:type, ?class)
+} .
+
+# ?maker is mandatory: without it, the note about the maker must vanish too.
+t:Maker [ ottr:IRI ?product, ottr:IRI ?maker ] :: {
+  ottr:Triple(?product, ex:madeBy, ?maker),
+  ottr:Triple(_:m, ex:note, "has maker"),
+  ottr:Triple(_:m, ex:about, ?product)
+} .
+
+t:Offer [ ottr:IRI ?product, ? xsd:decimal ?price ] :: {
+  ottr:Triple(_:offer, rdf:type, ex:Offer),
+  ottr:Triple(_:offer, ex:itemOffered, ?product),
+  ottr:Triple(_:offer, ex:price, ?price)
+} .
+
+t:Product [
+  ottr:IRI ?product,
+  ? xsd:string ?name,
+  ? xsd:decimal ?price,
+  owl:Class ?category = ex:Misc,
+  ? xsd:date ?launched,
+  ? ottr:IRI ?maker
+] :: {
+  t:Typed(?product, ex:Product),
+  cross | t:Typed(?product, ++(ex:Sellable, ex:Shippable)),
+  t:Labelled(?product, ?name),
+  ottr:Triple(?product, ex:price, ?price),
+  t:Typed(?product, ?category),
+  ottr:Triple(?product, ex:launched, ?launched),
+  t:Maker(?product, ?maker),
+  ottr:Triple(?product, ex:tags, ("new", "featured")),
+  t:Offer(?product, ?price)
+} .

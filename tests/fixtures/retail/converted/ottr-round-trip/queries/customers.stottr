@@ -1,0 +1,70 @@
+@prefix rt: <http://example.com/retail/template#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix cur: <http://example.com/currency/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix prod: <http://example.com/product/> .
+@prefix ord: <http://example.com/order/> .
+@prefix cat: <http://example.com/category/> .
+@prefix country: <http://example.com/country/> .
+@prefix status: <http://example.com/status/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+
+q:customers [
+    ? ottr:IRI ?id_iri,
+    ? ottr:IRI ?kind_iri,
+    ? xsd:string ?name,
+    ? xsd:string ?legal_name,
+    ? xsd:string ?email,
+    ? xsd:string ?phone,
+    ? xsd:date ?born_typed,
+    ? xsd:gYear ?founded_typed,
+    ? ottr:IRI ?homepage_iri,
+    ? ottr:IRI ?parent_iri,
+    ? xsd:string ?notes,
+    ? xsd:string ?locality,
+    ? xsd:string ?street,
+    ? xsd:string ?postcode,
+    ? ottr:IRI ?country_iri,
+    ? xsd:dateTime ?customer_since_typed,
+    ? xsd:boolean ?vip_typed,
+    ? xsd:decimal ?credit_limit_typed
+]
+  @@ tq:Source("customers.rq"),
+  @@ tq:Prefix("rt", "http://example.com/retail/template#"),
+  @@ tq:Prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+  @@ tq:Prefix("owl", "http://www.w3.org/2002/07/owl#"),
+  @@ tq:Prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("cur", "http://example.com/currency/"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Prefix("prod", "http://example.com/product/"),
+  @@ tq:Prefix("ord", "http://example.com/order/"),
+  @@ tq:Prefix("cat", "http://example.com/category/"),
+  @@ tq:Prefix("country", "http://example.com/country/"),
+  @@ tq:Prefix("status", "http://example.com/status/"),
+  @@ tq:Bind("id_iri", "IF(CONTAINS(STR(?id), \"://\"), IRI(?id), tarql:expandPrefixedName(?id))"),
+  @@ tq:Bind("kind_iri", "IF(CONTAINS(STR(?kind), \"://\"), IRI(?kind), tarql:expandPrefixedName(?kind))"),
+  @@ tq:Bind("born_typed", "STRDT(?born, xsd:date)"),
+  @@ tq:Bind("founded_typed", "STRDT(?founded, xsd:gYear)"),
+  @@ tq:Bind("country_iri", "IF(CONTAINS(STR(?country), \"://\"), IRI(?country), tarql:expandPrefixedName(?country))"),
+  @@ tq:Bind("homepage_iri", "IF(CONTAINS(STR(?homepage), \"://\"), IRI(?homepage), tarql:expandPrefixedName(?homepage))"),
+  @@ tq:Bind("parent_iri", "IF(CONTAINS(STR(?parent), \"://\"), IRI(?parent), tarql:expandPrefixedName(?parent))"),
+  @@ tq:Bind("vip_typed", "STRDT(?vip, xsd:boolean)"),
+  @@ tq:Bind("credit_limit_typed", "STRDT(?credit_limit, xsd:decimal)"),
+  @@ tq:Bind("customer_since_typed", "STRDT(?customer_since, xsd:dateTime)")
+:: {
+    tpl:Customer(?id_iri, ?kind_iri, ?name, ?legal_name, ?email, ?phone, ?born_typed, ?founded_typed, ?homepage_iri, ?parent_iri, ?notes),
+    tpl:PostalAddress(?id_iri, ?locality, ?street, ?postcode, ?country_iri),
+    tpl:Account(?id_iri, ?customer_since_typed, ?vip_typed, ?credit_limit_typed),
+    tpl:Parent(?parent_iri, ?id_iri)
+} .

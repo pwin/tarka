@@ -1,0 +1,55 @@
+# Native TARQL mapping for orders.csv, written by hand for oxi-gen.
+# One row per order line: the order's own triples repeat on every row (and are
+# merged), each line becomes a blank node with an optional unit price and an
+# optional shipment. A row without a line number is an order with no lines.
+PREFIX ex:     <http://example.com/ns#>
+PREFIX schema: <https://schema.org/>
+PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+PREFIX ord:    <http://example.com/order/>
+PREFIX prod:   <http://example.com/product/>
+PREFIX cust:   <http://example.com/customer/>
+PREFIX cur:    <http://example.com/currency/>
+PREFIX status: <http://example.com/status/>
+
+CONSTRUCT {
+  ?o a schema:Order ;
+      schema:orderDate ?order_date ;
+      schema:customer ?buyer ;
+      ex:channel ?channel ;
+      schema:orderStatus ?order_status ;
+      ex:giftMessage ?gift_message ;
+      schema:orderedItem ?item .
+  ?item a schema:OrderItem ;
+      ex:lineNumber ?line_no ;
+      schema:orderedItem ?product_iri ;
+      schema:orderQuantity ?quantity ;
+      ex:discountPercent ?discount ;
+      ex:sourceRow ?ROWNUM ;
+      ex:unitPrice ?unit_spec ;
+      ex:shipment ?shipment .
+  ?unit_spec a schema:PriceSpecification ;
+      schema:price ?unit_amount ;
+      schema:priceCurrency ?currency_iri .
+  ?shipment a ex:Shipment ;
+      ex:shippedOn ?ship_date ;
+      ex:carrier ?carrier ;
+      ex:trackingNumber ?tracking .
+}
+WHERE {
+  BIND(tarql:expandPrefixedName(?order) AS ?o)
+  BIND(xsd:dateTime(?ordered_at) AS ?order_date)
+  BIND(COALESCE(tarql:expandPrefixedName(?customer), IRI(?customer)) AS ?buyer)
+  BIND(tarql:expandPrefixedName(?status) AS ?order_status)
+  # the line node needs both a line number and a product
+  BIND(xsd:integer(?line) AS ?line_no)
+  BIND(COALESCE(tarql:expandPrefixedName(?product), IRI(?product)) AS ?product_iri)
+  BIND(IF(BOUND(?line_no) && BOUND(?product_iri), BNODE(), ?none) AS ?item)
+  BIND(xsd:integer(?qty) AS ?quantity)
+  BIND(xsd:decimal(?discount_pct) AS ?discount)
+  # nested nodes hang off the line, so they also need the line to exist
+  BIND(xsd:decimal(?unit_price) AS ?unit_amount)
+  BIND(COALESCE(tarql:expandPrefixedName(?currency), cur:EUR) AS ?currency_iri)
+  BIND(IF(BOUND(?item) && BOUND(?unit_amount), BNODE(), ?none) AS ?unit_spec)
+  BIND(STRDT(?shipped_on, xsd:date) AS ?ship_date)
+  BIND(IF(BOUND(?item) && BOUND(?ship_date), BNODE(), ?none) AS ?shipment)
+}

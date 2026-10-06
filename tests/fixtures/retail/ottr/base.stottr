@@ -1,0 +1,24 @@
+@prefix rt:   <http://example.com/retail/template#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+
+# Generic building blocks, with "regular" typing: ?value has no type, so it
+# accepts any term. Strongly typed callers can pass their values through these
+# templates; the reverse (an untyped value into a typed parameter) is a type
+# error in OTTR.
+
+# One property value. ?property is non-blank because ottr:Triple's predicate is.
+rt:Value [ ottr:IRI ?subject, ! ottr:IRI ?property, ? ?value ] :: {
+    ottr:Triple(?subject, ?property, ?value)
+} .
+
+rt:Typed [ ottr:IRI ?thing, owl:Class ?class ] :: {
+    ottr:Triple(?thing, rdf:type, ?class)
+} .
+
+# A link stated in both directions.
+rt:Inverse [ ottr:IRI ?subject, ! ottr:IRI ?property, ! ottr:IRI ?inverse, ottr:IRI ?object ] :: {
+    ottr:Triple(?subject, ?property, ?object),
+    ottr:Triple(?object, ?inverse, ?subject)
+} .

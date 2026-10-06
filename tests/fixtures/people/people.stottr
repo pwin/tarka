@@ -1,0 +1,33 @@
+@prefix ex:     <http://example.com/ns#> .
+@prefix ottr:   <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+
+ex:Person [ ottr:IRI ?person, xsd:string ?name, ? xsd:string ?email, ? ottr:IRI ?manager ] :: {
+    ottr:Triple(?person, rdf:type, schema:Person),
+    ottr:Triple(?person, schema:name, ?name),
+    ottr:Triple(?person, schema:email, ?email),
+    ex:ReportsTo(?person, ?manager)
+} .
+
+# A qualified relation. ?manager is mandatory, so without a manager none of
+# these triples, including the one about the blank node, may appear.
+ex:ReportsTo [ ottr:IRI ?person, ottr:IRI ?manager ] :: {
+    ottr:Triple(?person, ex:reportsTo, ?manager),
+    ottr:Triple(?person, ex:reporting, _:r),
+    ottr:Triple(_:r, ex:manager, ?manager),
+    ottr:Triple(_:r, ex:source, "hr.csv")
+} .
+
+ex:HasSkill [ ottr:IRI ?person, xsd:string ?skill ] :: {
+    ottr:Triple(?person, ex:skill, ?skill)
+} .
+
+# Needs a list per row: one ex:HasSkill instance per skill, but one record node per person.
+ex:Employee [ ottr:IRI ?person, xsd:string ?name, ? xsd:string ?email, ? ottr:IRI ?manager, ? List<xsd:string> ?skills ] :: {
+    ex:Person(?person, ?name, ?email, ?manager),
+    cross | ex:HasSkill(?person, ++?skills),
+    ottr:Triple(?person, ex:record, _:rec),
+    ottr:Triple(_:rec, ex:source, "hr.csv")
+} .

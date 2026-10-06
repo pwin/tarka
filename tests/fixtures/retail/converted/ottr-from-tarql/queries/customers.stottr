@@ -1,0 +1,59 @@
+@prefix ex: <http://example.com/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix cust: <http://example.com/customer/> .
+@prefix country: <http://example.com/country/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+q:customers [
+    ? ottr:IRI ?customer,
+    ? ottr:IRI ?class,
+    ? xsd:string ?name,
+    ? xsd:string ?legal_name,
+    ? xsd:string ?email,
+    ? xsd:string ?phone,
+    ? xsd:date ?birth_date,
+    ? xsd:gYear ?founding_year,
+    ? ottr:IRI ?url,
+    ? ottr:IRI ?parent_org,
+    ? xsd:string ?notes,
+    ? ottr:IRI ?address,
+    ? ottr:IRI ?account,
+    ? xsd:string ?locality,
+    ? xsd:string ?street,
+    ? xsd:string ?postcode,
+    ? ottr:IRI ?country_iri,
+    ? xsd:dateTime ?since,
+    ? xsd:boolean ?is_vip,
+    ? xsd:decimal ?limit
+]
+  @@ tq:Source("customers.rq"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Prefix("country", "http://example.com/country/"),
+  @@ tq:Bind("customer", "COALESCE(tarql:expandPrefixedName(?id), IRI(?id))"),
+  @@ tq:Bind("class", "tarql:expandPrefixedName(?kind)"),
+  @@ tq:Bind("birth_date", "STRDT(?born, xsd:date)"),
+  @@ tq:Bind("founding_year", "STRDT(?founded, xsd:gYear)"),
+  @@ tq:Bind("url", "IRI(?homepage)"),
+  @@ tq:Bind("parent_org", "tarql:expandPrefixedName(?parent)"),
+  @@ tq:Bind("address", "IF(COALESCE(?locality, \"\") != \"\", BNODE(), ?none)"),
+  @@ tq:Bind("country_iri", "tarql:expandPrefixedName(?country)"),
+  @@ tq:Bind("since", "xsd:dateTime(?customer_since)"),
+  @@ tq:Bind("account", "IF(BOUND(?since), BNODE(), ?none)"),
+  @@ tq:Bind("is_vip", "xsd:boolean(?vip)"),
+  @@ tq:Bind("limit", "xsd:decimal(?credit_limit)")
+:: {
+    tpl:Customer(?customer, ?account, ?class, ?notes, ?address, ?birth_date, ?email, ?founding_year, ?legal_name, ?name, ?parent_org, ?phone, ?url),
+    tpl:ParentOrg(?parent_org, ?customer),
+    tpl:PostalAddress(?address, ?country_iri, ?locality, ?postcode, ?street),
+    tpl:Account(?account, ?limit, ?since, ?is_vip)
+} .

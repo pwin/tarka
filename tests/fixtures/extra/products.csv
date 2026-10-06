@@ -1,0 +1,5 @@
+product,name,price,category,launched,maker
+ex:p1,Widget,9.99,ex:Tools,2024-05-01,ex:acme
+ex:p2,,,,,
+,Ghost,1.00,,,ex:acme
+http://example.com/ns#p3,Gadget,12,ex:Toys,,http://example.com/ns#globex

@@ -1,0 +1,219 @@
+# Shared templates decomposed from TARQL queries.
+
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix rt: <http://example.com/retail/template#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix cur: <http://example.com/currency/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix prod: <http://example.com/product/> .
+@prefix ord: <http://example.com/order/> .
+@prefix cat: <http://example.com/category/> .
+@prefix country: <http://example.com/country/> .
+@prefix status: <http://example.com/status/> .
+
+tpl:Customer [
+    ottr:IRI ?customer,
+    ? ottr:IRI ?type,
+    ? xsd:string ?name,
+    ? xsd:string ?legalName,
+    ? xsd:string ?email,
+    ? xsd:string ?telephone,
+    ? xsd:date ?birthDate,
+    ? xsd:gYear ?foundingDate,
+    ? ottr:IRI ?url,
+    ? ottr:IRI ?parentOrganization,
+    ? xsd:string ?comment
+]
+:: {
+    ottr:Triple(?customer, rdf:type, ex:Customer),
+    ottr:Triple(?customer, rdf:type, ?type),
+    ottr:Triple(?customer, schema:name, ?name),
+    ottr:Triple(?customer, schema:legalName, ?legalName),
+    ottr:Triple(?customer, schema:email, ?email),
+    ottr:Triple(?customer, schema:telephone, ?telephone),
+    ottr:Triple(?customer, schema:birthDate, ?birthDate),
+    ottr:Triple(?customer, schema:foundingDate, ?foundingDate),
+    ottr:Triple(?customer, schema:url, ?url),
+    ottr:Triple(?customer, schema:parentOrganization, ?parentOrganization),
+    ottr:Triple(?customer, rdfs:comment, ?comment)
+} .
+
+tpl:PostalAddress [
+    ottr:IRI ?customer,
+    xsd:string ?addressLocality,
+    ? xsd:string ?streetAddress,
+    ? xsd:string ?postalCode,
+    ? ottr:IRI ?addressCountry
+]
+:: {
+    ottr:Triple(?customer, schema:address, _:b0),
+    ottr:Triple(_:b0, rdf:type, schema:PostalAddress),
+    ottr:Triple(_:b0, schema:addressLocality, ?addressLocality),
+    ottr:Triple(_:b0, schema:streetAddress, ?streetAddress),
+    ottr:Triple(_:b0, schema:postalCode, ?postalCode),
+    ottr:Triple(_:b0, schema:addressCountry, ?addressCountry)
+} .
+
+tpl:Account [
+    ottr:IRI ?customer,
+    xsd:dateTime ?customerSince,
+    ? xsd:boolean ?vip,
+    ? xsd:decimal ?creditLimit
+]
+:: {
+    ottr:Triple(?customer, ex:account, _:b0),
+    ottr:Triple(_:b0, rdf:type, ex:Account),
+    ottr:Triple(_:b0, rdfs:label, "customer account"@en),
+    ottr:Triple(_:b0, rdfs:label, "kundekonto"@nb),
+    ottr:Triple(_:b0, ex:customerSince, ?customerSince),
+    ottr:Triple(_:b0, ex:vip, ?vip),
+    ottr:Triple(_:b0, ex:creditLimit, ?creditLimit)
+} .
+
+tpl:Parent [
+    ? ottr:IRI ?parent,
+    ottr:IRI ?customer
+]
+:: {
+    ottr:Triple(?parent, schema:subOrganization, ?customer)
+} .
+
+tpl:Order [
+    ottr:IRI ?order,
+    ? xsd:dateTime ?orderDate,
+    ? ottr:IRI ?customer,
+    ? xsd:string ?channel,
+    ? ottr:IRI ?orderStatus,
+    ? xsd:string ?giftMessage
+]
+:: {
+    ottr:Triple(?order, rdf:type, schema:Order),
+    ottr:Triple(?order, schema:orderDate, ?orderDate),
+    ottr:Triple(?order, schema:customer, ?customer),
+    ottr:Triple(?order, ex:channel, ?channel),
+    ottr:Triple(?order, schema:orderStatus, ?orderStatus),
+    ottr:Triple(?order, ex:giftMessage, ?giftMessage)
+} .
+
+tpl:OrderItem [
+    ottr:IRI ?order,
+    xsd:integer ?lineNumber,
+    ottr:IRI ?orderedItem,
+    ? xsd:integer ?orderQuantity,
+    ? xsd:decimal ?discountPercent,
+    ? xsd:integer ?sourceRow,
+    ? xsd:decimal ?price,
+    ? ottr:IRI ?priceCurrency,
+    ? xsd:date ?shippedOn,
+    ? xsd:string ?carrier,
+    ? xsd:string ?trackingNumber
+]
+:: {
+    ottr:Triple(?order, schema:orderedItem, _:b0),
+    ottr:Triple(_:b0, rdf:type, schema:OrderItem),
+    ottr:Triple(_:b0, ex:lineNumber, ?lineNumber),
+    ottr:Triple(_:b0, schema:orderedItem, ?orderedItem),
+    ottr:Triple(_:b0, schema:orderQuantity, ?orderQuantity),
+    ottr:Triple(_:b0, ex:discountPercent, ?discountPercent),
+    ottr:Triple(_:b0, ex:sourceRow, ?sourceRow),
+    tpl:PriceSpecification(_:b0, ?price, ?priceCurrency),
+    tpl:Shipment(_:b0, ?shippedOn, ?carrier, ?trackingNumber)
+} .
+
+tpl:PriceSpecification [
+    ottr:IRI ?orderItem,
+    xsd:decimal ?price,
+    ? ottr:IRI ?priceCurrency
+]
+:: {
+    ottr:Triple(?orderItem, ex:unitPrice, _:b0),
+    ottr:Triple(_:b0, rdf:type, schema:PriceSpecification),
+    ottr:Triple(_:b0, schema:price, ?price),
+    ottr:Triple(_:b0, schema:priceCurrency, ?priceCurrency)
+} .
+
+tpl:Shipment [
+    ottr:IRI ?orderItem,
+    xsd:date ?shippedOn,
+    ? xsd:string ?carrier,
+    ? xsd:string ?trackingNumber
+]
+:: {
+    ottr:Triple(?orderItem, ex:shipment, _:b0),
+    ottr:Triple(_:b0, rdf:type, ex:Shipment),
+    ottr:Triple(_:b0, ex:shippedOn, ?shippedOn),
+    ottr:Triple(_:b0, ex:carrier, ?carrier),
+    ottr:Triple(_:b0, ex:trackingNumber, ?trackingNumber)
+} .
+
+tpl:Product [
+    ottr:IRI ?product,
+    ? ottr:IRI ?type,
+    ? xsd:string ?name,
+    ? xsd:string ?description,
+    ? xsd:boolean ?inStock,
+    ? xsd:integer ?stockLevel,
+    ? xsd:date ?releaseDate,
+    ? xsd:decimal ?rating,
+    ? ottr:IRI ?manufacturer,
+    ? ottr:IRI ?replaces
+]
+:: {
+    ottr:Triple(?product, rdf:type, schema:Product),
+    ottr:Triple(?product, rdf:type, ex:CatalogItem),
+    ottr:Triple(?product, rdf:type, ?type),
+    ottr:Triple(?product, schema:name, ?name),
+    ottr:Triple(?product, schema:description, ?description),
+    ottr:Triple(?product, ex:inStock, ?inStock),
+    ottr:Triple(?product, ex:stockLevel, ?stockLevel),
+    ottr:Triple(?product, schema:releaseDate, ?releaseDate),
+    ottr:Triple(?product, ex:rating, ?rating),
+    ottr:Triple(?product, schema:manufacturer, ?manufacturer),
+    ottr:Triple(?product, ex:replaces, ?replaces)
+} .
+
+tpl:PriceSpecification_2 [
+    ottr:IRI ?product,
+    xsd:decimal ?price,
+    ? ottr:IRI ?priceCurrency
+]
+:: {
+    ottr:Triple(?product, schema:priceSpecification, _:b0),
+    ottr:Triple(_:b0, rdf:type, schema:PriceSpecification),
+    ottr:Triple(_:b0, schema:price, ?price),
+    ottr:Triple(_:b0, schema:priceCurrency, ?priceCurrency)
+} .
+
+tpl:QuantitativeValue [
+    ottr:IRI ?product,
+    xsd:decimal ?value
+]
+:: {
+    ottr:Triple(?product, schema:weight, _:b0),
+    ottr:Triple(_:b0, rdf:type, schema:QuantitativeValue),
+    ottr:Triple(_:b0, schema:value, ?value),
+    ottr:Triple(_:b0, schema:unitCode, "KGM")
+} .
+
+tpl:DiscontinuedProduct [
+    ottr:IRI ?product,
+    xsd:date ?discontinuedOn
+]
+:: {
+    ottr:Triple(?product, rdf:type, ex:DiscontinuedProduct),
+    ottr:Triple(?product, ex:discontinuedOn, ?discontinuedOn)
+} .
+
+tpl:Replaces [
+    ? ottr:IRI ?replaces,
+    ottr:IRI ?product
+]
+:: {
+    ottr:Triple(?replaces, ex:replacedBy, ?product)
+} .

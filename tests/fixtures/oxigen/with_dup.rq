@@ -1,0 +1,17 @@
+prefix : <https://test.com/d/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix skos: <http://www.w3.org/2004/02/skos/core#>
+
+construct {
+    :FixedMeta a :Annotation;
+        skos:prefLabel "Fixed Metadata" .
+    ?id_iri a :Item ;
+       :size ?typed_size ;
+       :related ?ref_iri ;
+       :onRow ?ROWNUM .
+} where {
+    bind(IRI(CONCAT('https://test.com/d/',STR(?id))) as ?id_iri)
+    bind(IRI(CONCAT('https://test.com/d/',STR(?ref))) as ?ref_iri)
+    bind(xsd:integer(?size) as ?typed_size)
+}
+

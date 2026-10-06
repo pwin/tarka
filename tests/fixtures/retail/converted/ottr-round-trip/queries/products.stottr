@@ -1,0 +1,70 @@
+@prefix rt: <http://example.com/retail/template#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix cur: <http://example.com/currency/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix prod: <http://example.com/product/> .
+@prefix ord: <http://example.com/order/> .
+@prefix cat: <http://example.com/category/> .
+@prefix country: <http://example.com/country/> .
+@prefix status: <http://example.com/status/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+
+q:products [
+    ? ottr:IRI ?sku_iri,
+    ? ottr:IRI ?category_iri,
+    ? xsd:string ?name,
+    ? xsd:string ?description,
+    ? xsd:boolean ?in_stock_typed,
+    ? xsd:integer ?stock_qty_typed,
+    ? xsd:date ?released_typed,
+    ? xsd:decimal ?rating_typed,
+    ? xsd:date ?discontinued_typed,
+    ? ottr:IRI ?supplier_iri,
+    ? ottr:IRI ?replaces_iri,
+    ? xsd:decimal ?price_typed,
+    ? ottr:IRI ?currency_iri_d2,
+    ? xsd:decimal ?weight_kg_typed
+]
+  @@ tq:Source("products.rq"),
+  @@ tq:Prefix("rt", "http://example.com/retail/template#"),
+  @@ tq:Prefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+  @@ tq:Prefix("owl", "http://www.w3.org/2002/07/owl#"),
+  @@ tq:Prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("cur", "http://example.com/currency/"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Prefix("prod", "http://example.com/product/"),
+  @@ tq:Prefix("ord", "http://example.com/order/"),
+  @@ tq:Prefix("cat", "http://example.com/category/"),
+  @@ tq:Prefix("country", "http://example.com/country/"),
+  @@ tq:Prefix("status", "http://example.com/status/"),
+  @@ tq:Bind("sku_iri", "IF(CONTAINS(STR(?sku), \"://\"), IRI(?sku), tarql:expandPrefixedName(?sku))"),
+  @@ tq:Bind("category_iri", "IF(CONTAINS(STR(?category), \"://\"), IRI(?category), tarql:expandPrefixedName(?category))"),
+  @@ tq:Bind("price_typed", "STRDT(?price, xsd:decimal)"),
+  @@ tq:Bind("currency_iri", "IF(CONTAINS(STR(?currency), \"://\"), IRI(?currency), tarql:expandPrefixedName(?currency))"),
+  @@ tq:Bind("weight_kg_typed", "STRDT(?weight_kg, xsd:decimal)"),
+  @@ tq:Bind("in_stock_typed", "STRDT(?in_stock, xsd:boolean)"),
+  @@ tq:Bind("stock_qty_typed", "STRDT(?stock_qty, xsd:integer)"),
+  @@ tq:Bind("released_typed", "STRDT(?released, xsd:date)"),
+  @@ tq:Bind("discontinued_typed", "STRDT(?discontinued, xsd:date)"),
+  @@ tq:Bind("supplier_iri", "IF(CONTAINS(STR(?supplier), \"://\"), IRI(?supplier), tarql:expandPrefixedName(?supplier))"),
+  @@ tq:Bind("replaces_iri", "IF(CONTAINS(STR(?replaces), \"://\"), IRI(?replaces), tarql:expandPrefixedName(?replaces))"),
+  @@ tq:Bind("rating_typed", "STRDT(?rating, xsd:decimal)"),
+  @@ tq:Bind("currency_iri_d2", "COALESCE(?currency_iri, cur:EUR)")
+:: {
+    tpl:Product(?sku_iri, ?category_iri, ?name, ?description, ?in_stock_typed, ?stock_qty_typed, ?released_typed, ?rating_typed, ?supplier_iri, ?replaces_iri),
+    tpl:PriceSpecification_2(?sku_iri, ?price_typed, ?currency_iri_d2),
+    tpl:QuantitativeValue(?sku_iri, ?weight_kg_typed),
+    tpl:DiscontinuedProduct(?sku_iri, ?discontinued_typed),
+    tpl:Replaces(?replaces_iri, ?sku_iri)
+} .

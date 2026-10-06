@@ -1,0 +1,16 @@
+[package]
+name = "tarka-ottr"
+description = "OTTR templates (stOTTR) for tarka: parse, check and compile templates to plans"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+oxiri = "0.2"
+oxrdf.workspace = true
+thiserror.workspace = true
+tarka-core.workspace = true
+tarka-tarql.workspace = true

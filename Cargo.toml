@@ -1,0 +1,40 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/pwin/tarka"
+authors = ["Peter Winstanley"]
+
+[workspace.dependencies]
+# The Oxigraph crates, as used by oxi-gen, HOLOS and SHACL_Engine. RDF 1.2 features
+# stay off: tarka works with RDF 1.1 and SPARQL 1.1 (matches over these types keep
+# wildcard arms, so a build that unifies `rdf-12`/`sparql-12` on still compiles).
+oxrdf = "0.3"
+oxrdfio = "0.2"
+oxsdatatypes = "0.2.3"
+spargebra = "0.4.7"
+spareval = "0.2.7"
+csv = "1.4"
+flate2 = "1"
+clap = { version = "4", features = ["derive"] }
+thiserror = "2"
+anyhow = "1"
+rayon = "1"
+
+tarka-core = { path = "crates/tarka-core", version = "0.1.0" }
+tarka-io = { path = "crates/tarka-io", version = "0.1.0" }
+tarka-tarql = { path = "crates/tarka-tarql", version = "0.1.0" }
+tarka-ottr = { path = "crates/tarka-ottr", version = "0.1.0" }
+tarka = { path = "crates/tarka", version = "0.1.0" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+# Unwinding, not abort: a panic must never take the whole run down without an error
+# message, and the Python bindings need unwinding to turn panics into exceptions.

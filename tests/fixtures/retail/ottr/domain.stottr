@@ -1,0 +1,150 @@
+@prefix rt:     <http://example.com/retail/template#> .
+@prefix ottr:   <http://ns.ottr.xyz/0.4/> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+@prefix ex:     <http://example.com/ns#> .
+@prefix cur:    <http://example.com/currency/> .
+
+# Domain templates, with strong typing. A template that builds a node makes its
+# defining value mandatory: when that value is none, OTTR drops the whole
+# instance, blank node included. TARQL needs IF(BOUND(...), BNODE(), ...) for
+# the same effect.
+
+# ---------------------------------------------------------------- value nodes
+
+rt:Price [ ottr:IRI ?thing, ! ottr:IRI ?property, xsd:decimal ?amount, ! ottr:IRI ?currency = cur:EUR ] :: {
+    rt:Value(?thing, ?property, _:spec),
+    rt:Typed(_:spec, schema:PriceSpecification),
+    rt:Value(_:spec, schema:price, ?amount),
+    rt:Value(_:spec, schema:priceCurrency, ?currency)
+} .
+
+rt:Quantity [ ottr:IRI ?thing, ! ottr:IRI ?property, xsd:decimal ?value, xsd:string ?unitCode ] :: {
+    rt:Value(?thing, ?property, _:q),
+    rt:Typed(_:q, schema:QuantitativeValue),
+    rt:Value(_:q, schema:value, ?value),
+    rt:Value(_:q, schema:unitCode, ?unitCode)
+} .
+
+rt:Address [ ottr:IRI ?agent, xsd:string ?locality, ? xsd:string ?street, ? xsd:string ?postcode, ? ottr:IRI ?country ] :: {
+    rt:Value(?agent, schema:address, _:address),
+    rt:Typed(_:address, schema:PostalAddress),
+    rt:Value(_:address, schema:addressLocality, ?locality),
+    rt:Value(_:address, schema:streetAddress, ?street),
+    rt:Value(_:address, schema:postalCode, ?postcode),
+    rt:Value(_:address, schema:addressCountry, ?country)
+} .
+
+rt:Account [ ottr:IRI ?customer, xsd:dateTime ?since, ? xsd:boolean ?vip, ? xsd:decimal ?creditLimit ] :: {
+    rt:Value(?customer, ex:account, _:account),
+    rt:Typed(_:account, ex:Account),
+    cross | rt:Value(_:account, rdfs:label, ++("customer account"@en, "kundekonto"@nb)),
+    rt:Value(_:account, ex:customerSince, ?since),
+    rt:Value(_:account, ex:vip, ?vip),
+    rt:Value(_:account, ex:creditLimit, ?creditLimit)
+} .
+
+rt:Shipment [ ottr:IRI ?item, xsd:date ?shippedOn, ? xsd:string ?carrier, ? xsd:string ?tracking ] :: {
+    rt:Value(?item, ex:shipment, _:shipment),
+    rt:Typed(_:shipment, ex:Shipment),
+    rt:Value(_:shipment, ex:shippedOn, ?shippedOn),
+    rt:Value(_:shipment, ex:carrier, ?carrier),
+    rt:Value(_:shipment, ex:trackingNumber, ?tracking)
+} .
+
+# ---------------------------------------------------------------- entities
+
+rt:Customer [
+    ! ottr:IRI ?customer,
+    ? owl:Class ?kind,
+    ? ?name,
+    ? ?legalName,
+    ? ?email,
+    ? xsd:string ?phone,
+    ? xsd:date ?birthDate,
+    ? xsd:gYear ?founded,
+    ? ottr:IRI ?homepage,
+    ? ottr:IRI ?parent,
+    ? ?notes
+] :: {
+    rt:Typed(?customer, ex:Customer),
+    rt:Typed(?customer, ?kind),
+    rt:Value(?customer, schema:name, ?name),
+    rt:Value(?customer, schema:legalName, ?legalName),
+    rt:Value(?customer, schema:email, ?email),
+    rt:Value(?customer, schema:telephone, ?phone),
+    rt:Value(?customer, schema:birthDate, ?birthDate),
+    rt:Value(?customer, schema:foundingDate, ?founded),
+    rt:Value(?customer, schema:url, ?homepage),
+    rt:Inverse(?customer, schema:parentOrganization, schema:subOrganization, ?parent),
+    rt:Value(?customer, rdfs:comment, ?notes)
+} .
+
+rt:Product [
+    ! ottr:IRI ?product,
+    ? xsd:string ?name,
+    ? ?description,
+    ? owl:Class ?category,
+    ? xsd:boolean ?inStock,
+    ? xsd:integer ?stockLevel,
+    ? xsd:date ?released,
+    ? xsd:decimal ?rating
+] :: {
+    cross | rt:Typed(?product, ++(schema:Product, ex:CatalogItem)),
+    rt:Typed(?product, ?category),
+    rt:Value(?product, schema:name, ?name),
+    rt:Value(?product, schema:description, ?description),
+    rt:Value(?product, ex:inStock, ?inStock),
+    rt:Value(?product, ex:stockLevel, ?stockLevel),
+    rt:Value(?product, schema:releaseDate, ?released),
+    rt:Value(?product, ex:rating, ?rating)
+} .
+
+rt:Discontinued [ ottr:IRI ?product, xsd:date ?on ] :: {
+    rt:Typed(?product, ex:DiscontinuedProduct),
+    rt:Value(?product, ex:discontinuedOn, ?on)
+} .
+
+rt:Order [
+    ! ottr:IRI ?order,
+    ? xsd:dateTime ?orderedAt,
+    ? ottr:IRI ?customer,
+    ? ?channel,
+    ? owl:NamedIndividual ?status,
+    ? ?giftMessage
+] :: {
+    rt:Typed(?order, schema:Order),
+    rt:Value(?order, schema:orderDate, ?orderedAt),
+    rt:Value(?order, schema:customer, ?customer),
+    rt:Value(?order, ex:channel, ?channel),
+    rt:Value(?order, schema:orderStatus, ?status),
+    rt:Value(?order, ex:giftMessage, ?giftMessage)
+} .
+
+# A line needs a number and a product. ?sourceRow is untyped: it takes whatever
+# row number the source supplies.
+rt:OrderLine [
+    ottr:IRI ?order,
+    xsd:integer ?line,
+    ottr:IRI ?product,
+    ? xsd:integer ?quantity,
+    ? xsd:decimal ?unitPrice,
+    !? ottr:IRI ?currency,
+    ? xsd:decimal ?discount,
+    ? xsd:date ?shippedOn,
+    ? xsd:string ?carrier,
+    ? xsd:string ?tracking,
+    ? ?sourceRow
+] :: {
+    rt:Value(?order, schema:orderedItem, _:item),
+    rt:Typed(_:item, schema:OrderItem),
+    rt:Value(_:item, ex:lineNumber, ?line),
+    rt:Value(_:item, schema:orderedItem, ?product),
+    rt:Value(_:item, schema:orderQuantity, ?quantity),
+    rt:Value(_:item, ex:discountPercent, ?discount),
+    rt:Value(_:item, ex:sourceRow, ?sourceRow),
+    rt:Price(_:item, ex:unitPrice, ?unitPrice, ?currency),
+    rt:Shipment(_:item, ?shippedOn, ?carrier, ?tracking)
+} .

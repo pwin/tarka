@@ -1,0 +1,23 @@
+[package]
+name = "tarka"
+description = "Triplify CSV and other tables with TARQL queries or OTTR templates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+readme = "../../README.md"
+
+[dependencies]
+oxrdf.workspace = true
+rayon.workspace = true
+thiserror.workspace = true
+tarka-core.workspace = true
+tarka-io.workspace = true
+tarka-ottr.workspace = true
+tarka-tarql.workspace = true
+
+[dev-dependencies]
+oxrdf.workspace = true
+oxrdfio.workspace = true

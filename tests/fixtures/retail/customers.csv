@@ -1,0 +1,8 @@
+id,kind,name,legal_name,email,phone,born,founded,street,locality,postcode,country,homepage,parent,vip,credit_limit,customer_since,notes
+cust:C001,schema:Organization,ACME,"ACME Corporation, Inc.",sales@acme.example,+1 555 0100,,1949,"1 Road Runner Way, Suite 9",Phoenix,85001,country:US,https://acme.example/,,true,250000.00,2015-06-01T08:00:00Z,"Key account.
+Invoices by e-mail; ""net 30"" terms."
+cust:C002,schema:Organization,Globex Nordic,Globex Nordic AS,post@globex.example,,,1998,Storgata 1,Oslo,0155,country:NO,https://globex.example/no?lang=nb&ref=csv,cust:C001,false,75000,2018-01-15T12:30:00+01:00,
+cust:C003,schema:Person,Åsa Ødegård,,asa@example.no,+47 22 00 00 00,1985-02-28,,Kirkeveien 12B,Bergen,5003,country:NO,,,1,5000.50,2020-11-30T23:59:59Z,"Works for \"Globex Nordic\" — Bergen office"
+cust:C004,schema:Person,Zoë O'Brien,,zoe@example.ie,,1990-07-04,,,,,country:IE,,,0,,2021-03-01T09:00:00Z,"   "
+http://example.com/customer/C005,ex:Partnership,"Smith, Jones & Partners","Smith, Jones \& Partners LLP",,,,2003,"12 High St, Unit 4",London,EC1A 1BB,country:GB,,,,12500.5,2022-02-28T17:05:00.25Z,	
+cust:C006,schema:Organization,  Initech  ,,,,,,,"   ",,,,cust:C002,false,0.00,2023-07-01T00:00:00-04:00,"Tab	separated; emoji 🚀"

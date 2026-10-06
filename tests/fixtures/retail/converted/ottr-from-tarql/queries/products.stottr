@@ -1,0 +1,61 @@
+@prefix ex: <http://example.com/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prod: <http://example.com/product/> .
+@prefix cat: <http://example.com/category/> .
+@prefix cur: <http://example.com/currency/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+q:products [
+    ? ottr:IRI ?product,
+    ? ottr:IRI ?category_class,
+    ? ?discontinued_class,
+    ? xsd:string ?name,
+    ? xsd:string ?description,
+    ? xsd:boolean ?in_stock_flag,
+    ? xsd:integer ?stock,
+    ? xsd:date ?release_date,
+    ? xsd:decimal ?rating_value,
+    ? xsd:date ?discontinued_date,
+    ? ottr:IRI ?maker,
+    ? ottr:IRI ?predecessor,
+    ? ottr:IRI ?price_spec,
+    ? ottr:IRI ?weight,
+    ? xsd:decimal ?amount,
+    ? ottr:IRI ?currency_iri,
+    ? xsd:decimal ?kg
+]
+  @@ tq:Source("products.rq"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("prod", "http://example.com/product/"),
+  @@ tq:Prefix("cat", "http://example.com/category/"),
+  @@ tq:Prefix("cur", "http://example.com/currency/"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Bind("product", "COALESCE(tarql:expandPrefixedName(?sku), IRI(?sku))"),
+  @@ tq:Bind("category_class", "tarql:expandPrefixedName(?category)"),
+  @@ tq:Bind("in_stock_flag", "xsd:boolean(?in_stock)"),
+  @@ tq:Bind("stock", "xsd:integer(?stock_qty)"),
+  @@ tq:Bind("release_date", "STRDT(?released, xsd:date)"),
+  @@ tq:Bind("rating_value", "xsd:decimal(?rating)"),
+  @@ tq:Bind("discontinued_date", "STRDT(?discontinued, xsd:date)"),
+  @@ tq:Bind("discontinued_class", "IF(BOUND(?discontinued_date), ex:DiscontinuedProduct, ?none)"),
+  @@ tq:Bind("maker", "tarql:expandPrefixedName(?supplier)"),
+  @@ tq:Bind("predecessor", "tarql:expandPrefixedName(?replaces)"),
+  @@ tq:Bind("amount", "xsd:decimal(?price)"),
+  @@ tq:Bind("currency_iri", "COALESCE(tarql:expandPrefixedName(?currency), cur:EUR)"),
+  @@ tq:Bind("price_spec", "IF(BOUND(?amount), BNODE(), ?none)"),
+  @@ tq:Bind("kg", "xsd:decimal(?weight_kg)"),
+  @@ tq:Bind("weight", "IF(BOUND(?kg), BNODE(), ?none)")
+:: {
+    tpl:Product(?product, ?discontinued_date, ?in_stock_flag, ?rating_value, ?predecessor, ?stock, ?category_class, ?discontinued_class, ?description, ?maker, ?name, ?price_spec, ?release_date, ?weight),
+    tpl:Predecessor(?predecessor, ?product),
+    tpl:PriceSpecification(?price_spec, ?amount, ?currency_iri),
+    tpl:QuantitativeValue(?weight, ?kg)
+} .

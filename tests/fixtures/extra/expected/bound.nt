@@ -1,0 +1,5 @@
+<http://example.com/ns#s> <http://example.com/ns#boundDerived> "yes" .
+<http://example.com/ns#s> <http://example.com/ns#boundFlag> "yes" .
+<http://example.com/ns#s> <http://example.com/ns#direct> "Alice" .
+<http://example.com/ns#s> <http://example.com/ns#viaCoalesce> "Alice" .
+<http://example.com/ns#s> <http://example.com/ns#viaIf> "Alice" .

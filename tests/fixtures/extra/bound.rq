@@ -1,0 +1,17 @@
+# Regression fixture: oxi-gen substitutes CSV columns into the query, so BOUND(?name)
+# is false even when the cell has a value; COALESCE and BOUND on BIND results work.
+PREFIX ex: <http://example.com/ns#>
+CONSTRUCT {
+  ex:s ex:direct ?name ;
+       ex:viaIf ?a ;
+       ex:boundFlag ?flag ;
+       ex:viaCoalesce ?c ;
+       ex:boundDerived ?flag2 .
+}
+WHERE {
+  BIND(IF(BOUND(?name), "yes", "no") AS ?flag)
+  BIND(IF(BOUND(?name), ?name, ?_u) AS ?a)
+  BIND(COALESCE(?name, "default") AS ?c)
+  BIND(STR(?other) AS ?d)
+  BIND(IF(BOUND(?d), "yes", "no") AS ?flag2)
+}

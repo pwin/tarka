@@ -1,0 +1,5 @@
+id,name,nick,age,street,city,org_id,org_name
+alice,Alice,Al,42,1 Main St,Oslo,ex:acme,ACME Inc.
+bob,Bob,,x,,Bergen,ex:acme,ACME Inc.
+,Nobody,,,Nowhere 1,,ex:globex,
+skip,Skipped,,,,,,

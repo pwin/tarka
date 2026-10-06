@@ -1,0 +1,9 @@
+sku,name,description,category,price,currency,weight_kg,in_stock,stock_qty,released,discontinued,supplier,replaces,rating
+prod:P-100,Anvil,"Heavy, drop-forged anvil.
+Ships on a pallet.",cat:Hardware,129.90,cur:USD,45.5,true,12,2019-04-01,,cust:C001,,4.5
+prod:P-099,Rocket Skates (classic),Original model,cat:Sports,999.99,cur:USD,3.5,false,0,2015-03-10,2020-01-15,cust:C001,,2.5
+prod:P-101,Rocket Skates,"Model ""RS-2"", now with brakes",cat:Sports,1250.00,,3.2,false,0,2020-01-15,,cust:C001,prod:P-099,3
+prod:P-200,Fjord Kayak,Sit-on-top kayak – 3.6 m,cat:Sports,8990,cur:NOK,22,true,3,2022-05-17,,cust:C002,,
+prod:P-201,Brunost,Brown cheese; 500 g,cat:Food,89.50,cur:NOK,0.5,true,140,2021-09-01,,cust:C002,,5.0
+prod:P-300,Mystery Box,,cat:Misc,,,,,,,,,,
+http://example.com/product/P-301,Gift Card,"Value: €50 \"digital\" (no expiry)",cat:Misc,50.00,cur:EUR,,true,,2023-11-24,,,,

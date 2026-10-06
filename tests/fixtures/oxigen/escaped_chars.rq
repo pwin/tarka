@@ -1,0 +1,9 @@
+prefix : <https://test.com/d/>
+construct {
+    ?row_iri
+        :description ?description ;
+        .
+}
+where {
+    BIND(tarql:expandPrefixedName(CONCAT(":row_", STR(?ROWNUM))) AS ?row_iri)
+}

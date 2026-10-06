@@ -1,0 +1,19 @@
+prefix : <https://test.com/d/>
+prefix two: <https://test.com/d2/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# cargo run -- --input split.csv  --query splitfuncs.rq -H --test=3 --split d d_s ";" --split e e_s " ";
+
+construct {
+    ?id_iri a :Item ;
+       :size ?typed_size ;
+       :related ?ref_iri ;
+       :firstSplit ?d_s ;
+       :secondSplit ?e_iri
+} where {
+    bind(IRI(CONCAT(tarql:expandPrefix(''),STR(?a))) as ?id_iri)
+    bind(tarql:expandPrefixedName(CONCAT(':',STR(?b))) as ?ref_iri)
+    bind(tarql:expandPrefixedName(CONCAT(':',STR(?e_s))) as ?e_iri)
+    bind(xsd:integer(?c) as ?typed_size)
+}
+   

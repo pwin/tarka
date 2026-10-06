@@ -1,0 +1,22 @@
+# People with a nested (blank node) address and a shared organisation shape.
+PREFIX ex: <http://example.com/ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX schema: <https://schema.org/>
+
+CONSTRUCT {
+  ?person a foaf:Person ;
+      foaf:name ?name , ?nick ;
+      foaf:age ?age_int ;
+      schema:address [ a schema:PostalAddress ; schema:streetAddress ?street ; schema:addressLocality ?city ] ;
+      ex:worksFor ?org .
+  ?org a foaf:Organization ;
+      foaf:name ?org_name .
+  ex:dataset ex:lastRow ?ROWNUM .
+}
+WHERE {
+  BIND(IRI(CONCAT(str(ex:), "person/", ENCODE_FOR_URI(?id))) AS ?person)
+  BIND(tarql:expandPrefixedName(?org_id) AS ?org)
+  BIND(xsd:integer(?age) AS ?age_int)
+  FILTER(?id != "skip")
+}
