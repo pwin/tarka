@@ -1,0 +1,105 @@
+<http://example.com/customer/C001> <http://example.com/ns#account> _:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b .
+<http://example.com/customer/C001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Organization> .
+<http://example.com/customer/C001> <http://www.w3.org/2000/01/rdf-schema#comment> "Key account.\nInvoices by e-mail; \"net 30\" terms." .
+<http://example.com/customer/C001> <https://schema.org/address> _:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a .
+<http://example.com/customer/C001> <https://schema.org/email> "sales@acme.example" .
+<http://example.com/customer/C001> <https://schema.org/foundingDate> "1949"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.com/customer/C001> <https://schema.org/legalName> "ACME Corporation, Inc." .
+<http://example.com/customer/C001> <https://schema.org/name> "ACME" .
+<http://example.com/customer/C001> <https://schema.org/subOrganization> <http://example.com/customer/C002> .
+<http://example.com/customer/C001> <https://schema.org/telephone> "+1 555 0100" .
+<http://example.com/customer/C001> <https://schema.org/url> <https://acme.example/> .
+<http://example.com/customer/C002> <http://example.com/ns#account> _:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de .
+<http://example.com/customer/C002> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C002> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Organization> .
+<http://example.com/customer/C002> <https://schema.org/address> _:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 .
+<http://example.com/customer/C002> <https://schema.org/email> "post@globex.example" .
+<http://example.com/customer/C002> <https://schema.org/foundingDate> "1998"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.com/customer/C002> <https://schema.org/legalName> "Globex Nordic AS" .
+<http://example.com/customer/C002> <https://schema.org/name> "Globex Nordic" .
+<http://example.com/customer/C002> <https://schema.org/parentOrganization> <http://example.com/customer/C001> .
+<http://example.com/customer/C002> <https://schema.org/subOrganization> <http://example.com/customer/C006> .
+<http://example.com/customer/C002> <https://schema.org/url> <https://globex.example/no?lang=nb&ref=csv> .
+<http://example.com/customer/C003> <http://example.com/ns#account> _:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 .
+<http://example.com/customer/C003> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C003> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Person> .
+<http://example.com/customer/C003> <http://www.w3.org/2000/01/rdf-schema#comment> "Works for \"Globex Nordic\" — Bergen office" .
+<http://example.com/customer/C003> <https://schema.org/address> _:cb0 .
+<http://example.com/customer/C003> <https://schema.org/birthDate> "1985-02-28"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/customer/C003> <https://schema.org/email> "asa@example.no" .
+<http://example.com/customer/C003> <https://schema.org/name> "Åsa Ødegård" .
+<http://example.com/customer/C003> <https://schema.org/telephone> "+47 22 00 00 00" .
+<http://example.com/customer/C004> <http://example.com/ns#account> _:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a .
+<http://example.com/customer/C004> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C004> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Person> .
+<http://example.com/customer/C004> <https://schema.org/birthDate> "1990-07-04"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/customer/C004> <https://schema.org/email> "zoe@example.ie" .
+<http://example.com/customer/C004> <https://schema.org/name> "Zoë O'Brien" .
+<http://example.com/customer/C005> <http://example.com/ns#account> _:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 .
+<http://example.com/customer/C005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C005> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Partnership> .
+<http://example.com/customer/C005> <https://schema.org/address> _:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 .
+<http://example.com/customer/C005> <https://schema.org/foundingDate> "2003"^^<http://www.w3.org/2001/XMLSchema#gYear> .
+<http://example.com/customer/C005> <https://schema.org/legalName> "Smith, Jones & Partners LLP" .
+<http://example.com/customer/C005> <https://schema.org/name> "Smith, Jones & Partners" .
+<http://example.com/customer/C006> <http://example.com/ns#account> _:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 .
+<http://example.com/customer/C006> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Customer> .
+<http://example.com/customer/C006> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Organization> .
+<http://example.com/customer/C006> <http://www.w3.org/2000/01/rdf-schema#comment> "Tab	separated; emoji 🚀" .
+<http://example.com/customer/C006> <https://schema.org/name> "  Initech  " .
+<http://example.com/customer/C006> <https://schema.org/parentOrganization> <http://example.com/customer/C002> .
+_:cb0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb0 <https://schema.org/addressCountry> <http://example.com/country/NO> .
+_:cb0 <https://schema.org/addressLocality> "Bergen" .
+_:cb0 <https://schema.org/postalCode> "5003" .
+_:cb0 <https://schema.org/streetAddress> "Kirkeveien 12B" .
+_:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a <https://schema.org/addressCountry> <http://example.com/country/US> .
+_:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a <https://schema.org/addressLocality> "Phoenix" .
+_:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a <https://schema.org/postalCode> "85001" .
+_:cb235970e717637435e6d6c05039fb74d67e0d459673114a34efb2d8e1aa94ce6a <https://schema.org/streetAddress> "1 Road Runner Way, Suite 9" .
+_:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 <https://schema.org/addressCountry> <http://example.com/country/NO> .
+_:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 <https://schema.org/addressLocality> "Oslo" .
+_:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 <https://schema.org/postalCode> "0155" .
+_:cb3ce7d1c9af9a275983eb67c8df5100a6de00214506e8775157b1b4219b0c41d6 <https://schema.org/streetAddress> "Storgata 1" .
+_:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 <https://schema.org/addressCountry> <http://example.com/country/GB> .
+_:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 <https://schema.org/addressLocality> "London" .
+_:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 <https://schema.org/postalCode> "EC1A 1BB" .
+_:cb45a70fbb2ce6ca0359361ce88a15907267305a5fcf06697aa930b51be9139774 <https://schema.org/streetAddress> "12 High St, Unit 4" .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://example.com/ns#creditLimit> "250000"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://example.com/ns#customerSince> "2015-06-01T08:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://example.com/ns#vip> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cb53569c1d8987d52d1491e3a742d80565b615c82e7248cecf55e6c2dd69ee486b <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .
+_:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 <http://example.com/ns#creditLimit> "12500.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 <http://example.com/ns#customerSince> "2022-02-28T17:05:00.25Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cb75471676aea517fc62d45a48bd197bb5169d580837c0acf5fbc560f7bbfd6a42 <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .
+_:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a <http://example.com/ns#customerSince> "2021-03-01T09:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a <http://example.com/ns#vip> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cbc42c6cad6169d754810f589b193a8337a8b097b5f9930317fa92f115bfd6b24a <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://example.com/ns#creditLimit> "5000.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://example.com/ns#customerSince> "2020-11-30T23:59:59Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://example.com/ns#vip> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cbdb11d27eb72a6bbb26bfebb46e617d8c19515593881407aa43b833b472a615f6 <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://example.com/ns#creditLimit> "0"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://example.com/ns#customerSince> "2023-07-01T00:00:00-04:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://example.com/ns#vip> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cbe7154378bc10a0208b8608c16fad8c898e5a01770112b23a17aca74860a0d583 <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://example.com/ns#creditLimit> "75000"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://example.com/ns#customerSince> "2018-01-15T12:30:00+01:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://example.com/ns#vip> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#Account> .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://www.w3.org/2000/01/rdf-schema#label> "customer account"@en .
+_:cbef60eaf45540158234ef37a454656e3b82b62418356e34fd8c6da62079b228de <http://www.w3.org/2000/01/rdf-schema#label> "kundekonto"@nb .

@@ -1,0 +1,19 @@
+<http://example.com/ns#acme> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Organization> .
+<http://example.com/ns#acme> <http://xmlns.com/foaf/0.1/name> "ACME Inc." .
+<http://example.com/ns#dataset> <http://example.com/ns#lastRow> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/ns#dataset> <http://example.com/ns#lastRow> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/ns#person/alice> <http://example.com/ns#worksFor> <http://example.com/ns#acme> .
+<http://example.com/ns#person/alice> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.com/ns#person/alice> <http://xmlns.com/foaf/0.1/age> "42"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/ns#person/alice> <http://xmlns.com/foaf/0.1/name> "Al" .
+<http://example.com/ns#person/alice> <http://xmlns.com/foaf/0.1/name> "Alice" .
+<http://example.com/ns#person/alice> <https://schema.org/address> _:cb82fd267093dc0cd6ffb2c1c515d1afa0cf12dbb864706054a4988aadb572409e .
+<http://example.com/ns#person/bob> <http://example.com/ns#worksFor> <http://example.com/ns#acme> .
+<http://example.com/ns#person/bob> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.com/ns#person/bob> <http://xmlns.com/foaf/0.1/name> "Bob" .
+<http://example.com/ns#person/bob> <https://schema.org/address> _:cb0 .
+_:cb0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb0 <https://schema.org/addressLocality> "Bergen" .
+_:cb82fd267093dc0cd6ffb2c1c515d1afa0cf12dbb864706054a4988aadb572409e <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PostalAddress> .
+_:cb82fd267093dc0cd6ffb2c1c515d1afa0cf12dbb864706054a4988aadb572409e <https://schema.org/addressLocality> "Oslo" .
+_:cb82fd267093dc0cd6ffb2c1c515d1afa0cf12dbb864706054a4988aadb572409e <https://schema.org/streetAddress> "1 Main St" .

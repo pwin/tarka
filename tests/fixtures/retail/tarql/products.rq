@@ -1,0 +1,50 @@
+# Native TARQL mapping for products.csv, written by hand for oxi-gen.
+# A product with an optional price specification, an optional weight, an optional
+# "discontinued" status and a two-way link to the product it replaces.
+PREFIX ex:     <http://example.com/ns#>
+PREFIX schema: <https://schema.org/>
+PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+PREFIX prod:   <http://example.com/product/>
+PREFIX cat:    <http://example.com/category/>
+PREFIX cur:    <http://example.com/currency/>
+PREFIX cust:   <http://example.com/customer/>
+
+CONSTRUCT {
+  ?product a schema:Product , ex:CatalogItem , ?category_class , ?discontinued_class ;
+      schema:name ?name ;
+      schema:description ?description ;
+      ex:inStock ?in_stock_flag ;
+      ex:stockLevel ?stock ;
+      schema:releaseDate ?release_date ;
+      ex:rating ?rating_value ;
+      ex:discontinuedOn ?discontinued_date ;
+      schema:manufacturer ?maker ;
+      ex:replaces ?predecessor ;
+      schema:priceSpecification ?price_spec ;
+      schema:weight ?weight .
+  ?predecessor ex:replacedBy ?product .
+  ?price_spec a schema:PriceSpecification ;
+      schema:price ?amount ;
+      schema:priceCurrency ?currency_iri .
+  ?weight a schema:QuantitativeValue ;
+      schema:value ?kg ;
+      schema:unitCode "KGM" .
+}
+WHERE {
+  BIND(COALESCE(tarql:expandPrefixedName(?sku), IRI(?sku)) AS ?product)
+  BIND(tarql:expandPrefixedName(?category) AS ?category_class)
+  BIND(xsd:boolean(?in_stock) AS ?in_stock_flag)
+  BIND(xsd:integer(?stock_qty) AS ?stock)
+  BIND(STRDT(?released, xsd:date) AS ?release_date)
+  BIND(xsd:decimal(?rating) AS ?rating_value)
+  BIND(STRDT(?discontinued, xsd:date) AS ?discontinued_date)
+  BIND(IF(BOUND(?discontinued_date), ex:DiscontinuedProduct, ?none) AS ?discontinued_class)
+  BIND(tarql:expandPrefixedName(?supplier) AS ?maker)
+  BIND(tarql:expandPrefixedName(?replaces) AS ?predecessor)
+  # a price node only when there is a price; the currency defaults to EUR
+  BIND(xsd:decimal(?price) AS ?amount)
+  BIND(COALESCE(tarql:expandPrefixedName(?currency), cur:EUR) AS ?currency_iri)
+  BIND(IF(BOUND(?amount), BNODE(), ?none) AS ?price_spec)
+  BIND(xsd:decimal(?weight_kg) AS ?kg)
+  BIND(IF(BOUND(?kg), BNODE(), ?none) AS ?weight)
+}

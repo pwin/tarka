@@ -1,0 +1,17 @@
+[package]
+name = "tarka-tarql"
+description = "TARQL (SPARQL CONSTRUCT over CSV rows) for tarka: query to plan, and evaluation with spareval"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+oxiri = "0.2"
+oxrdf.workspace = true
+spargebra.workspace = true
+spareval.workspace = true
+thiserror.workspace = true
+tarka-core.workspace = true

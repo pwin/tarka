@@ -1,0 +1,3 @@
+id,label,label_no_txt,homepage,category,extra_prop,value
+e:acme,ACME,Akme,http://acme.example/,e:Manufacturer,rdfs:comment,Makes everything
+e:globex,Globex,,,,e:motto,"We say ""hi"""

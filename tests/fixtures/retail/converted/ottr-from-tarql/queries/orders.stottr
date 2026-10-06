@@ -1,0 +1,64 @@
+@prefix ex: <http://example.com/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ord: <http://example.com/order/> .
+@prefix prod: <http://example.com/product/> .
+@prefix cust: <http://example.com/customer/> .
+@prefix cur: <http://example.com/currency/> .
+@prefix status: <http://example.com/status/> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix tpl: <http://example.com/retail/tpl/> .
+@prefix q: <http://example.com/retail/q/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+q:orders [
+    ? ottr:IRI ?o,
+    ? xsd:dateTime ?order_date,
+    ? ottr:IRI ?buyer,
+    ? xsd:string ?channel,
+    ? ottr:IRI ?order_status,
+    ? xsd:string ?gift_message,
+    ? ottr:IRI ?item,
+    ? xsd:integer ?line_no,
+    ? ottr:IRI ?product_iri,
+    ? xsd:integer ?quantity,
+    ? xsd:decimal ?discount,
+    ? xsd:integer ?ROWNUM,
+    ? ottr:IRI ?unit_spec,
+    ? ottr:IRI ?shipment,
+    ? xsd:decimal ?unit_amount,
+    ? ottr:IRI ?currency_iri,
+    ? xsd:date ?ship_date,
+    ? xsd:string ?carrier,
+    ? xsd:string ?tracking
+]
+  @@ tq:Source("orders.rq"),
+  @@ tq:Prefix("ex", "http://example.com/ns#"),
+  @@ tq:Prefix("schema", "https://schema.org/"),
+  @@ tq:Prefix("xsd", "http://www.w3.org/2001/XMLSchema#"),
+  @@ tq:Prefix("ord", "http://example.com/order/"),
+  @@ tq:Prefix("prod", "http://example.com/product/"),
+  @@ tq:Prefix("cust", "http://example.com/customer/"),
+  @@ tq:Prefix("cur", "http://example.com/currency/"),
+  @@ tq:Prefix("status", "http://example.com/status/"),
+  @@ tq:Bind("o", "tarql:expandPrefixedName(?order)"),
+  @@ tq:Bind("order_date", "xsd:dateTime(?ordered_at)"),
+  @@ tq:Bind("buyer", "COALESCE(tarql:expandPrefixedName(?customer), IRI(?customer))"),
+  @@ tq:Bind("order_status", "tarql:expandPrefixedName(?status)"),
+  @@ tq:Bind("line_no", "xsd:integer(?line)"),
+  @@ tq:Bind("product_iri", "COALESCE(tarql:expandPrefixedName(?product), IRI(?product))"),
+  @@ tq:Bind("item", "IF(BOUND(?line_no) && BOUND(?product_iri), BNODE(), ?none)"),
+  @@ tq:Bind("quantity", "xsd:integer(?qty)"),
+  @@ tq:Bind("discount", "xsd:decimal(?discount_pct)"),
+  @@ tq:Bind("unit_amount", "xsd:decimal(?unit_price)"),
+  @@ tq:Bind("currency_iri", "COALESCE(tarql:expandPrefixedName(?currency), cur:EUR)"),
+  @@ tq:Bind("unit_spec", "IF(BOUND(?item) && BOUND(?unit_amount), BNODE(), ?none)"),
+  @@ tq:Bind("ship_date", "STRDT(?shipped_on, xsd:date)"),
+  @@ tq:Bind("shipment", "IF(BOUND(?item) && BOUND(?ship_date), BNODE(), ?none)")
+:: {
+    tpl:Order(?o, ?channel, ?gift_message, ?buyer, ?order_date, ?order_status, ?item),
+    tpl:OrderItem(?item, ?discount, ?line_no, ?shipment, ?ROWNUM, ?unit_spec, ?quantity, ?product_iri),
+    tpl:PriceSpecification(?unit_spec, ?unit_amount, ?currency_iri),
+    tpl:Shipment(?shipment, ?carrier, ?ship_date, ?tracking)
+} .

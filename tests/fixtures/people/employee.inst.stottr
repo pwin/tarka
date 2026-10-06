@@ -1,0 +1,4 @@
+@prefix ex: <http://example.com/ns#> .
+ex:Employee(ex:alice, "Alice", "alice@example.com", ex:carol, ("python", "rust", "sparql")) .
+ex:Employee(ex:bob, "Bob", none, ex:carol, ("sparql")) .
+ex:Employee(ex:carol, "Carol", "carol@example.com", none, none) .

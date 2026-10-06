@@ -1,0 +1,6 @@
+<https://test.com/d/0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://test.com/d/Item> .
+<https://test.com/d/0> <https://test.com/d/related> <https://test.com/d/659789> .
+<https://test.com/d/0> <https://test.com/d/size> "829742"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://test.com/d/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://test.com/d/Item> .
+<https://test.com/d/1> <https://test.com/d/related> <https://test.com/d/905494> .
+<https://test.com/d/1> <https://test.com/d/size> "992592"^^<http://www.w3.org/2001/XMLSchema#integer> .

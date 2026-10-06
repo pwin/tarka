@@ -1,0 +1,4 @@
+<https://test.com/d/row_0> <https://test.com/d/description> "C:\\Users\\test\\path" .
+<https://test.com/d/row_1> <https://test.com/d/description> "line1\\nline2\\ttab" .
+<https://test.com/d/row_2> <https://test.com/d/description> "say \"hello world\"" .
+<https://test.com/d/row_3> <https://test.com/d/description> "mixed: C:\\path \"quoted\"" .

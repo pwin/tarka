@@ -1,0 +1,11 @@
+<http://example.com/ns#acme> <http://example.com/ns#category> <http://example.com/ns#Manufacturer> .
+<http://example.com/ns#acme> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Organization> .
+<http://example.com/ns#acme> <http://www.w3.org/2000/01/rdf-schema#comment> "Makes everything" .
+<http://example.com/ns#acme> <http://www.w3.org/2004/02/skos/core#prefLabel> "ACME"@en .
+<http://example.com/ns#acme> <http://www.w3.org/2004/02/skos/core#prefLabel> "Akme"@no .
+<http://example.com/ns#acme> <http://xmlns.com/foaf/0.1/homepage> <http://acme.example/> .
+<http://example.com/ns#acme> <http://xmlns.com/foaf/0.1/name> "ACME" .
+<http://example.com/ns#globex> <http://example.com/ns#motto> "We say \"hi\"" .
+<http://example.com/ns#globex> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Organization> .
+<http://example.com/ns#globex> <http://www.w3.org/2004/02/skos/core#prefLabel> "Globex"@en .
+<http://example.com/ns#globex> <http://xmlns.com/foaf/0.1/name> "Globex" .

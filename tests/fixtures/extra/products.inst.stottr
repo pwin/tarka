@@ -1,0 +1,12 @@
+@prefix ex: <http://example.com/ns#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix t: <http://example.com/templates#> .
+
+t:Product(ex:p1, "Widget", 9.99, ex:Tools, "2024-05-01"^^xsd:date, ex:acme) .
+t:Product(ex:p2, none, none, none, none, none) .
+t:Product(none, "Ghost", "1"^^xsd:decimal, none, none, ex:acme) .
+t:Product(ex:p3, "Gadget", "12"^^xsd:decimal, ex:Toys, none, ex:globex) .

@@ -1,0 +1,24 @@
+[package]
+name = "tarka-cli"
+description = "The tarka command: triplify CSV with TARQL queries or OTTR templates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "tarka"
+path = "src/main.rs"
+# the library is called tarka too; its documentation is the one to keep
+doc = false
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+oxrdf.workspace = true
+tarka.workspace = true
+
+[dev-dependencies]
+flate2.workspace = true

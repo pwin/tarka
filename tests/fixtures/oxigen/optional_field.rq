@@ -1,0 +1,11 @@
+prefix : <https://test.com/d/>
+construct {
+    ?id_iri
+        a :Item ;
+        :prefLabel ?pref_label ;
+        :altLabel ?alt_label ; #optional field in CSV data
+        .
+}
+where {
+    BIND(tarql:expandPrefixedName(?id) AS ?id_iri)
+}

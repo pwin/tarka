@@ -1,0 +1,17 @@
+[package]
+name = "tarka-io"
+description = "CSV input in oxi-gen's dialect, and RDF output, for tarka"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+csv.workspace = true
+flate2.workspace = true
+oxrdf.workspace = true
+oxrdfio.workspace = true
+thiserror.workspace = true
+tarka-core.workspace = true

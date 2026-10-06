@@ -1,0 +1,51 @@
+# Native TARQL mapping for customers.csv, written by hand for oxi-gen.
+# One customer per row, with an optional postal address and an optional account node.
+PREFIX ex:      <http://example.com/ns#>
+PREFIX schema:  <https://schema.org/>
+PREFIX rdfs:    <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
+PREFIX cust:    <http://example.com/customer/>
+PREFIX country: <http://example.com/country/>
+
+CONSTRUCT {
+  ?customer a ex:Customer , ?class ;
+      schema:name ?name ;
+      schema:legalName ?legal_name ;
+      schema:email ?email ;
+      schema:telephone ?phone ;
+      schema:birthDate ?birth_date ;
+      schema:foundingDate ?founding_year ;
+      schema:url ?url ;
+      schema:parentOrganization ?parent_org ;
+      rdfs:comment ?notes ;
+      schema:address ?address ;
+      ex:account ?account .
+  ?parent_org schema:subOrganization ?customer .
+  ?address a schema:PostalAddress ;
+      schema:addressLocality ?locality ;
+      schema:streetAddress ?street ;
+      schema:postalCode ?postcode ;
+      schema:addressCountry ?country_iri .
+  ?account a ex:Account ;
+      rdfs:label "customer account"@en , "kundekonto"@nb ;
+      ex:customerSince ?since ;
+      ex:vip ?is_vip ;
+      ex:creditLimit ?limit .
+}
+WHERE {
+  # ids are prefixed names, or full IRIs for customers imported from elsewhere
+  BIND(COALESCE(tarql:expandPrefixedName(?id), IRI(?id)) AS ?customer)
+  BIND(tarql:expandPrefixedName(?kind) AS ?class)
+  BIND(STRDT(?born, xsd:date) AS ?birth_date)
+  BIND(STRDT(?founded, xsd:gYear) AS ?founding_year)
+  BIND(IRI(?homepage) AS ?url)
+  BIND(tarql:expandPrefixedName(?parent) AS ?parent_org)
+  # oxi-gen substitutes cell values into the query, so BOUND(?locality) is always
+  # false; COALESCE sees the value
+  BIND(IF(COALESCE(?locality, "") != "", BNODE(), ?none) AS ?address)
+  BIND(tarql:expandPrefixedName(?country) AS ?country_iri)
+  BIND(xsd:dateTime(?customer_since) AS ?since)
+  BIND(IF(BOUND(?since), BNODE(), ?none) AS ?account)
+  BIND(xsd:boolean(?vip) AS ?is_vip)
+  BIND(xsd:decimal(?credit_limit) AS ?limit)
+}

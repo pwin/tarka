@@ -1,0 +1,35 @@
+# Signatures of the tq: annotations that carry TARQL-only parts of a query.
+
+@prefix tq: <http://example.org/ottr-tarql#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+tq:Source [
+    xsd:string ?file
+] .
+
+tq:Prefix [
+    xsd:string ?prefix,
+    xsd:string ?namespace
+] .
+
+tq:Base [
+    xsd:string ?base
+] .
+
+tq:Bind [
+    xsd:string ?variable,
+    xsd:string ?expression
+] .
+
+tq:Where [
+    xsd:string ?clause
+] .
+
+tq:Dataset [
+    xsd:string ?clause
+] .
+
+tq:Modifiers [
+    xsd:string ?clause
+] .

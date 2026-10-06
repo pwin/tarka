@@ -1,0 +1,15 @@
+[package]
+name = "tarka-core"
+description = "The mapping plan shared by tarka's front ends (TARQL, OTTR) and backends"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+oxrdf.workspace = true
+oxsdatatypes.workspace = true
+spargebra.workspace = true
+thiserror.workspace = true

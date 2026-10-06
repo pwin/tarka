@@ -1,0 +1,108 @@
+<http://example.com/product/P-099> <http://example.com/ns#discontinuedOn> "2020-01-15"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-099> <http://example.com/ns#inStock> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-099> <http://example.com/ns#rating> "2.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://example.com/product/P-099> <http://example.com/ns#replacedBy> <http://example.com/product/P-101> .
+<http://example.com/product/P-099> <http://example.com/ns#stockLevel> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/product/P-099> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Sports> .
+<http://example.com/product/P-099> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-099> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#DiscontinuedProduct> .
+<http://example.com/product/P-099> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-099> <https://schema.org/description> "Original model" .
+<http://example.com/product/P-099> <https://schema.org/manufacturer> <http://example.com/customer/C001> .
+<http://example.com/product/P-099> <https://schema.org/name> "Rocket Skates (classic)" .
+<http://example.com/product/P-099> <https://schema.org/priceSpecification> _:cb0 .
+<http://example.com/product/P-099> <https://schema.org/releaseDate> "2015-03-10"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-099> <https://schema.org/weight> _:cb6f9dc35bf27f12cffcf6baea409e8bfe43cc4dbff16b384761764ed3a1fc8171 .
+<http://example.com/product/P-100> <http://example.com/ns#inStock> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-100> <http://example.com/ns#rating> "4.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://example.com/product/P-100> <http://example.com/ns#stockLevel> "12"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/product/P-100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Hardware> .
+<http://example.com/product/P-100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-100> <https://schema.org/description> "Heavy, drop-forged anvil.\nShips on a pallet." .
+<http://example.com/product/P-100> <https://schema.org/manufacturer> <http://example.com/customer/C001> .
+<http://example.com/product/P-100> <https://schema.org/name> "Anvil" .
+<http://example.com/product/P-100> <https://schema.org/priceSpecification> _:cbbcaaf479b9a822bb138acecb6b72d159021fd8d29591ef83e61370abc14a8bd0 .
+<http://example.com/product/P-100> <https://schema.org/releaseDate> "2019-04-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-100> <https://schema.org/weight> _:cbae1b5f2fcbe83d623ff08d933dcc5b63f23150489726553cf01a0f7575d2634b .
+<http://example.com/product/P-101> <http://example.com/ns#inStock> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-101> <http://example.com/ns#rating> "3"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://example.com/product/P-101> <http://example.com/ns#replaces> <http://example.com/product/P-099> .
+<http://example.com/product/P-101> <http://example.com/ns#stockLevel> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/product/P-101> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Sports> .
+<http://example.com/product/P-101> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-101> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-101> <https://schema.org/description> "Model \"RS-2\", now with brakes" .
+<http://example.com/product/P-101> <https://schema.org/manufacturer> <http://example.com/customer/C001> .
+<http://example.com/product/P-101> <https://schema.org/name> "Rocket Skates" .
+<http://example.com/product/P-101> <https://schema.org/priceSpecification> _:cbb6a77e78b342aa21c85995acd908ddf6682bbff728dc941741b455b34acad611 .
+<http://example.com/product/P-101> <https://schema.org/releaseDate> "2020-01-15"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-101> <https://schema.org/weight> _:cbd0fbab3fa4f5478ddda764bc5561664cecdc5278f497621a7c412f7b24e62345 .
+<http://example.com/product/P-200> <http://example.com/ns#inStock> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-200> <http://example.com/ns#stockLevel> "3"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/product/P-200> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Sports> .
+<http://example.com/product/P-200> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-200> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-200> <https://schema.org/description> "Sit-on-top kayak – 3.6 m" .
+<http://example.com/product/P-200> <https://schema.org/manufacturer> <http://example.com/customer/C002> .
+<http://example.com/product/P-200> <https://schema.org/name> "Fjord Kayak" .
+<http://example.com/product/P-200> <https://schema.org/priceSpecification> _:cbf335bb48bfb0149204f9f4a9ab8d7c88b5dbcb6d0fe2c8a5e4c5a961f0be5266 .
+<http://example.com/product/P-200> <https://schema.org/releaseDate> "2022-05-17"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-200> <https://schema.org/weight> _:cbf1e98a07dc0bbccac07148abfee1534e4171cb7f41afe2244ea41c17495c0ab .
+<http://example.com/product/P-201> <http://example.com/ns#inStock> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-201> <http://example.com/ns#rating> "5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://example.com/product/P-201> <http://example.com/ns#stockLevel> "140"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://example.com/product/P-201> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Food> .
+<http://example.com/product/P-201> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-201> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-201> <https://schema.org/description> "Brown cheese; 500 g" .
+<http://example.com/product/P-201> <https://schema.org/manufacturer> <http://example.com/customer/C002> .
+<http://example.com/product/P-201> <https://schema.org/name> "Brunost" .
+<http://example.com/product/P-201> <https://schema.org/priceSpecification> _:cb987db2a883abb86a70c8d4c6a1a922ed9b63ba697d06878c1bc61f379f1c8666 .
+<http://example.com/product/P-201> <https://schema.org/releaseDate> "2021-09-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.com/product/P-201> <https://schema.org/weight> _:cb4223d0051dde938787213efad8d70bd4f85922807a5c35fc7278bde949e80597 .
+<http://example.com/product/P-300> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Misc> .
+<http://example.com/product/P-300> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-300> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-300> <https://schema.org/name> "Mystery Box" .
+<http://example.com/product/P-301> <http://example.com/ns#inStock> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://example.com/product/P-301> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/category/Misc> .
+<http://example.com/product/P-301> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ns#CatalogItem> .
+<http://example.com/product/P-301> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/Product> .
+<http://example.com/product/P-301> <https://schema.org/description> "Value: €50 \"digital\" (no expiry)" .
+<http://example.com/product/P-301> <https://schema.org/name> "Gift Card" .
+<http://example.com/product/P-301> <https://schema.org/priceSpecification> _:cb11fd1e55fa0942d8cec87bdb7257cb4e40714d1634cd4e9c82d6e832e5a8ffe9 .
+<http://example.com/product/P-301> <https://schema.org/releaseDate> "2023-11-24"^^<http://www.w3.org/2001/XMLSchema#date> .
+_:cb0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cb0 <https://schema.org/price> "999.99"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb0 <https://schema.org/priceCurrency> <http://example.com/currency/USD> .
+_:cb11fd1e55fa0942d8cec87bdb7257cb4e40714d1634cd4e9c82d6e832e5a8ffe9 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cb11fd1e55fa0942d8cec87bdb7257cb4e40714d1634cd4e9c82d6e832e5a8ffe9 <https://schema.org/price> "50"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb11fd1e55fa0942d8cec87bdb7257cb4e40714d1634cd4e9c82d6e832e5a8ffe9 <https://schema.org/priceCurrency> <http://example.com/currency/EUR> .
+_:cb4223d0051dde938787213efad8d70bd4f85922807a5c35fc7278bde949e80597 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/QuantitativeValue> .
+_:cb4223d0051dde938787213efad8d70bd4f85922807a5c35fc7278bde949e80597 <https://schema.org/unitCode> "KGM" .
+_:cb4223d0051dde938787213efad8d70bd4f85922807a5c35fc7278bde949e80597 <https://schema.org/value> "0.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb6f9dc35bf27f12cffcf6baea409e8bfe43cc4dbff16b384761764ed3a1fc8171 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/QuantitativeValue> .
+_:cb6f9dc35bf27f12cffcf6baea409e8bfe43cc4dbff16b384761764ed3a1fc8171 <https://schema.org/unitCode> "KGM" .
+_:cb6f9dc35bf27f12cffcf6baea409e8bfe43cc4dbff16b384761764ed3a1fc8171 <https://schema.org/value> "3.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb987db2a883abb86a70c8d4c6a1a922ed9b63ba697d06878c1bc61f379f1c8666 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cb987db2a883abb86a70c8d4c6a1a922ed9b63ba697d06878c1bc61f379f1c8666 <https://schema.org/price> "89.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cb987db2a883abb86a70c8d4c6a1a922ed9b63ba697d06878c1bc61f379f1c8666 <https://schema.org/priceCurrency> <http://example.com/currency/NOK> .
+_:cbae1b5f2fcbe83d623ff08d933dcc5b63f23150489726553cf01a0f7575d2634b <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/QuantitativeValue> .
+_:cbae1b5f2fcbe83d623ff08d933dcc5b63f23150489726553cf01a0f7575d2634b <https://schema.org/unitCode> "KGM" .
+_:cbae1b5f2fcbe83d623ff08d933dcc5b63f23150489726553cf01a0f7575d2634b <https://schema.org/value> "45.5"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbb6a77e78b342aa21c85995acd908ddf6682bbff728dc941741b455b34acad611 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cbb6a77e78b342aa21c85995acd908ddf6682bbff728dc941741b455b34acad611 <https://schema.org/price> "1250"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbb6a77e78b342aa21c85995acd908ddf6682bbff728dc941741b455b34acad611 <https://schema.org/priceCurrency> <http://example.com/currency/EUR> .
+_:cbbcaaf479b9a822bb138acecb6b72d159021fd8d29591ef83e61370abc14a8bd0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cbbcaaf479b9a822bb138acecb6b72d159021fd8d29591ef83e61370abc14a8bd0 <https://schema.org/price> "129.9"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbbcaaf479b9a822bb138acecb6b72d159021fd8d29591ef83e61370abc14a8bd0 <https://schema.org/priceCurrency> <http://example.com/currency/USD> .
+_:cbd0fbab3fa4f5478ddda764bc5561664cecdc5278f497621a7c412f7b24e62345 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/QuantitativeValue> .
+_:cbd0fbab3fa4f5478ddda764bc5561664cecdc5278f497621a7c412f7b24e62345 <https://schema.org/unitCode> "KGM" .
+_:cbd0fbab3fa4f5478ddda764bc5561664cecdc5278f497621a7c412f7b24e62345 <https://schema.org/value> "3.2"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbf1e98a07dc0bbccac07148abfee1534e4171cb7f41afe2244ea41c17495c0ab <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/QuantitativeValue> .
+_:cbf1e98a07dc0bbccac07148abfee1534e4171cb7f41afe2244ea41c17495c0ab <https://schema.org/unitCode> "KGM" .
+_:cbf1e98a07dc0bbccac07148abfee1534e4171cb7f41afe2244ea41c17495c0ab <https://schema.org/value> "22"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbf335bb48bfb0149204f9f4a9ab8d7c88b5dbcb6d0fe2c8a5e4c5a961f0be5266 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org/PriceSpecification> .
+_:cbf335bb48bfb0149204f9f4a9ab8d7c88b5dbcb6d0fe2c8a5e4c5a961f0be5266 <https://schema.org/price> "8990"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+_:cbf335bb48bfb0149204f9f4a9ab8d7c88b5dbcb6d0fe2c8a5e4c5a961f0be5266 <https://schema.org/priceCurrency> <http://example.com/currency/NOK> .

@@ -1,0 +1,9 @@
+@prefix ex: <http://example.com/ns#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+
+ex:Person(ex:alice, "Alice", "alice@example.com", ex:carol) .
+ex:Person(ex:bob, "Bob", none, ex:carol) .
+ex:Person(ex:carol, "Carol", "carol@example.com", none) .
