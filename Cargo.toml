@@ -19,6 +19,7 @@ oxrdfio = "0.2"
 oxsdatatypes = "0.2.3"
 spargebra = "0.4.7"
 spareval = "0.2.7"
+sparesults = "0.3"
 csv = "1.4"
 flate2 = "1"
 clap = { version = "4", features = ["derive"] }

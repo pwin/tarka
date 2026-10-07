@@ -130,7 +130,7 @@ in Lutra, an instance whose arguments cannot be made, or do not fit the template
 types, is left out and reported (every bad argument of the row), the others are written, and
 tarka exits with status 1.
 
-Two sources are read:
+Three sources are read:
 
 * `ottr:H2Source` with `SELECT [DISTINCT] columns FROM CSVREAD('file.csv'[, columns[, options]])`,
   in H2's CSV dialect (unquoted fields trimmed, an empty one NULL; `""` is an empty string). A
@@ -138,9 +138,11 @@ Two sources are read:
   is refused, since tarka does not embed H2.
 * `ottr:RDFFileSource`: a SPARQL 1.1 SELECT over its `ottr:sourceURL` files. A term whose own
   type fits the argument map's is kept as it is.
+* `ottr:SPARQLEndpointSource`: the SELECT sent to its `ottr:sourceURL` (the SPARQL 1.1
+  Protocol; HOLOS serves it at `/query`), its values read as an RDF file source's are.
 
 Relative files are found from the bOTTR file's directory (H2 would use the working
-directory); `@@THIS_DIR@@` works as in Lutra. JDBC sources and SPARQL endpoints are not read.
+directory); `@@THIS_DIR@@` works as in Lutra. JDBC sources are not read.
 In Python: `tarka.bottr(["templates/"], ["staff.bottr.ttl"], "staff.ttl")`.
 
 ### Linting

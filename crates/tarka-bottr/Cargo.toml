@@ -8,10 +8,16 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
+[features]
+default = ["endpoints"]
+# SPARQL endpoint sources, over HTTP
+endpoints = ["dep:sparesults", "dep:ureq"]
+
 [dependencies]
 oxrdf.workspace = true
 oxrdfio.workspace = true
 oxsdatatypes.workspace = true
+sparesults = { workspace = true, optional = true }
 spareval.workspace = true
 spargebra.workspace = true
 tarka-core.workspace = true
@@ -19,6 +25,7 @@ tarka-io.workspace = true
 tarka-ottr.workspace = true
 tarka-tarql.workspace = true
 thiserror.workspace = true
+ureq = { workspace = true, optional = true }
 
 [dev-dependencies]
 tarka.workspace = true
