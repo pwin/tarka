@@ -247,7 +247,11 @@ Each instance is then type-checked against the template's parameters with `tarka
 and expanded like any OTTR instance (the template compiled once, with given values). H2's
 SQL is not embedded: tarka parses the part of it that reads a CSV file, and H2's CSV dialect,
 whose quirks the fixtures pin (trimming, NULL for empty fields, the column list split on the
-field separator). RDF sources are loaded into one dataset and queried with spareval.
+field separator). RDF sources are loaded into one dataset and queried with spareval; a
+SPARQL endpoint gets the query as an `application/sparql-query` POST, and its JSON or XML
+results (sparesults) are read like spareval's solutions. The endpoint tests check the request,
+and, with `HOLOS_SERVER` set, run the RDF file fixture's map against HOLOS serving the same data:
+the output must be the file source's, and Lutra's against the same endpoint.
 
 The fixtures under `tests/fixtures/bottr` were run through Lutra to make their expected
 output; a live test runs Lutra again when `LUTRA_JAR` is set.
@@ -255,4 +259,3 @@ output; a live test runs Lutra again when `LUTRA_JAR` is set.
 ## 12. What is next
 
 * Evaluating `Columns` liftings over Polars frames as expressions, without the copy to cells.
-* More bOTTR sources (SPARQL endpoints, over the HTTP client tarka already has for loading).

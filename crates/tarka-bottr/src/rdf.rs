@@ -50,7 +50,7 @@ fn load(file: &Path, dataset: &mut Dataset) -> Result<(), String> {
 }
 
 /// A triple term, or a literal with a base direction.
-fn rdf_12(t: &Term) -> bool {
+pub(crate) fn rdf_12(t: &Term) -> bool {
     match t {
         Term::NamedNode(_) | Term::BlankNode(_) => false,
         Term::Literal(l) => l.datatype().as_str() == "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString",

@@ -21,6 +21,8 @@ pub enum Source {
     H2,
     /// RDF files, queried with SPARQL.
     RdfFiles(Vec<PathBuf>),
+    /// A SPARQL endpoint, by URL.
+    SparqlEndpoint(String),
     /// A source tarka does not read (JDBC, a SPARQL endpoint), by class.
     Unsupported(String),
 }
@@ -200,6 +202,13 @@ impl Doc<'_> {
                 return Err("an RDF file source needs an ottr:sourceURL".into());
             }
             return Ok(Source::RdfFiles(urls));
+        }
+        if is("SPARQLEndpointSource") {
+            return match self.object(s, "sourceURL") {
+                Some(Term::Literal(l)) => Ok(Source::SparqlEndpoint(l.value().to_owned())),
+                Some(Term::NamedNode(n)) => Ok(Source::SparqlEndpoint(n.into_string())),
+                _ => Err("a SPARQL endpoint source needs its URL as ottr:sourceURL".into()),
+            };
         }
         Ok(Source::Unsupported(classes.into_iter().next().unwrap_or_else(|| "an untyped source".into())))
     }

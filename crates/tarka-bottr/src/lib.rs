@@ -8,12 +8,16 @@
 //!
 //! * `ottr:H2Source` with a query over H2's `CSVREAD`
 //!   (`SELECT a, b FROM CSVREAD('@@THIS_DIR@@/people.csv')`), in H2's CSV dialect;
-//! * `ottr:RDFFileSource` with a SPARQL SELECT query over its `ottr:sourceURL` files.
+//! * `ottr:RDFFileSource` with a SPARQL SELECT query over its `ottr:sourceURL` files;
+//! * `ottr:SPARQLEndpointSource` with a SPARQL SELECT query sent to its `ottr:sourceURL`
+//!   (with the `endpoints` feature, on by default).
 //!
 //! As in Lutra, an instance whose arguments cannot be made, or do not fit the template's
 //! parameter types, is left out and reported, and the others are made.
 
 pub mod convert;
+#[cfg(feature = "endpoints")]
+pub mod endpoint;
 pub mod h2;
 pub mod map;
 pub mod rdf;
@@ -83,8 +87,18 @@ fn rows(m: &InstanceMap) -> Result<(Vec<String>, Vec<Vec<convert::Raw>>), String
             let rows = rows.into_iter().map(|r| r.into_iter().map(|v| v.map_or(Raw::Null, Raw::Term)).collect()).collect();
             Ok((labels, rows))
         }
+        Source::SparqlEndpoint(url) => {
+            #[cfg(feature = "endpoints")]
+            {
+                let (labels, rows) = endpoint::rows(url, &m.query)?;
+                let rows = rows.into_iter().map(|r| r.into_iter().map(|v| v.map_or(Raw::Null, Raw::Term)).collect()).collect();
+                Ok((labels, rows))
+            }
+            #[cfg(not(feature = "endpoints"))]
+            Err(format!("{url} is a SPARQL endpoint, and this build of tarka-bottr does not query endpoints (the endpoints feature)"))
+        }
         Source::Unsupported(class) => Err(format!(
-            "tarka reads H2 sources over CSVREAD and RDF file sources; {class} is not one (export the data to CSV, or query it into a file)"
+            "tarka reads H2 sources over CSVREAD, RDF file sources and SPARQL endpoints; {class} is not one (export the data to CSV, or query it into a file)"
         )),
     }
 }
