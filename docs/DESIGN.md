@@ -144,8 +144,15 @@ the input says whether a cell is text or a list: a text cell for a list paramete
 separator, and a list cell for any other parameter is an error. So is a list column used by a
 TARQL query, whose rows bind strings.
 
-Converting to cells costs a copy of the used columns. Evaluating `Columns` liftings as Polars
-expressions, without the copy, is possible later; the plan does not need to change for it.
+That is how a TARQL query's rows are made. A plan whose lifting reads columns (OTTR) skips the
+cells: each binding's column becomes its parameter's terms directly, the columns in parallel,
+and the rows go to the shape layer (`tarka::run_envs`). Integer columns for integer or decimal
+parameters, boolean columns for `xsd:boolean` and string columns are converted without writing
+values out as text; the rest go through the same text conversion as cells. A test compares the
+two routes term for term on every fast path and its edges. On the 200,000-row orders file the
+column route does a fifth less work than the cells did (single-threaded: 3.8 s against 4.8 s
+from Parquet); with every core busy the shape layer dominates, and the run is a few percent
+faster.
 
 ## 7. Python
 
@@ -255,7 +262,3 @@ the output must be the file source's, and Lutra's against the same endpoint.
 
 The fixtures under `tests/fixtures/bottr` were run through Lutra to make their expected
 output; a live test runs Lutra again when `LUTRA_JAR` is set.
-
-## 12. What is next
-
-* Evaluating `Columns` liftings over Polars frames as expressions, without the copy to cells.

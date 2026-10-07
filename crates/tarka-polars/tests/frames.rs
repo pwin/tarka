@@ -129,6 +129,51 @@ fn typed_columns() {
     }
 }
 
+/// The column-by-column lifting gives the terms the cells would: every fast path and
+/// the edges around it (nulls, blanks, large and negative integers, floats as decimals).
+#[test]
+fn columns_lift_as_cells_would() {
+    use chrono::NaiveDate;
+    let lib =
+        "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+         ex:Row [ ottr:IRI ?id, ? xsd:integer ?i, ? xsd:int ?small, ? xsd:decimal ?d, ? xsd:decimal ?f, ? xsd:boolean ?b,
+                  ? xsd:string ?s, ? xsd:integer ?big, ? xsd:date ?day, ? xsd:double ?x, ? ?ROWNUM ] :: {
+           ottr:Triple(?id, ex:i, ?i), ottr:Triple(?id, ex:small, ?small), ottr:Triple(?id, ex:d, ?d), ottr:Triple(?id, ex:f, ?f),
+           ottr:Triple(?id, ex:b, ?b), ottr:Triple(?id, ex:s, ?s), ottr:Triple(?id, ex:big, ?big), ottr:Triple(?id, ex:day, ?day),
+           ottr:Triple(?id, ex:x, ?x), ottr:Triple(?id, ex:row, ?ROWNUM) } .";
+    let mut library = tarka::ottr::Library::new();
+    library.add(tarka::ottr::parse_stottr(lib, "inline").unwrap());
+    let plan = tarka::ottr::compile(&library, "http://example.com/Row", &Default::default()).unwrap();
+    let day = |d| NaiveDate::from_ymd_opt(2024, 3, d);
+    let df = df!(
+        "id" => ["ex:a", "ex:b", "ex:c", "not an iri"],
+        "i" => [Some(7i64), Some(-3), None, Some(0)],
+        "small" => [Some(1i16), None, Some(-32768), Some(5)],
+        "d" => [Some(42i32), Some(0), Some(-1), None],
+        "f" => [Some(9.5f64), Some(8990.0), Some(0.1), None],
+        "b" => [Some(true), Some(false), None, Some(true)],
+        "s" => [Some("text"), Some("  "), Some(""), None],
+        "big" => [Some(u64::MAX), Some(1), None, Some(2)],
+        "day" => [day(5), None, day(7), day(8)],
+        "x" => [Some(1.5e3f64), Some(f64::NAN), None, Some(-0.0)],
+    )
+    .unwrap();
+    // the cell path: cells first, then the row engine
+    let (columns, records) = tarka_polars::frame_records(&plan, &df, &FrameOptions::default()).unwrap();
+    let mut by_cells: Vec<Triple> = Vec::new();
+    tarka::run(&plan, &columns, records.into_iter().map(Ok::<_, std::convert::Infallible>), &mut by_cells, &RunOptions::default()).unwrap();
+    let by_cells: Graph = by_cells.into_iter().collect();
+    assert_same(&by_cells, &run(&plan, &df), "columns against cells");
+    assert!(by_cells.to_string().contains("\"18446744073709551615\"^^<http://www.w3.org/2001/XMLSchema#integer>"));
+    let blanks = FrameOptions { bind_empty_strings: true };
+    let (columns, records) = tarka_polars::frame_records(&plan, &df, &blanks).unwrap();
+    let mut by_cells: Vec<Triple> = Vec::new();
+    tarka::run(&plan, &columns, records.into_iter().map(Ok::<_, std::convert::Infallible>), &mut by_cells, &RunOptions::default()).unwrap();
+    let mut by_columns: Vec<Triple> = Vec::new();
+    run_frame(&plan, &df, &blanks, &mut by_columns, &RunOptions::default()).unwrap();
+    assert_same(&by_cells.into_iter().collect(), &by_columns.into_iter().collect(), "with empty strings bound");
+}
+
 #[test]
 fn parquet_files_and_triple_frames() {
     let mut df = csv_frame(&fixture("retail/orders.csv"), CsvOptions::default());
