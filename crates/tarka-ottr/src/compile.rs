@@ -82,9 +82,12 @@ pub fn compile_many(lib: &Library, names: &[&str], options: &CompileOptions) -> 
         for (_, root) in &roots {
             let mut vars = Vec::new();
             for p in &root.params {
-                let wanted = column_binding(VarId(0), p, options)?;
+                let wanted = column_binding(VarId(0), p, options);
                 let same = |b: &&ColumnBinding| {
-                    b.source == wanted.source && b.conversion == wanted.conversion && b.list_separator == wanted.list_separator
+                    b.source == wanted.source
+                        && b.conversion == wanted.conversion
+                        && b.list == wanted.list
+                        && b.list_separator == wanted.list_separator
                 };
                 let var = match bindings.iter().find(same) {
                     Some(b) => b.var,
@@ -118,17 +121,16 @@ fn lifting(root: &Template, vars: &[VarId], options: &CompileOptions) -> Result<
     if !tq.is_empty() {
         return tq_lifting(root, vars, &tq);
     }
-    root.params.iter().zip(vars).map(|(p, var)| column_binding(*var, p, options)).collect::<Result<_, _>>().map(Lifting::Columns)
+    Ok(Lifting::Columns(root.params.iter().zip(vars).map(|(p, var)| column_binding(*var, p, options)).collect()))
 }
 
-/// Reading parameter `p` from the column of the same name.
-fn column_binding(var: VarId, p: &Param, options: &CompileOptions) -> Result<ColumnBinding, OttrError> {
+/// Reading parameter `p` from the column of the same name. A list parameter needs a
+/// separator only for text cells, which the input decides, so that is checked as cells are read.
+fn column_binding(var: VarId, p: &Param, options: &CompileOptions) -> ColumnBinding {
     let source = if p.name == "ROWNUM" { CellSource::RowNumber } else { CellSource::Column(p.name.clone()) };
-    let list_separator = match &p.ty {
-        Some(t) if t.is_list() => Some(options.lists.get(&p.name).cloned().ok_or_else(|| OttrError::ListSeparator(p.name.clone()))?),
-        _ => None,
-    };
-    Ok(ColumnBinding { var, source, conversion: conversion(p.ty.as_ref()), list_separator })
+    let list = p.ty.as_ref().is_some_and(|t| t.is_list());
+    let list_separator = if list { options.lists.get(&p.name).cloned() } else { None };
+    ColumnBinding { var, source, conversion: conversion(p.ty.as_ref()), list, list_separator }
 }
 
 /// How a cell becomes a value of type `ty`.
@@ -485,7 +487,11 @@ mod tests {
         assert_eq!(conv[1], (Conversion::Plain, None));
         assert_eq!(conv[3], (Conversion::Typed(NamedNode::new_unchecked(format!("{XSD}decimal"))), None));
         assert_eq!(conv[4], (Conversion::Plain, Some(";".into())), "xsd:string items are plain literals");
-        assert!(matches!(compile(&lib(), "ex:Thing", &CompileOptions::default()), Err(OttrError::ListSeparator(p)) if p == "skills"));
+        assert!(b[4].list && !b[0].list);
+        // list cells need no separator, so none is required to compile
+        let plan = compile(&lib(), "ex:Thing", &CompileOptions::default()).unwrap();
+        let Lifting::Columns(b) = &plan.lifting else { panic!() };
+        assert!(b[4].list && b[4].list_separator.is_none());
     }
 
     #[test]

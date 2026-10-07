@@ -135,6 +135,34 @@ fn errors_are_reported_cleanly() {
     assert!(String::from_utf8_lossy(&ragged.stderr).contains("row 0"), "{}", String::from_utf8_lossy(&ragged.stderr));
     let unknown = tarka(&["run", "-l", path(&fixture("people/people.stottr")), "-T", "ex:Nope"], Some(b"x\n"));
     assert!(String::from_utf8_lossy(&unknown.stderr).contains("is not defined"));
-    let list = tarka(&["run", "-l", path(&fixture("people/people.stottr")), "-T", "ex:Employee"], Some(b"x\n"));
+    // a list parameter's text cells need a separator
+    let list = tarka(
+        &["run", "-l", path(&fixture("people/people.stottr")), "-T", "ex:Employee"],
+        Some(b"person,name,skills\nex:a,A,rust;sparql\n"),
+    );
+    assert!(!list.status.success());
     assert!(String::from_utf8_lossy(&list.stderr).contains("--list skills"), "{}", String::from_utf8_lossy(&list.stderr));
+}
+
+#[test]
+fn parquet_input() {
+    use tarka_polars::polars::prelude::*;
+    let mut df = df!(
+        "person" => ["ex:alice", "ex:bob", "ex:carol"],
+        "name" => ["Alice", "Bob", "Carol"],
+        "email" => [Some("alice@example.com"), None, Some("carol@example.com")],
+        "manager" => [Some("ex:carol"), Some("ex:carol"), None],
+    )
+    .unwrap();
+    let dir = std::env::temp_dir().join(format!("tarka-parquet-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("people.parquet");
+    ParquetWriter::new(std::fs::File::create(&file).unwrap()).finish(&mut df).unwrap();
+    let out = ok(&["run", "-l", path(&fixture("people/people.stottr")), "-T", "ex:Person", "-i", path(&file), "--ntriples"], None);
+    assert_eq!(sorted_lines(&out).len(), 16, "{out}");
+    assert!(out.contains("<http://example.com/ns#alice> <http://example.com/ns#reportsTo> <http://example.com/ns#carol>"));
+    let split =
+        tarka(&["run", "-l", path(&fixture("people/people.stottr")), "-T", "ex:Person", "-i", path(&file), "--split", "a", "b", ";"], None);
+    assert!(String::from_utf8_lossy(&split.stderr).contains("list column"));
+    std::fs::remove_dir_all(&dir).ok();
 }

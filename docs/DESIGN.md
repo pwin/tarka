@@ -2,13 +2,14 @@
 
 tarka compiles every mapping, whether a TARQL query or OTTR templates, to one **plan**, and
 runs plans with a backend. This document describes the plan, how each front end compiles to it,
-and how the row backend runs it.
+how the row backend runs it, and how data frames reach it.
 
 ```
  TARQL query ──► tarka-tarql ─┐
                               ├─► Plan ──► row backend (tarka) ──► RDF writer (tarka-io)
- OTTR library ──► tarka-ottr ─┘                   ▲
-                                                  └── CSV records (tarka-io)
+ OTTR library ──► tarka-ottr ─┘                   ▲              └► triples frame (tarka-polars)
+                                                  ├── CSV records (tarka-io)
+                                                  └── frame cells (tarka-polars) ◄── Parquet, IPC, Python
 ```
 
 ## 1. The plan
@@ -125,9 +126,34 @@ was split. Duplicates are removed within each record, or within a window of dist
 (`--dedup N`), as in oxi-gen; Turtle output sorts each window, so a subject's triples come out
 together.
 
-## 6. What is next
+## 6. Data frames
 
-* A column-wise backend over Polars data frames, with Parquet input and Python bindings.
+A record's cells are text or lists (`Cell::Text`, `Cell::List`). tarka-polars converts a frame
+column by column, and only the columns the plan reads: each Polars type has one text form (see
+the README), and a `List` column gives list cells. The row backend then runs unchanged, so a
+frame gives the same RDF as a CSV file holding the same text, and the tests check exactly that
+on every fixture.
+
+The text forms are chosen so that conversion by an OTTR type gives the canonical literal: a
+`Float64` is written in its shortest round-trip form, a `Datetime` with a time zone in UTC
+with `Z`. A list cell feeds an OTTR list parameter directly. A column binding records whether
+its parameter takes a list, and the check that cells fit happens as they are read, since only
+the input says whether a cell is text or a list: a text cell for a list parameter needs a
+separator, and a list cell for any other parameter is an error. So is a list column used by a
+TARQL query, whose rows bind strings.
+
+Converting to cells costs a copy of the used columns. Evaluating `Columns` liftings as Polars
+expressions, without the copy, is possible later; the plan does not need to change for it.
+
+## 7. Python
+
+`tarka-python` is a PyO3 module built with maturin. A `Mapping` holds a compiled plan; frames
+cross with pyo3-polars, which passes each column's chunks through the Arrow C data interface
+without copying. Mapping runs release the GIL. Errors become `ValueError`, or `OSError` when a
+file cannot be read.
+
+## 8. What is next
+
 * SHACL shapes generated from plans, validation with SHACL_Engine, and loading into HOLOS.
 * Mapping files (in the spirit of bOTTR's argument maps: language tags, null values, IRI
   templates), and a linter for template libraries.

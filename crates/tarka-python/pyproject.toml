@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "tarka"
+description = "Turn Polars data frames and CSV into RDF with TARQL queries or OTTR templates"
+requires-python = ">=3.10"
+license = "MIT OR Apache-2.0"
+authors = [{ name = "Peter Winstanley" }]
+dependencies = ["polars>=1.30"]
+dynamic = ["version"]
+classifiers = ["Programming Language :: Rust", "Topic :: Database"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "rdflib>=7"]
+
+[project.urls]
+Repository = "https://github.com/pwin/tarka"
+
+[tool.maturin]
+module-name = "tarka"
+features = ["pyo3/extension-module"]

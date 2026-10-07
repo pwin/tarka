@@ -9,7 +9,7 @@ use std::io;
 
 use oxrdf::{Literal, Triple};
 use rayon::prelude::*;
-use tarka_core::{CellSource, ColumnBinding, Emitter, Labels, Lifting, Plan, Record, Value, VarId};
+use tarka_core::{Cell, CellSource, ColumnBinding, Emitter, Labels, Lifting, Plan, Record, Value, VarId};
 use tarka_io::TripleSink;
 use tarka_tarql::{EvalError, SparqlEvaluator};
 use thiserror::Error;
@@ -90,22 +90,25 @@ impl Lifter {
     }
 
     /// The solutions (environments) of each record.
-    fn lift(&self, plan: &Plan, records: &[Record], first: u64) -> Result<Vec<Vec<Vec<Option<Value>>>>, EvalError> {
+    fn lift(&self, plan: &Plan, records: &[Record], first: u64) -> Result<Vec<Vec<Vec<Option<Value>>>>, RunError> {
         let empty = || vec![None; plan.vars.len()];
         match self {
-            Self::Columns(bindings) => Ok(records
+            Self::Columns(bindings) => records
                 .iter()
                 .map(|r| {
                     let mut env = empty();
                     for (var, index, b) in bindings {
                         env[var.0] = match index {
                             None => Some(Value::Term(Literal::from(r.row as i64).into())),
-                            Some(i) => r.cells.get(*i).cloned().flatten().and_then(|text| convert(&text, b, plan)),
+                            Some(i) => match r.cells.get(*i).and_then(Option::as_ref) {
+                                Some(cell) => convert(cell, b, plan)?,
+                                None => None,
+                            },
                         };
                     }
-                    vec![env]
+                    Ok(vec![env])
                 })
-                .collect()),
+                .collect(),
             Self::Sparql(evaluator, outputs) => Ok(evaluator
                 .evaluate(records, first)?
                 .into_iter()
@@ -126,16 +129,37 @@ impl Lifter {
     }
 }
 
-fn convert(text: &str, b: &ColumnBinding, plan: &Plan) -> Option<Value> {
-    match &b.list_separator {
-        None => b.conversion.apply(text, &plan.prefixes).map(Value::Term),
-        Some(sep) => Some(Value::List(
-            text.split(sep.as_str())
+/// A cell's value for a column binding: text converted by type, or for a list parameter,
+/// split on the binding's separator; a list cell converted item by item.
+pub fn convert(cell: &Cell, b: &ColumnBinding, plan: &Plan) -> Result<Option<Value>, RunError> {
+    let items = |parts: &mut dyn Iterator<Item = &str>| {
+        Value::List(
+            parts
                 .filter(|part| !part.trim().is_empty())
                 .filter_map(|part| b.conversion.apply(part, &plan.prefixes).map(Value::Term))
                 .collect(),
-        )),
-    }
+        )
+    };
+    let column = || match &b.source {
+        CellSource::Column(c) => c.as_str(),
+        CellSource::RowNumber => "ROWNUM",
+    };
+    Ok(match (cell, b.list) {
+        (Cell::Text(text), false) => b.conversion.apply(text, &plan.prefixes).map(Value::Term),
+        (Cell::Text(text), true) => match &b.list_separator {
+            Some(sep) => Some(items(&mut text.split(sep.as_str()))),
+            None => {
+                let c = column();
+                return Err(RunError::Mapping(format!(
+                    "parameter ?{c} has a list type: give the separator of its text cells (--list {c} ';', or lists={{\"{c}\": \";\"}} in Python)"
+                )));
+            }
+        },
+        (Cell::List(list), true) => Some(items(&mut list.iter().map(String::as_str))),
+        (Cell::List(_), false) => {
+            return Err(RunError::Mapping(format!("column {} holds lists, but its parameter does not take a list", column())));
+        }
+    })
 }
 
 /// Runs `plan` over `records` (whose cells follow `columns`) and writes the triples to
@@ -172,7 +196,7 @@ where
         if batches.is_empty() {
             break;
         }
-        let shaped: Vec<Result<Shaped, EvalError>> = batches.par_iter().map(|(first, batch)| shape(plan, &lifter, batch, *first)).collect();
+        let shaped: Vec<Result<Shaped, RunError>> = batches.par_iter().map(|(first, batch)| shape(plan, &lifter, batch, *first)).collect();
         for result in shaped {
             let (solutions, rows) = result?;
             stats.solutions += solutions;
@@ -190,7 +214,7 @@ where
 type Shaped = (u64, Vec<Vec<Triple>>);
 
 /// Lifts and shapes one batch.
-fn shape(plan: &Plan, lifter: &Lifter, batch: &[Record], first: u64) -> Result<Shaped, EvalError> {
+fn shape(plan: &Plan, lifter: &Lifter, batch: &[Record], first: u64) -> Result<Shaped, RunError> {
     let mut emitter = Emitter::new(plan);
     let mut labels = Labels::new("b");
     let mut solutions = 0;

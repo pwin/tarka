@@ -14,11 +14,18 @@ path = "src/main.rs"
 # the library is called tarka too; its documentation is the one to keep
 doc = false
 
+[features]
+default = ["polars"]
+# Parquet and Arrow IPC input, through Polars (a large dependency)
+polars = ["dep:tarka-polars"]
+
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
 oxrdf.workspace = true
 tarka.workspace = true
+tarka-polars = { workspace = true, optional = true }
 
 [dev-dependencies]
 flate2.workspace = true
+tarka-polars.workspace = true
