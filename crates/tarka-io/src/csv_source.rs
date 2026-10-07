@@ -12,7 +12,7 @@
 use std::collections::VecDeque;
 use std::io::Read;
 
-use tarka_core::Record;
+use tarka_core::{Cell, Record};
 use thiserror::Error;
 
 #[derive(Clone, Debug)]
@@ -100,8 +100,8 @@ impl<R: Read> CsvSource<R> {
         &self.columns
     }
 
-    fn cell(&self, text: &str) -> Option<String> {
-        if self.options.bind_empty_strings || !text.trim().is_empty() { Some(text.to_owned()) } else { None }
+    fn cell(&self, text: &str) -> Option<Cell> {
+        if self.options.bind_empty_strings || !text.trim().is_empty() { Some(Cell::Text(text.to_owned())) } else { None }
     }
 
     fn read_row(&mut self) -> Option<Result<(), CsvError>> {
@@ -122,7 +122,7 @@ impl<R: Read> CsvSource<R> {
                 }
                 texts.resize(own.max(texts.len()), "");
                 texts.truncate(own);
-                let base: Vec<Option<String>> = texts.iter().map(|t| self.cell(t)).collect();
+                let base: Vec<Option<Cell>> = texts.iter().map(|t| self.cell(t)).collect();
                 let mut records = vec![base];
                 for (split, column) in self.options.splits.iter().zip(&self.split_columns) {
                     let Some(column) = column else {
@@ -131,7 +131,7 @@ impl<R: Read> CsvSource<R> {
                         continue;
                     };
                     let text = texts[*column];
-                    let parts: Vec<Option<String>> = text.split(split.separator.as_str()).map(|p| self.cell(p)).collect();
+                    let parts: Vec<Option<Cell>> = text.split(split.separator.as_str()).map(|p| self.cell(p)).collect();
                     records = records
                         .into_iter()
                         .flat_map(|r| {
@@ -183,7 +183,7 @@ mod tests {
     }
 
     fn cells(r: &Record) -> Vec<Option<&str>> {
-        r.cells.iter().map(Option::as_deref).collect()
+        r.cells.iter().map(|c| c.as_ref().and_then(Cell::text)).collect()
     }
 
     #[test]

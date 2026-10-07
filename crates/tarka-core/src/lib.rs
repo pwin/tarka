@@ -17,5 +17,5 @@ pub use plan::{
     VarId, VarInfo,
 };
 pub use prefix::PrefixMap;
-pub use record::Record;
+pub use record::{Cell, Record};
 pub use value::Value;

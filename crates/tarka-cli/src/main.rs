@@ -62,7 +62,7 @@ struct RunArgs {
 /// CSV options, as oxi-gen names them.
 #[derive(Args)]
 struct CsvArgs {
-    /// The CSV file (default: the file the query names with FROM, else standard input)
+    /// The input: a CSV file, or a Parquet or Arrow IPC file (default: the file the query names with FROM, else standard input)
     #[arg(short, long)]
     input: Option<PathBuf>,
     /// The field delimiter
@@ -157,6 +157,10 @@ impl Command {
 fn run(args: RunArgs) -> Result<()> {
     let plan = mapping(&args)?;
     let input = args.csv.input.clone().or_else(|| plan.default_input.as_ref().map(PathBuf::from));
+    #[cfg(feature = "polars")]
+    if let Some(path) = input.as_deref().filter(|p| tarka_polars::is_frame_file(p)) {
+        return run_frame(&args, &plan, path);
+    }
     let reader: Box<dyn Read> = match &input {
         Some(p) if p.as_os_str() != "-" => Box::new(File::open(p).with_context(|| format!("cannot open {}", p.display()))?),
         _ => Box::new(io::stdin().lock()),
@@ -166,6 +170,26 @@ fn run(args: RunArgs) -> Result<()> {
     let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
     let options = RunOptions { batch_size: args.batch_size, jobs: args.jobs };
     let stats = tarka::run(&plan, &columns, source, &mut out, &options)?;
+    if args.stats {
+        eprintln!("{} records, {} solutions, {} triples made, {} written", stats.records, stats.solutions, stats.triples, out.written());
+    }
+    Ok(())
+}
+
+/// A Parquet or Arrow IPC input, read with Polars.
+#[cfg(feature = "polars")]
+fn run_frame(args: &RunArgs, plan: &Plan, path: &Path) -> Result<()> {
+    if !args.csv.split.is_empty() {
+        bail!("--split applies to CSV input; in a data frame, use a list column");
+    }
+    let mut df = tarka_polars::read_frame(path).with_context(|| path.display().to_string())?;
+    if let Some(n) = args.csv.test {
+        df = df.head(Some(n as usize));
+    }
+    let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
+    let options = RunOptions { batch_size: args.batch_size, jobs: args.jobs };
+    let frame = tarka_polars::FrameOptions { bind_empty_strings: args.csv.bind_empty_strings };
+    let stats = tarka_polars::run_frame(plan, &df, &frame, &mut out, &options)?;
     if args.stats {
         eprintln!("{} records, {} solutions, {} triples made, {} written", stats.records, stats.solutions, stats.triples, out.written());
     }

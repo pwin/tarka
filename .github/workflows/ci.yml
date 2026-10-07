@@ -19,4 +19,25 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace
+      - run: cargo test --workspace --exclude tarka-python
+
+  python:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install maturin polars pytest rdflib
+      # the dev profile: the release profile's fat LTO over Polars takes long
+      - run: maturin build --profile dev -m crates/tarka-python/Cargo.toml -o dist
+      - run: pip install --no-index --find-links dist tarka
+      - run: pytest crates/tarka-python/tests -v

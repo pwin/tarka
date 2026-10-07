@@ -84,7 +84,10 @@ pub struct ColumnBinding {
     pub var: VarId,
     pub source: CellSource,
     pub conversion: Conversion,
-    /// Split the cell into a list value on this separator.
+    /// The parameter takes a list: a list cell gives its items, and a text cell is split
+    /// on `list_separator`.
+    pub list: bool,
+    /// The separator of a text cell's list items.
     pub list_separator: Option<String>,
 }
 

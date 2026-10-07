@@ -141,11 +141,8 @@ mod tests {
         let columns: Vec<String> = columns.iter().map(|c| c.to_string()).collect();
         let eval = SparqlEvaluator::new(lifting, &plan.prefixes, &columns);
         eval.check().unwrap();
-        let records: Vec<Record> = rows
-            .iter()
-            .enumerate()
-            .map(|(i, r)| Record { row: i as u64, cells: r.iter().map(|c| c.map(str::to_owned)).collect() })
-            .collect();
+        let records: Vec<Record> =
+            rows.iter().enumerate().map(|(i, r)| Record { row: i as u64, cells: r.iter().map(|c| c.map(Into::into)).collect() }).collect();
         let mut out = Vec::new();
         let mut emitter = Emitter::new(&plan);
         for (record, solutions) in records.iter().zip(eval.evaluate(&records, 0).unwrap()) {

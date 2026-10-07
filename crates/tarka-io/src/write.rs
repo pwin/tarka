@@ -59,6 +59,8 @@ impl TripleSink for Vec<Triple> {
 
 pub struct RdfWriter<W: Write> {
     serializer: Option<WriterQuadSerializer<W>>,
+    /// The underlying writer, once finished.
+    finished: Option<W>,
     options: OutputOptions,
     window: HashSet<Triple>,
     written: u64,
@@ -99,7 +101,7 @@ impl<W: Write> RdfWriter<W> {
         if options.format == OutputFormat::NQuads && options.graph.is_none() {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "N-Quads output needs a graph name"));
         }
-        Ok(Self { serializer: Some(serializer.for_writer(out)), options, window: HashSet::new(), written: 0 })
+        Ok(Self { serializer: Some(serializer.for_writer(out)), finished: None, options, window: HashSet::new(), written: 0 })
     }
 
     /// The number of triples written so far.
@@ -108,6 +110,9 @@ impl<W: Write> RdfWriter<W> {
     }
 
     fn flush_window(&mut self) -> io::Result<()> {
+        if self.window.is_empty() {
+            return Ok(());
+        }
         let mut triples: Vec<Triple> = self.window.drain().collect();
         if self.options.format == OutputFormat::Turtle {
             triples.sort_by_cached_key(|t| (t.subject.to_string(), t.predicate.to_string(), t.object.to_string()));
@@ -128,12 +133,10 @@ impl<W: Write> RdfWriter<W> {
         Ok(())
     }
 
-    /// Writes everything and returns the underlying writer.
+    /// Writes everything and returns the underlying writer (also after [`TripleSink::finish`]).
     pub fn into_inner(mut self) -> io::Result<W> {
-        self.flush_window()?;
-        let mut out = self.serializer.take().expect("writer used after finish").finish()?;
-        out.flush()?;
-        Ok(out)
+        self.finish()?;
+        Ok(self.finished.take().expect("a finished writer"))
     }
 }
 
@@ -149,7 +152,9 @@ impl<W: Write> TripleSink for RdfWriter<W> {
     fn finish(&mut self) -> io::Result<()> {
         self.flush_window()?;
         if let Some(serializer) = self.serializer.take() {
-            serializer.finish()?.flush()?;
+            let mut out = serializer.finish()?;
+            out.flush()?;
+            self.finished = Some(out);
         }
         Ok(())
     }

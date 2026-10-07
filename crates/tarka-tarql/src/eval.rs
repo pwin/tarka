@@ -8,7 +8,7 @@ use spareval::{QueryEvaluationError, QueryEvaluator, QueryResults};
 use spargebra::Query;
 use spargebra::algebra::GraphPattern;
 use spargebra::term::GroundTerm;
-use tarka_core::{PrefixMap, Record, SparqlLifting};
+use tarka_core::{Cell, PrefixMap, Record, SparqlLifting};
 use thiserror::Error;
 
 use crate::inject::{bind_targets, with_values};
@@ -90,11 +90,13 @@ impl SparqlEvaluator {
             .enumerate()
             .map(|(i, r)| {
                 let mut row: Vec<Option<GroundTerm>> = vec![Some(GroundTerm::Literal(Literal::from(i as i64)))];
-                row.extend(
-                    self.columns
-                        .iter()
-                        .map(|(c, _)| r.cells.get(*c).cloned().flatten().map(|s| GroundTerm::Literal(Literal::new_simple_literal(s)))),
-                );
+                row.extend(self.columns.iter().map(|(c, _)| {
+                    r.cells
+                        .get(*c)
+                        .and_then(Option::as_ref)
+                        .and_then(Cell::text)
+                        .map(|s| GroundTerm::Literal(Literal::new_simple_literal(s)))
+                }));
                 if self.rownum.is_some() {
                     row.push(Some(GroundTerm::Literal(Literal::from(r.row as i64))));
                 }

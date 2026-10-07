@@ -47,8 +47,6 @@ pub enum OttrError {
     TooDeep(String),
     #[error("?{var} in <{template}> is not one of its parameters")]
     UnboundVariable { template: String, var: String },
-    #[error("parameter ?{0} has a list type: give the separator of its cells (for example --list {0} ';')")]
-    ListSeparator(String),
     #[error("invalid IRI <{0}>")]
     Iri(String),
     #[error("the tq: lifting of <{0}>: {1}")]
