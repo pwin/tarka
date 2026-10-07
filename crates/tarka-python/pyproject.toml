@@ -3,10 +3,13 @@ requires = ["maturin>=1.8,<2"]
 build-backend = "maturin"
 
 [project]
-name = "tarka"
+name = "tarka-rdf"
 description = "Turn Polars data frames and CSV into RDF with TARQL queries or OTTR templates"
+readme = "README.md"
+keywords = ["rdf", "tarql", "ottr", "polars", "sparql", "semantic-web"]
 requires-python = ">=3.10"
 license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
 authors = [{ name = "Peter Winstanley" }]
 dependencies = ["polars>=1.30"]
 dynamic = ["version"]
@@ -19,5 +22,5 @@ test = ["pytest>=8", "rdflib>=7", "shacl>=0.3"]
 Repository = "https://github.com/pwin/tarka"
 
 [tool.maturin]
-module-name = "tarka"
+module-name = "tarka_rdf"
 features = ["pyo3/extension-module"]

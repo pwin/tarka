@@ -1,4 +1,5 @@
-//! The `tarka` Python module.
+//! The `tarka_rdf` Python module (the `tarka-rdf` distribution: `tarka` on PyPI is
+//! another project).
 
 use std::collections::HashMap;
 use std::io::Write;
@@ -26,7 +27,7 @@ fn ottr_error(e: OttrError) -> PyErr {
 }
 
 /// A compiled mapping: a TARQL query or OTTR templates.
-#[pyclass(module = "tarka", frozen)]
+#[pyclass(module = "tarka_rdf", frozen)]
 struct Mapping {
     plan: Plan,
 }
@@ -160,7 +161,7 @@ impl Mapping {
     }
 
     fn __repr__(&self) -> String {
-        format!("<tarka.Mapping {}>", self.plan.name)
+        format!("<tarka_rdf.Mapping {}>", self.plan.name)
     }
 }
 
@@ -270,7 +271,7 @@ fn write_to(
 }
 
 #[pymodule]
-#[pyo3(name = "tarka")]
+#[pyo3(name = "tarka_rdf")]
 fn tarka_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mapping>()?;
     m.add_function(wrap_pyfunction!(expand, m)?)?;

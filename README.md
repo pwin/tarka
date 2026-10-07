@@ -46,10 +46,17 @@ tarka works with RDF 1.1 and SPARQL 1.1.
 
 ## Install
 
+Each release on GitHub carries the `tarka` command for Linux (x86_64), macOS (Apple Silicon)
+and Windows, and the Python wheels; the Python package is on PyPI as `tarka-rdf`. From source:
+
 ```sh
 cargo install --path crates/tarka-cli        # Rust 1.90 or later; installs the `tarka` command
-pip install ./crates/tarka-python            # the Python module (builds with maturin)
+pip install ./crates/tarka-python            # the Python module, tarka-rdf (builds with maturin)
 ```
+
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md). A release is cut by tagging
+the workspace version (`v0.1.0`); `.github/workflows/release.yml` builds and tests everything on
+each platform and publishes the GitHub release, and a manual run of it uploads to PyPI.
 
 ## TARQL
 
@@ -143,7 +150,7 @@ Three sources are read:
 
 Relative files are found from the bOTTR file's directory (H2 would use the working
 directory); `@@THIS_DIR@@` works as in Lutra. JDBC sources are not read.
-In Python: `tarka.bottr(["templates/"], ["staff.bottr.ttl"], "staff.ttl")`.
+In Python: `tarka_rdf.bottr(["templates/"], ["staff.bottr.ttl"], "staff.ttl")`.
 
 ### Linting
 
@@ -186,19 +193,22 @@ parameter gives `"42"^^xsd:integer`. TARQL binds every cell as a plain string, a
 
 ## Python
 
+The Python package is `tarka-rdf`, imported as `tarka_rdf` (the name `tarka` on PyPI is another
+project's).
+
 ```python
 import polars as pl
-import tarka
+import tarka_rdf
 
-m = tarka.Mapping.tarql_file("people.rq")              # or tarka.Mapping.tarql(query_text)
-m = tarka.Mapping.ottr(["templates/"], ["ex:Person"])  # library files or directories, root templates
+m = tarka_rdf.Mapping.tarql_file("people.rq")              # or tarka_rdf.Mapping.tarql(query_text)
+m = tarka_rdf.Mapping.ottr(["templates/"], ["ex:Person"])  # library files or directories, root templates
 
 df = pl.read_parquet("people.parquet")
 triples = m.triplify(df)          # a DataFrame of N-Triples terms: subject, predicate, object
 m.write(df, "people.ttl")         # or format="ntriples", or "nquads" with graph="http://…"
 text = m.write(df)                # without a path, the RDF is returned as text
 m.run_csv("people.csv", "people.ttl")                  # CSV in oxi-gen's dialect
-tarka.expand(["templates/"], ["instances.stottr"], "people.ttl")
+tarka_rdf.expand(["templates/"], ["instances.stottr"], "people.ttl")
 ```
 
 `lists={"skills": ";"}` gives the separator of a text column that feeds an OTTR list parameter.
