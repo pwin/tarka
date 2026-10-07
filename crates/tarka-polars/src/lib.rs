@@ -19,6 +19,12 @@
 //! | null                                | unbound                                      |
 //!
 //! Only the columns a plan uses are converted.
+//!
+//! A plan whose lifting reads columns (OTTR templates) is lifted column by column, in
+//! parallel: each column becomes its parameter's terms directly (an integer column
+//! becomes `xsd:integer` literals without being written out and read back), and the
+//! rows go straight to the shape layer. A TARQL query's rows are turned into cells and
+//! evaluated as CSV rows are.
 
 /// The Polars version tarka is built with.
 pub use polars;
@@ -26,10 +32,12 @@ pub use polars;
 use std::convert::Infallible;
 use std::path::Path;
 
-use oxrdf::Triple;
+use oxrdf::vocab::xsd;
+use oxrdf::{Literal, NamedNode, NamedNodeRef, Triple};
 use polars::prelude::*;
+use rayon::prelude::*;
 use tarka::{RunError, RunOptions, RunStats};
-use tarka_core::{Cell, CellSource, Lifting, Plan, Record};
+use tarka_core::{Cell, CellSource, ColumnBinding, Conversion, Lifting, Plan, Record, Value};
 use tarka_io::TripleSink;
 use thiserror::Error;
 
@@ -95,8 +103,94 @@ pub fn run_frame(
     sink: &mut dyn TripleSink,
     run: &RunOptions,
 ) -> Result<RunStats, FrameError> {
+    if let Lifting::Columns(bindings) = &plan.lifting {
+        let columns: Vec<Vec<Option<Value>>> =
+            bindings.par_iter().map(|b| lift_column(plan, b, df, options)).collect::<Result<_, FrameError>>()?;
+        let vars: Vec<usize> = bindings.iter().map(|b| b.var.0).collect();
+        let mut columns: Vec<_> = columns.into_iter().map(Vec::into_iter).collect();
+        let width = plan.vars.len();
+        let envs = (0..df.height()).map(move |_| {
+            let mut env = vec![None; width];
+            for (var, column) in vars.iter().zip(columns.iter_mut()) {
+                env[*var] = column.next().flatten();
+            }
+            Ok::<_, RunError>(env)
+        });
+        return Ok(tarka::run_envs(plan, envs, sink, run)?);
+    }
     let (columns, records) = frame_records(plan, df, options)?;
     Ok(tarka::run(plan, &columns, records.into_iter().map(Ok::<_, Infallible>), sink, run)?)
+}
+
+/// The datatypes whose canonical form for an integer is the integer as Rust writes it.
+const INTEGER_FORMS: [NamedNodeRef<'static>; 14] = [
+    xsd::INTEGER,
+    xsd::DECIMAL,
+    xsd::LONG,
+    xsd::INT,
+    xsd::SHORT,
+    xsd::BYTE,
+    xsd::NON_NEGATIVE_INTEGER,
+    xsd::POSITIVE_INTEGER,
+    xsd::NON_POSITIVE_INTEGER,
+    xsd::NEGATIVE_INTEGER,
+    xsd::UNSIGNED_LONG,
+    xsd::UNSIGNED_INT,
+    xsd::UNSIGNED_SHORT,
+    xsd::UNSIGNED_BYTE,
+];
+
+/// One binding's values for every row of the frame, the same as the cells' would be.
+fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOptions) -> Result<Vec<Option<Value>>, FrameError> {
+    let height = df.height();
+    let name = match &b.source {
+        CellSource::RowNumber => return Ok((0..height).map(|i| Some(Value::Term(Literal::from(i as i64).into()))).collect()),
+        CellSource::Column(c) => c,
+    };
+    let Ok(column) = df.column(name) else { return Ok(vec![None; height]) };
+    let s = column.as_materialized_series();
+    let blank = |t: &str| !options.bind_empty_strings && t.trim().is_empty();
+    let text = |t: Option<&str>| -> Result<Option<Value>, FrameError> {
+        match t {
+            Some(t) if !blank(t) => Ok(tarka::engine::convert_text(t, b, plan)?),
+            _ => Ok(None),
+        }
+    };
+    // the cases that need no text
+    match (s.dtype(), &b.conversion, b.list) {
+        (DataType::String, _, _) => return s.str()?.iter().map(text).collect(),
+        (dt, Conversion::Typed(datatype), false) if dt.is_integer() && INTEGER_FORMS.contains(&datatype.as_ref()) => {
+            let ints = s.cast(&DataType::Int64);
+            if let Ok(ints) = ints
+                && ints.null_count() == s.null_count()
+            {
+                return Ok(ints.i64()?.iter().map(|v| v.map(|v| integer(v, datatype))).collect());
+            }
+        }
+        (DataType::Boolean, Conversion::Typed(datatype), false) if datatype.as_ref() == xsd::BOOLEAN => {
+            return Ok(s.bool()?.iter().map(|v| v.map(|v| Value::Term(Literal::from(v).into()))).collect());
+        }
+        (DataType::List(_), _, _) => {
+            let lists = s.list()?;
+            let mut out = Vec::with_capacity(height);
+            for i in 0..lists.len() {
+                out.push(match lists.get_as_series(i) {
+                    None => None,
+                    Some(inner) => {
+                        let items = texts(name, &inner)?;
+                        tarka::engine::convert_items(items.iter().flatten().map(String::as_str), b, plan)?
+                    }
+                });
+            }
+            return Ok(out);
+        }
+        _ => {}
+    }
+    texts(name, s)?.iter().map(|t| text(t.as_deref())).collect()
+}
+
+fn integer(v: i64, datatype: &NamedNode) -> Value {
+    Value::Term(Literal::new_typed_literal(v.to_string(), datatype.clone()).into())
 }
 
 /// Runs `plan` over `df` and returns the triples as a frame of N-Triples terms, with

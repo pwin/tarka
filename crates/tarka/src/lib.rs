@@ -18,7 +18,7 @@ pub mod engine;
 
 use std::collections::HashMap;
 
-pub use engine::{RunError, RunOptions, RunStats, run};
+pub use engine::{RunError, RunOptions, RunStats, run, run_envs};
 pub use tarka_core as core;
 pub use tarka_core::Plan;
 pub use tarka_io as io;
