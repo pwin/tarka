@@ -13,6 +13,7 @@ tarka run -q people.rq -i people.parquet -o people.ttl                      # Pa
 tarka expand -l templates/ instances.stottr -o people.ttl                   # OTTR instances, as Lutra does
 tarka shapes -q people.rq -o shapes.ttl                                     # SHACL shapes for what a mapping makes
 tarka run -q people.rq -i people.csv -o people.ttl --validate               # ... and the output checked against them
+tarka run -q people.rq -i people.csv --post http://127.0.0.1:7878/graph     # straight into HOLOS, or any Graph Store
 ```
 
 * **TARQL, as written for oxi-gen.** `tarka run` takes oxi-gen's options (`-q -i -o --ntriples
@@ -32,6 +33,9 @@ tarka run -q people.rq -i people.csv -o people.ttl --validate               # ..
 * **Shapes from mappings.** tarka writes SHACL shapes for the RDF a mapping makes (classes,
   datatypes, node kinds, required properties), and validates its output against them, or any
   shapes, with [SHACL_Engine](https://github.com/pwin/SHACL_Engine).
+* **Straight into a store.** `--post` streams the output into
+  [HOLOS](https://github.com/pwin/triplestore) or any store with the SPARQL Graph Store Protocol
+  (Oxigraph, Fuseki, GraphDB …), as it is made.
 * **Faster than oxi-gen.** Rows are evaluated in batches on every core. On a 200,000-row file
   (the retail orders mapping, 8 cores), tarka ran the TARQL query 1.7 times as fast as oxi-gen,
   and the OTTR templates 2.6 times as fast.
@@ -189,6 +193,32 @@ tarka: the output does not conform to the shapes (1 result)
 A typed OTTR parameter keeps a value that is not of its type as written (`"seven"^^xsd:integer`),
 so validation is how such cells are found. Validation holds the output in memory.
 
+## Loading into a store
+
+```sh
+tarka run -q people.rq -i people.csv --post http://127.0.0.1:7878/graph --graph http://example.com/people
+tarka run -l templates/ -T ex:Person -i people.csv --post http://localhost:7878/store --replace   # Oxigraph
+tarka expand -l templates/ instances.stottr --post http://localhost:3030/ds/data \
+    --header "Authorization: Basic …"                                                         # Fuseki
+```
+
+`--post ENDPOINT` sends the output to a SPARQL 1.1 Graph Store Protocol endpoint instead of
+writing it: HOLOS serves one at `/graph`. `--graph IRI` names the graph to load into (the
+default graph without it), `--replace` replaces the graph (PUT) instead of adding to it (POST),
+and `--header "Name: value"` adds a request header: credentials, or HOLOS's
+`X-Holos-Principal` and `X-Holos-Roles` behind `--trust-forwarded-identity`. The triples are
+streamed as N-Triples while they are made, so a large load is not held in memory. A run that
+fails partway aborts the request before its body ends, so the store takes nothing of it; a
+store's refusal is reported with its answer:
+
+```text
+tarka: http://127.0.0.1:7878/graph?graph=http%3A%2F%2Fexample.com%2Fpeople answered 403: …
+```
+
+With `--validate`, the output is checked as it is loaded, so the store has it even when it does not
+conform (tarka still exits with status 3). From Python, send `m.write(df, format="ntriples")`
+with any HTTP client.
+
 ## As a library
 
 ```rust
@@ -239,6 +269,7 @@ How it works is in [docs/DESIGN.md](docs/DESIGN.md).
 ```sh
 cargo test --workspace --exclude tarka-python
 OXI_GEN=path/to/oxi_gen LUTRA_JAR=path/to/lutra.jar cargo test --workspace --exclude tarka-python   # also compare with them live
+HOLOS_SERVER=path/to/holos-server cargo test -p tarka-cli --test holos                                # and load into HOLOS
 
 python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests

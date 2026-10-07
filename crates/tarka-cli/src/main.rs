@@ -1,5 +1,8 @@
 //! The `tarka` command.
 
+#[cfg(feature = "gsp")]
+mod gsp;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fs::File;
@@ -10,6 +13,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use oxrdf::{NamedNode, Triple};
+use tarka::core::PrefixMap;
 use tarka::io::{CsvOptions, CsvSource, OutputFormat, OutputOptions, RdfWriter, Split, TripleSink};
 use tarka::ottr::{CompileOptions, Library};
 use tarka::{Plan, RunOptions, RunStats};
@@ -58,6 +62,8 @@ struct RunArgs {
     csv: CsvArgs,
     #[command(flatten)]
     output: OutputArgs,
+    #[command(flatten)]
+    load: LoadArgs,
     #[cfg(feature = "shacl")]
     #[command(flatten)]
     check: CheckArgs,
@@ -118,7 +124,7 @@ struct OutputArgs {
     /// Write N-Triples (the same as --format ntriples)
     #[arg(long)]
     ntriples: bool,
-    /// Put every triple in this named graph (N-Quads output)
+    /// Put every triple in this named graph (N-Quads output; with --post, the graph to load into)
     #[arg(long)]
     graph: Option<String>,
     /// Compress the output file with gzip
@@ -127,6 +133,25 @@ struct OutputArgs {
     /// Remove duplicates within a window of N triples (default: within each row)
     #[arg(long, num_args = 0..=1, default_missing_value = "1000")]
     dedup: Option<usize>,
+}
+
+/// Loading the output into a store with the SPARQL Graph Store Protocol, instead of
+/// writing it.
+#[derive(Args)]
+struct LoadArgs {
+    /// Load the output into a store: POST it to this Graph Store Protocol endpoint (HOLOS:
+    /// http://127.0.0.1:7878/graph). --graph names the graph, else the default graph.
+    #[cfg(feature = "gsp")]
+    #[arg(long, value_name = "ENDPOINT", conflicts_with_all = ["output", "format", "ntriples", "gzip"])]
+    post: Option<String>,
+    /// Replace the graph (PUT) instead of adding to it (POST)
+    #[cfg(feature = "gsp")]
+    #[arg(long, requires = "post")]
+    replace: bool,
+    /// Send this HTTP header with the request, as "Name: value" (repeat for more)
+    #[cfg(feature = "gsp")]
+    #[arg(long, value_name = "HEADER", requires = "post", action = clap::ArgAction::Append)]
+    header: Vec<String>,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -162,6 +187,8 @@ struct ExpandArgs {
     instances: Vec<PathBuf>,
     #[command(flatten)]
     output: OutputArgs,
+    #[command(flatten)]
+    load: LoadArgs,
 }
 
 #[derive(Args)]
@@ -249,16 +276,80 @@ fn write_output(args: &RunArgs, plan: &Plan, body: impl FnOnce(&mut dyn TripleSi
     let check = Check::new(&args.check, plan)?;
     #[cfg(not(feature = "shacl"))]
     let check: Option<Check> = None;
-    let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
-    let mut tee = Tee { out: &mut out, kept: check.is_some().then(HashSet::new) };
-    let stats = body(&mut tee)?;
+    let mut out = Output::open(&args.output, &args.load, &plan.prefixes)?;
+    let mut tee = Tee { out: out.sink(), kept: check.is_some().then(HashSet::new) };
+    let result = body(&mut tee);
     let kept = tee.kept.take();
+    let stats = match result {
+        Ok(stats) => stats,
+        Err(e) => return Err(out.abandon(e)),
+    };
+    let written = out.written();
+    let answer = out.complete()?;
     if args.stats {
-        eprintln!("{} records, {} solutions, {} triples made, {} written", stats.records, stats.solutions, stats.triples, out.written());
+        eprintln!("{} records, {} solutions, {} triples made, {written} written", stats.records, stats.solutions, stats.triples);
+        if let Some(answer) = answer {
+            eprintln!("{answer}");
+        }
     }
     match (check, kept) {
         (Some(check), Some(kept)) => check.validate(plan, &kept),
         _ => Ok(()),
+    }
+}
+
+/// Where the output goes: a file (or standard output), or a store.
+enum Output {
+    File(RdfWriter<Box<dyn Write>>),
+    #[cfg(feature = "gsp")]
+    Store(gsp::Upload),
+}
+
+impl Output {
+    fn open(output: &OutputArgs, load: &LoadArgs, prefixes: &PrefixMap) -> Result<Self> {
+        #[cfg(feature = "gsp")]
+        if let Some(endpoint) = &load.post {
+            let url = gsp::graph_url(endpoint, output.graph.as_deref());
+            return Ok(Self::Store(gsp::Upload::start(url, load.replace, &load.header, output.dedup.unwrap_or(0))?));
+        }
+        #[cfg(not(feature = "gsp"))]
+        let _ = load;
+        Ok(Self::File(RdfWriter::create(output.output.as_deref(), prefixes, output_options(output)?)?))
+    }
+
+    fn sink(&mut self) -> &mut dyn TripleSink {
+        match self {
+            Self::File(w) => w,
+            #[cfg(feature = "gsp")]
+            Self::Store(u) => u,
+        }
+    }
+
+    fn written(&self) -> u64 {
+        match self {
+            Self::File(w) => w.written(),
+            #[cfg(feature = "gsp")]
+            Self::Store(u) => u.written(),
+        }
+    }
+
+    /// Waits for the store to take the output; what it answered.
+    fn complete(self) -> Result<Option<String>> {
+        match self {
+            Self::File(_) => Ok(None),
+            #[cfg(feature = "gsp")]
+            Self::Store(u) => u.complete().map(Some),
+        }
+    }
+
+    /// After a failed run: the error to report (a store's refusal rather than a broken
+    /// pipe), with nothing loaded.
+    fn abandon(self, e: anyhow::Error) -> anyhow::Error {
+        match self {
+            Self::File(_) => e,
+            #[cfg(feature = "gsp")]
+            Self::Store(u) => u.abandon(e),
+        }
     }
 }
 
@@ -395,8 +486,11 @@ fn expand(args: ExpandArgs) -> Result<()> {
         }
         instances.extend(doc.instances);
     }
-    let mut out = RdfWriter::create(args.output.output.as_deref(), &lib.prefixes, output_options(&args.output)?)?;
-    tarka::expand_instances(&lib, &instances, &mut out)?;
+    let mut out = Output::open(&args.output, &args.load, &lib.prefixes)?;
+    if let Err(e) = tarka::expand_instances(&lib, &instances, out.sink()) {
+        return Err(out.abandon(e.into()));
+    }
+    out.complete()?;
     Ok(())
 }
 

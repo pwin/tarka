@@ -25,6 +25,8 @@ clap = { version = "4", features = ["derive"] }
 thiserror = "2"
 anyhow = "1"
 rayon = "1"
+# HTTP for the Graph Store Protocol; rustls, so there is no system TLS library to find
+ureq = { version = "3.4", default-features = false, features = ["rustls"] }
 polars = { version = "0.55", default-features = false, features = ["fmt", "parquet", "ipc", "lazy", "dtype-full", "timezones"] }
 # SHACL_Engine (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
 shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "f572d45d0896ebadeb907bcec26e84305cb8b3ca", default-features = false }

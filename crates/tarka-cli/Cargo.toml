@@ -15,11 +15,13 @@ path = "src/main.rs"
 doc = false
 
 [features]
-default = ["polars", "shacl"]
+default = ["polars", "shacl", "gsp"]
 # Parquet and Arrow IPC input, through Polars (a large dependency)
 polars = ["dep:tarka-polars"]
 # Validation of the output with SHACL_Engine (--validate, --shapes, --report)
 shacl = ["tarka-shacl/validate", "dep:oxrdfio"]
+# Loading into a store over the SPARQL Graph Store Protocol (--post)
+gsp = ["dep:ureq"]
 
 [dependencies]
 anyhow.workspace = true
@@ -29,7 +31,10 @@ oxrdfio = { workspace = true, optional = true }
 tarka.workspace = true
 tarka-polars = { workspace = true, optional = true }
 tarka-shacl.workspace = true
+ureq = { workspace = true, optional = true }
 
 [dev-dependencies]
 flate2.workspace = true
+oxrdfio.workspace = true
 tarka-polars.workspace = true
+ureq.workspace = true
