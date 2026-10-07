@@ -9,8 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [features]
-# Validation with SHACL_Engine. It builds the Oxigraph crates with their RDF 1.2
-# features, which tarka's front ends then reject explicitly.
+# Validation with SHACL_Engine, built without its `rdf-12` feature (RDF 1.1).
 validate = ["dep:shacl"]
 
 [dependencies]

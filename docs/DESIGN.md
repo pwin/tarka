@@ -182,12 +182,14 @@ The tests generate shapes for every fixture mapping and validate the mapping's o
 them, which checks the inference against what the engine really makes.
 
 **Validation** runs SHACL_Engine in process: tarka's triples and the shapes go into its term
-store directly. SHACL_Engine builds the Oxigraph crates with their RDF 1.2 features, and Cargo
-turns features on for the whole build, so spargebra then parses SPARQL 1.2. tarka's RDF 1.1
-scope is therefore checked explicitly (`tarka_tarql::sparql11`): triple terms, SPARQL 1.2
-functions and literals with a base direction are refused whichever way spargebra was built, and
-the tests run both ways. The Python module leaves validation to SHACL_Engine's own package and
-is built without it.
+store directly. SHACL_Engine is built without its `rdf-12` feature, so the Oxigraph crates, for
+it and for tarka, read RDF 1.1 only. Cargo turns a feature on for every crate in a build,
+though, so a build that adds RDF 1.2 elsewhere (HOLOS's crates, SHACL_Engine's default
+features) would make spargebra parse SPARQL 1.2 for tarka too. tarka's RDF 1.1 scope is
+therefore also checked explicitly (`tarka_tarql::sparql11`): triple terms, SPARQL 1.2 functions
+and literals with a base direction are refused whichever way spargebra was built, and CI runs
+those tests with the RDF 1.2 features on as well. The Python module leaves validation to
+SHACL_Engine's own package and is built without it.
 
 ## 9. Loading into a store
 
