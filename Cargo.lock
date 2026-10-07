@@ -1631,10 +1631,12 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4be15186205eb60ddbdc2fb47cb25df472c7f399bbe119b68c0972b6b6dd46ea"
 dependencies = [
+ "hex",
  "oxilangtag",
  "oxiri",
  "oxsdatatypes",
  "rand 0.9.5",
+ "sha2",
  "thiserror",
 ]
 
@@ -3128,6 +3130,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "shacl"
+version = "0.3.2"
+source = "git+https://github.com/pwin/SHACL_Engine?rev=f572d45d0896ebadeb907bcec26e84305cb8b3ca#f572d45d0896ebadeb907bcec26e84305cb8b3ca"
+dependencies = [
+ "flate2",
+ "foldhash 0.2.0",
+ "hashbrown 0.16.1",
+ "oxrdf",
+ "oxrdfio",
+ "oxsdatatypes",
+ "oxttl",
+ "regex",
+ "spareval",
+ "spargebra",
+]
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3460,8 +3479,10 @@ dependencies = [
  "clap",
  "flate2",
  "oxrdf",
+ "oxrdfio",
  "tarka",
  "tarka-polars",
+ "tarka-shacl",
 ]
 
 [[package]]
@@ -3521,6 +3542,21 @@ dependencies = [
  "pyo3-polars",
  "tarka",
  "tarka-polars",
+ "tarka-shacl",
+]
+
+[[package]]
+name = "tarka-shacl"
+version = "0.1.0"
+dependencies = [
+ "oxrdf",
+ "oxrdfio",
+ "shacl",
+ "spargebra",
+ "tarka",
+ "tarka-core",
+ "tarka-tarql",
+ "thiserror",
 ]
 
 [[package]]

@@ -360,4 +360,12 @@ mod tests {
         let err = parse_stottr("@prefix ex: <http://ex/> .\nex:T [ ?x ] :: { nope:U(?x) } .", "lib.stottr").unwrap_err();
         assert_eq!(err.to_string(), "lib.stottr:2: undeclared prefix 'nope:'");
     }
+
+    /// RDF 1.2's base directions are not language tags, whichever way oxrdf was built.
+    #[test]
+    fn directional_literals_are_refused() {
+        let text = "@prefix ex: <http://ex/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .\nex:T [ ?x ] :: { ottr:Triple(?x, ex:p, \"hi\"@en--ltr) } .";
+        let err = parse_stottr(text, "lib.stottr").unwrap_err();
+        assert_eq!(err.to_string(), "lib.stottr:2: invalid language tag @en--ltr");
+    }
 }

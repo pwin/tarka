@@ -1,0 +1,26 @@
+[package]
+name = "tarka-shacl"
+description = "SHACL shapes for the RDF a tarka mapping makes, and validation with SHACL_Engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+# Validation with SHACL_Engine. It builds the Oxigraph crates with their RDF 1.2
+# features, which tarka's front ends then reject explicitly.
+validate = ["dep:shacl"]
+
+[dependencies]
+oxrdf.workspace = true
+shacl = { workspace = true, optional = true }
+spargebra.workspace = true
+tarka-core.workspace = true
+tarka-tarql.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+oxrdfio.workspace = true
+tarka.workspace = true

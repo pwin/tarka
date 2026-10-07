@@ -10,6 +10,7 @@
 pub mod eval;
 pub mod inject;
 pub mod scan;
+pub mod sparql11;
 
 use std::collections::HashMap;
 
@@ -41,6 +42,7 @@ pub fn parse_tarql(text: &str, name: &str) -> Result<Plan, TarqlError> {
     let Query::Construct { template, dataset, pattern, base_iri } = parser().parse_query(text)? else {
         return Err(TarqlError::NotConstruct);
     };
+    sparql11::check(&template, &pattern)?;
     let mut plan = Plan::new(name, Lifting::Given);
     plan.prefixes = prefixes;
     let mut bnodes: HashMap<String, BNodeId> = HashMap::new();
@@ -88,6 +90,7 @@ pub fn sparql_lifting(
     let Query::Construct { pattern, base_iri, .. } = parser().parse_query(&text)? else {
         return Err(TarqlError::NotConstruct);
     };
+    sparql11::check(&[], &pattern)?;
     // the outputs are read from row columns too (a parameter that no BIND makes)
     let mut variables = scan::variables(&text);
     for (_, name) in &outputs {
@@ -209,5 +212,27 @@ mod tests {
         let Lifting::Sparql(l) = &plan.lifting else { panic!() };
         let check = SparqlEvaluator::new(l, &plan.prefixes, &["v".to_owned()]).check();
         assert!(check.is_err(), "{check:?}");
+    }
+
+    /// SPARQL 1.2 is refused, whether or not spargebra was built to parse it (a build
+    /// with SHACL_Engine turns its `sparql-12` feature on).
+    #[test]
+    fn sparql_12_is_refused() {
+        let queries = [
+            "CONSTRUCT { <http://s> <http://p> <<( <http://a> <http://b> <http://c> )>> } WHERE { }",
+            "CONSTRUCT { <http://s> <http://p> ?t } WHERE { BIND(<<( <http://a> <http://b> ?c )>> AS ?t) }",
+            "CONSTRUCT { <http://s> <http://p> ?t } WHERE { BIND(TRIPLE(<http://a>, <http://b>, ?c) AS ?t) }",
+            "CONSTRUCT { <http://s> <http://p> ?d } WHERE { BIND(LANGDIR(?c) AS ?d) }",
+            "CONSTRUCT { <http://s> <http://p> \"hi\"@en--ltr } WHERE { }",
+            "CONSTRUCT { <http://s> <http://p> ?v } WHERE { VALUES ?v { \"hi\"@en--rtl } }",
+        ];
+        for q in queries {
+            match parse_tarql(q, "q") {
+                Err(TarqlError::Syntax(_) | TarqlError::Unsupported(_)) => {}
+                other => panic!("{q}: {other:?}"),
+            }
+        }
+        let tq = sparql_lifting(&PrefixMap::new(), None, "BIND(TRIPLE(<http://a>, <http://b>, ?c) AS ?t)", "", Vec::new());
+        assert!(matches!(tq, Err(TarqlError::Syntax(_) | TarqlError::Unsupported(_))), "{tq:?}");
     }
 }

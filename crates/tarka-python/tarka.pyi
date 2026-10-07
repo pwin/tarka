@@ -41,6 +41,9 @@ class Mapping:
         bind_empty_strings: bool = False,
     ) -> str | None:
         """Writes the RDF of a data frame to `path`, or returns it as text when `path` is None."""
+    def shapes(self, base: str = "urn:tarka:shapes:") -> str:
+        """SHACL shapes for the RDF this mapping makes, as Turtle. Validate with SHACL_Engine's
+        Python package: `shacl.Shapes.from_turtle(m.shapes()).validate_turtle(m.write(df))`."""
     def run_csv(
         self,
         input: _Path,

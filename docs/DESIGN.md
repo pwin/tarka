@@ -2,7 +2,7 @@
 
 tarka compiles every mapping, whether a TARQL query or OTTR templates, to one **plan**, and
 runs plans with a backend. This document describes the plan, how each front end compiles to it,
-how the row backend runs it, and how data frames reach it.
+how the row backend runs it, how data frames reach it, and how shapes are read from it.
 
 ```
  TARQL query ──► tarka-tarql ─┐
@@ -10,6 +10,8 @@ how the row backend runs it, and how data frames reach it.
  OTTR library ──► tarka-ottr ─┘                   ▲              └► triples frame (tarka-polars)
                                                   ├── CSV records (tarka-io)
                                                   └── frame cells (tarka-polars) ◄── Parquet, IPC, Python
+
+ Plan ──► tarka-shacl ──► SHACL shapes ──► SHACL_Engine ◄── the triples a run makes
 ```
 
 ## 1. The plan
@@ -152,8 +154,43 @@ cross with pyo3-polars, which passes each column's chunks through the Arrow C da
 without copying. Mapping runs release the GIL. Errors become `ValueError`, or `OSError` when a
 file cannot be read.
 
-## 8. What is next
+## 8. Shapes
 
-* SHACL shapes generated from plans, validation with SHACL_Engine, and loading into HOLOS.
+`tarka-shacl` reads a plan's shape layer as a description of the RDF it makes.
+
+**Where a subject is known to exist.** Each triple pattern sits in a block (the root, or a
+repeat's body) and needs some variables bound: those in its terms (a default needs only its
+fallback's), those it `requires`, and those of the repeats around it. A pattern P is made
+whenever pattern T is made when P's block encloses T's and P needs nothing T does not, besides
+variables bound in every solution (the row number). A class assertion (`?s rdf:type C`, C
+constant) says where its subject exists; a shape for C collects the patterns on that subject,
+and a property is required when it is made whenever the class assertion is, in every place C is
+asserted.
+
+**What values are.** A variable's kind comes from its lifting. Columns lifting: the OTTR
+conversion (an IRI, a typed or plain literal, a list), with list elements bound by repeats
+taking the element conversion. SPARQL lifting: the expression its BINDs give it, inferred over
+SPARQL's functions, XSD casts and TARQL's, through `IF` and `COALESCE`; a variable no BIND sets
+can only hold a column's string. Casts follow what spareval writes: `xsd:int` values come out as
+`xsd:integer`. A property's kinds are those of all its objects, and become `sh:datatype` when
+they are one datatype, else `sh:nodeKind` when they agree on one.
+
+**Objects.** An object gets `sh:class C` when its own class assertion is made whenever the
+property is; a blank node object without a class gets a `sh:node` shape built the same way.
+
+The tests generate shapes for every fixture mapping and validate the mapping's output against
+them, which checks the inference against what the engine really makes.
+
+**Validation** runs SHACL_Engine in process: tarka's triples and the shapes go into its term
+store directly. SHACL_Engine builds the Oxigraph crates with their RDF 1.2 features, and Cargo
+turns features on for the whole build, so spargebra then parses SPARQL 1.2. tarka's RDF 1.1
+scope is therefore checked explicitly (`tarka_tarql::sparql11`): triple terms, SPARQL 1.2
+functions and literals with a base direction are refused whichever way spargebra was built, and
+the tests run both ways. The Python module leaves validation to SHACL_Engine's own package and
+is built without it.
+
+## 9. What is next
+
+* Loading into HOLOS (and other stores) over the SPARQL Graph Store Protocol.
 * Mapping files (in the spirit of bOTTR's argument maps: language tags, null values, IRI
   templates), and a linter for template libraries.

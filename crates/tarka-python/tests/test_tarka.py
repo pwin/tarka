@@ -137,6 +137,36 @@ def test_expand():
         assert_same(expected(f"people/expected/{name}.nt"), parse(text, "turtle"), f"{name} instances")
 
 
+def test_shapes():
+    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    shapes = m.shapes()
+    g = parse(shapes, "turtle")
+    sh = rdflib.Namespace("http://www.w3.org/ns/shacl#")
+    assert (rdflib.URIRef("urn:tarka:shapes:PersonShape"), sh.targetClass, rdflib.URIRef("http://xmlns.com/foaf/0.1/Person")) in g
+    assert "@prefix shape: <http://example.com/s#> ." in m.shapes(base="http://example.com/s#")
+    with pytest.raises(ValueError):
+        m.shapes(base="not an IRI")
+
+
+def test_validation_with_shacl_engine(tmp_path):
+    shacl = pytest.importorskip("shacl")
+    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    shapes = shacl.Shapes.from_turtle(m.shapes())
+    assert shapes.validate_turtle(m.write(text_frame("extra/people.csv"))).conforms
+    # an ill-typed value breaks the shapes of a typed OTTR parameter
+    (tmp_path / "items.stottr").write_text(
+        """@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> . @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+        ex:Item [ ottr:IRI ?id, ? xsd:integer ?qty ] :: { ottr:Triple(?id, rdf:type, ex:Item), ottr:Triple(?id, ex:qty, ?qty) } .""",
+        encoding="utf-8",
+    )
+    items = tarka.Mapping.ottr([tmp_path], ["http://example.com/Item"])
+    df = pl.DataFrame({"id": ["ex:a", "ex:b"], "qty": ["7", "seven"]})
+    report = shacl.Shapes.from_turtle(items.shapes()).validate_turtle(items.write(df))
+    assert not report.conforms
+    assert [r.focus_node for r in report.results] == ["<http://example.com/b>"]
+
+
 def test_errors():
     with pytest.raises(ValueError, match="CONSTRUCT"):
         tarka.Mapping.tarql("SELECT * WHERE { }")

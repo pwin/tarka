@@ -145,6 +145,56 @@ fn errors_are_reported_cleanly() {
 }
 
 #[test]
+fn shapes_and_validation() {
+    let people = fixture("extra/people.rq");
+    let shapes = ok(&["shapes", "-q", path(&people)], None);
+    assert!(shapes.contains("shape:PersonShape a sh:NodeShape ;\n    sh:targetClass foaf:Person ;"), "{shapes}");
+    let based = ok(&["shapes", "-q", path(&people), "--base", "http://example.com/shapes/"], None);
+    assert!(based.contains("@prefix shape: <http://example.com/shapes/> ."), "{based}");
+    // the fixture's output conforms to the shapes made from its mapping
+    ok(&["run", "-q", path(&people), "-i", path(&fixture("extra/people.csv")), "--validate"], None);
+
+    let dir = std::env::temp_dir().join(format!("tarka-cli-shapes-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let lib = dir.join("items.stottr");
+    std::fs::write(
+        &lib,
+        "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+         @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+         ex:Item [ ottr:IRI ?id, ? xsd:integer ?qty ] :: { ottr:Triple(?id, rdf:type, ex:Item), ottr:Triple(?id, ex:qty, ?qty) } .",
+    )
+    .unwrap();
+    let extra = dir.join("extra.ttl");
+    std::fs::write(
+        &extra,
+        "@prefix sh: <http://www.w3.org/ns/shacl#> . @prefix ex: <http://example.com/> .
+         ex:ItemQty a sh:NodeShape ; sh:targetClass ex:Item ; sh:property [ sh:path ex:qty ; sh:minCount 1 ] .",
+    )
+    .unwrap();
+    let (output, report) = (dir.join("items.nt"), dir.join("report.ttl"));
+    let csv = b"id,qty\nex:a,7\nex:b,seven\nex:c,\n";
+    let base = ["run", "-l", path(&lib), "-T", "ex:Item", "--ntriples", "-o", path(&output)];
+    // the generated shapes catch the ill-typed quantity; the extra ones the missing one
+    let generated = tarka(&[&base[..], &["--validate"]].concat(), Some(csv));
+    assert_eq!(generated.status.code(), Some(3), "{}", String::from_utf8_lossy(&generated.stderr));
+    let stderr = String::from_utf8_lossy(&generated.stderr);
+    assert!(stderr.contains("ex:b ex:qty sh:DatatypeConstraintComponent: \"seven\"^^xsd:integer"), "{stderr}");
+    assert!(stderr.contains("does not conform to the shapes (1 result)"), "{stderr}");
+    assert_eq!(std::fs::read_to_string(&output).unwrap().lines().count(), 5, "the output is written all the same");
+    let both = tarka(&[&base[..], &["--validate", "--shapes", path(&extra), "--report", path(&report)]].concat(), Some(csv));
+    assert_eq!(both.status.code(), Some(3));
+    assert!(String::from_utf8_lossy(&both.stderr).contains("(2 results)"));
+    let report_text = std::fs::read_to_string(&report).unwrap();
+    assert!(report_text.contains("sh:conforms false"), "{report_text}");
+    assert!(report_text.contains("sh:MinCountConstraintComponent"), "{report_text}");
+    // --shapes alone uses only those shapes
+    let only = tarka(&[&base[..], &["--shapes", path(&extra)]].concat(), Some(csv));
+    assert!(String::from_utf8_lossy(&only.stderr).contains("ex:c ex:qty sh:MinCountConstraintComponent"));
+    assert!(String::from_utf8_lossy(&only.stderr).contains("(1 result)"));
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;
     let mut df = df!(
