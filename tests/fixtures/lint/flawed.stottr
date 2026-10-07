@@ -1,0 +1,77 @@
+@prefix ex:     <http://example.com/ns#> .
+@prefix ottr:   <http://ns.ottr.xyz/0.4/> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix schema: <https://schema.org/> .
+
+# Lint fixture: what Lutra's linter reports, and the cases it accepts.
+# A test runs Lutra's lint and tarka's on it and compares (see crates/tarka/tests/parity.rs).
+
+# an xsd:integer parameter passed to an ottr:IRI one
+ex:BadType [ xsd:integer ?n ] :: { ex:Named(?n) } .
+ex:Named [ ottr:IRI ?x ] :: { ottr:Triple(?x, rdfs:label, "x") } .
+
+# an unused parameter, and a constant of the wrong type
+ex:Unused [ ottr:IRI ?a, ?b ] :: { ottr:Triple(?a, rdfs:label, "a"), ex:Named("not an IRI") } .
+
+# a template that is not defined
+ex:Missing [ ottr:IRI ?a ] :: { ex:Nowhere(?a) } .
+
+# the wrong number of arguments
+ex:Arity [ ottr:IRI ?a ] :: { ex:Named(?a, ?a) } .
+
+# a blank node given to a non-blank parameter
+ex:NonBlank [ ! ottr:IRI ?a ] :: { ottr:Triple(?a, rdfs:label, "a") } .
+ex:GivesBlank [ ] :: { ex:NonBlank(_:b) } .
+
+# an optional parameter passed on as mandatory
+ex:Optional [ ? ottr:IRI ?a ] :: { ex:Named(?a) } .
+
+# a cycle
+ex:Ping [ ottr:IRI ?a ] :: { ex:Pong(?a) } .
+ex:Pong [ ottr:IRI ?a ] :: { ex:Ping(?a) } .
+
+# fine: owl:Class is an IRI type; integers are decimals; a list for a list
+ex:Fine [ owl:Class ?c, xsd:integer ?i, List<xsd:string> ?l ] :: {
+  ex:Named(?c), ex:Dec(?i), ex:Strings(?l), ex:Dec(1), ex:Strings(("a", "b"))
+} .
+ex:Dec [ xsd:decimal ?d ] :: { ottr:Triple(ex:s, ex:p, ?d) } .
+ex:Strings [ List<xsd:string> ?l ] :: { ottr:Triple(ex:s, ex:p, ?l) } .
+
+# a list where a single value is wanted, and an IRI where an integer is
+ex:Lists [ List<xsd:string> ?l ] :: { ex:Dec(?l), ex:Dec(ex:x) } .
+
+# Type compatibility at the edges.
+ex:NamedT [ ottr:IRI ?x ] :: { ottr:Triple(?x, rdfs:label, "x") } .
+ex:ClsT [ owl:Class ?x ] :: { ottr:Triple(?x, rdf:type, owl:Class) } .
+ex:IntT [ xsd:int ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:StrT [ xsd:string ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:LitT [ rdfs:Literal ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:NET [ NEList<xsd:string> ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:LT [ List<ottr:IRI> ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+
+ex:Edge1 [ ?u ] :: { ex:NamedT(?u) } .
+ex:Edge2 [ ottr:IRI ?i ] :: { ex:ClsT(?i) } .
+ex:Edge3 [ owl:Class ?c ] :: { ex:NamedT(?c) } .
+ex:Edge4 [ ] :: { ex:NamedT(_:b), ex:ClsT(_:b), ex:StrT(_:b) } .
+ex:Edge5 [ ] :: { ex:IntT(1), ex:StrT("a"@en), ex:LitT("a"@en), ex:StrT(1) } .
+ex:Edge6 [ ] :: { ex:NET(()), ex:LT((ex:a, ex:b)), ex:LT(()), ex:NET(("a", 1)) } .
+ex:Edge7 [ List<xsd:string> ?l ] :: { ex:NET(?l) } .
+ex:Edge8 [ NEList<xsd:string> ?l ] :: { ex:LT(?l) } .
+ex:Edge9 [ ] :: { ex:NamedT(none), ex:LitT(true) } .
+ex:Edge10 [ List<owl:Class> ?l ] :: { cross | ex:NamedT(++?l), cross | ex:IntT(++?l) } .
+
+# More edges: lists, defaults, LUB, unknown types, duplicates.
+ex:Any2 [ ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:L2 [ List<ottr:IRI> ?x ] :: { ottr:Triple(ex:s, ex:p, ?x) } .
+ex:Named2 [ ottr:IRI ?x ] :: { ottr:Triple(?x, ex:p, ex:o) } .
+ex:F1 [ List<xsd:string> ?l ] :: { ex:Any2(?l), ex:Any2(("a")) } .
+ex:F2 [ ] :: { ex:L2(_:b) } .
+ex:F3 [ ottr:IRI ?x = "notIRI" ] :: { ex:Named2(?x) } .
+ex:F4 [ LUB<ottr:IRI> ?x ] :: { ex:Named2(?x) } .
+ex:F5 [ schema:Thing ?x ] :: { ex:Named2(?x) } .
+ex:F6 [ ottr:IRI ?x ] :: { ex:Named2(?x) } .
+ex:F6 [ ottr:IRI ?x ] :: { ex:Named2(?x) } .
+ex:F7 [ ottr:IRI ?x ] :: { ottr:Triple(?x, ex:p, ex:o), ottr:Triple("lit", ex:p, ex:o), ottr:Triple(?x, "p", ex:o) } .

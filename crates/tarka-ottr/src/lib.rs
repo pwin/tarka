@@ -16,8 +16,10 @@
 pub mod compile;
 pub mod lexer;
 pub mod library;
+pub mod lint;
 pub mod model;
 pub mod parser;
+pub mod types;
 
 use thiserror::Error;
 

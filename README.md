@@ -14,6 +14,7 @@ tarka expand -l templates/ instances.stottr -o people.ttl                   # OT
 tarka shapes -q people.rq -o shapes.ttl                                     # SHACL shapes for what a mapping makes
 tarka run -q people.rq -i people.csv -o people.ttl --validate               # ... and the output checked against them
 tarka run -q people.rq -i people.csv --post http://127.0.0.1:7878/graph     # straight into HOLOS, or any Graph Store
+tarka lint -l templates/                                                    # check a template library
 ```
 
 * **TARQL, as written for oxi-gen.** `tarka run` takes oxi-gen's options (`-q -i -o --ntriples
@@ -103,6 +104,26 @@ tarka run -l vendor/retail/ -l my-templates.stottr -T my:Customer -T my:Audit -i
 
 Templates may live in any file; a signature in one file can be defined in another. A root
 template's mandatory parameters drop only its own instance, so roots combine freely.
+
+### Linting
+
+```text
+$ tarka lint -l templates/
+templates/core.stottr:13: error: ?n (xsd:integer) does not fit the type ottr:IRI of argument 1 of ex:Named [type]
+templates/core.stottr:17: warning: parameter ?b is not used in the pattern [unused-parameter]
+templates/core.stottr:20: error: ex:Nowhere is not defined [undefined-template]
+12 templates: 2 errors, 1 warning
+```
+
+`tarka lint` type-checks a library with OTTR's type system and reports what Lutra's linter
+reports: undefined templates, the wrong number of arguments, cycles, arguments whose type does
+not fit (an `xsd:integer` where an `ottr:IRI` is wanted, a `List` where an `NEList` is), one
+argument given to parameters of incompatible types, unused parameters and duplicate
+definitions. It also reports variables that are not parameters, blank nodes given to non-blank
+(`!`) parameters, expanders without `++` arguments and the reverse, literal subjects and non-IRI
+predicates in `ottr:Triple`, types OTTR does not have, and defaults that do not fit their
+parameters. It exits with status 1 when there are errors (`--deny-warnings`: or warnings);
+`--errors-only` hides the warnings.
 
 ## Data frames
 
@@ -275,7 +296,8 @@ python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests
 ```
 
-Every mapping is checked against a reference output: oxi-gen's for TARQL, Lutra's for OTTR. The
+Every mapping is checked against a reference output: oxi-gen's for TARQL, Lutra's for OTTR, and
+the linter against Lutra's on a library of deliberate mistakes (`tests/fixtures/lint`). The
 retail suite writes one transformation of three complex CSV files both as TARQL and as a modular
 OTTR library, and both must give oxi-gen's output exactly. The same mappings run over data frames
 must give the same RDF as over CSV, and every mapping's output must conform to the shapes made

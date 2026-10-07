@@ -149,7 +149,7 @@ impl Parser {
                 self.pos += 1;
             }
         }
-        Ok(Template { iri, params, body: Vec::new(), annotations, kind: Kind::Signature, line })
+        Ok(Template { iri, params, body: Vec::new(), annotations, kind: Kind::Signature, file: self.source.clone(), line })
     }
 
     fn param(&mut self) -> Result<Param, OttrError> {

@@ -4,7 +4,9 @@
 //!   except `extra/bound.rq`, where tarka follows TARQL (`BOUND(?column)` is true
 //!   when the cell has a value; oxi-gen says false).
 //! * `LUTRA_JAR=path/to/lutra.jar` (and `java` on the path): every instance file
-//!   expands to the same RDF as with Lutra.
+//!   expands to the same RDF as with Lutra, and the linter finds what Lutra's does: the
+//!   same kinds of finding in the same templates, as often (tarka's own checks aside),
+//!   and nothing in the fixture libraries.
 //!
 //! Without the variables these tests pass without checking anything.
 
@@ -78,6 +80,66 @@ fn instances_match_lutra() {
         let mut triples = Vec::new();
         tarka::expand_instances(&lib, &doc.instances, &mut triples).unwrap();
         assert_same(&read_graph(&out), &triples.into_iter().collect(), instances);
+    }
+}
+
+/// Lutra's lint findings as (severity, check, template), with tarka's names for the checks.
+fn lutra_lint(lutra: &str, library: &Path) -> Vec<(String, String, String)> {
+    let run = Command::new("java").args(["-jar", lutra, "-m", "lint", "-L", "stottr", "-l", path(library)]).output().unwrap();
+    let text = format!("{}{}", String::from_utf8_lossy(&run.stdout), String::from_utf8_lossy(&run.stderr));
+    let rules = [
+        ("[ERROR] Undefined template used in ", "error", "undefined-template"),
+        ("[ERROR] Wrong number of arguments in instance ", "error", "arity"),
+        ("[ERROR] Cyclic dependency in template ", "error", "cycle"),
+        ("[WARNING] Unused parameter in template ", "warning", "unused-parameter"),
+        ("[ERROR] Type error in template ", "error", "type"),
+        ("[WARNING] There exist duplicate templates which may conflict with each other: ", "warning", "duplicate"),
+    ];
+    let mut out = Vec::new();
+    for line in text.lines().filter(|l| l.starts_with('[')) {
+        let Some((prefix, severity, check)) = rules.iter().find(|(p, ..)| line.starts_with(p)) else {
+            panic!("a finding of Lutra's this test does not know: {line}");
+        };
+        let rest = &line[prefix.len()..];
+        let (template, check) = match *check {
+            // "… An instance of template T has 2 arguments …"
+            "arity" => (rest.split("An instance of template ").nth(1).unwrap().split(' ').next().unwrap(), "arity"),
+            "type" if rest.contains(": incompatible parameter types") => {
+                (rest.split(": incompatible").next().unwrap(), "inconsistent-uses")
+            }
+            "type" => (rest.split(": incompatible").next().unwrap(), "type"),
+            "duplicate" => (rest.trim(), "duplicate"),
+            _ => (rest.split(". ").next().unwrap().trim_end_matches('.'), *check),
+        };
+        out.push((severity.to_string(), check.to_string(), template.to_owned()));
+    }
+    out.sort();
+    out
+}
+
+#[test]
+fn lint_matches_lutra() {
+    let Ok(lutra) = std::env::var("LUTRA_JAR") else {
+        eprintln!("LUTRA_JAR is not set: not comparing with Lutra");
+        return;
+    };
+    use tarka::ottr::lint::{Check, Severity, lint};
+    // tarka's own checks, which Lutra's linter does not make
+    let own = [Check::UndeclaredVariable, Check::NonBlank, Check::Expander, Check::Triple, Check::UnknownType, Check::Default];
+    for library in
+        ["lint/flawed.stottr", "retail/ottr", "people/people.stottr", "extra/products.stottr", "retail/converted/ottr-round-trip"]
+    {
+        let lib = tarka::ottr::Library::load(&[fixture(library)]).unwrap();
+        let mut ours: Vec<(String, String, String)> = lint(&lib)
+            .into_iter()
+            .filter(|f| !own.contains(&f.check))
+            .map(|f| {
+                let severity = if f.severity == Severity::Error { "error" } else { "warning" };
+                (severity.to_owned(), f.check.name().to_owned(), f.template)
+            })
+            .collect();
+        ours.sort();
+        assert_eq!(ours, lutra_lint(&lutra, &fixture(library)), "{library}");
     }
 }
 

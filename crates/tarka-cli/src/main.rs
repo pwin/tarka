@@ -34,6 +34,8 @@ enum Command {
     Expand(ExpandArgs),
     /// Write SHACL shapes for the RDF a mapping makes
     Shapes(ShapesArgs),
+    /// Check OTTR template libraries: undefined templates, arity, types, cycles …
+    Lint(LintArgs),
 }
 
 /// The mapping: a TARQL query, or OTTR templates.
@@ -203,6 +205,19 @@ struct ShapesArgs {
     base: String,
 }
 
+#[derive(Args)]
+struct LintArgs {
+    /// An OTTR template file or directory (repeat for more)
+    #[arg(short, long, required = true, action = clap::ArgAction::Append)]
+    library: Vec<PathBuf>,
+    /// Report errors only
+    #[arg(long)]
+    errors_only: bool,
+    /// Fail on warnings too
+    #[arg(long, conflicts_with = "errors_only")]
+    deny_warnings: bool,
+}
+
 /// The output was written, but does not conform to the shapes.
 #[derive(Debug)]
 struct NotConforming(usize);
@@ -232,6 +247,7 @@ impl Command {
             Self::Run(args) => run(args),
             Self::Expand(args) => expand(args),
             Self::Shapes(args) => shapes(args),
+            Self::Lint(args) => lint(args),
         }
     }
 }
@@ -501,6 +517,25 @@ fn shapes(args: ShapesArgs) -> Result<()> {
     match &args.output {
         Some(p) if p.as_os_str() != "-" => std::fs::write(p, text).with_context(|| format!("cannot write {}", p.display()))?,
         _ => io::stdout().lock().write_all(text.as_bytes())?,
+    }
+    Ok(())
+}
+
+fn lint(args: LintArgs) -> Result<()> {
+    use tarka::ottr::lint::Severity;
+    let lib = Library::load(&args.library)?;
+    let findings = tarka::ottr::lint::lint(&lib);
+    let mut out = io::stdout().lock();
+    for f in findings.iter().filter(|f| !args.errors_only || f.severity == Severity::Error) {
+        writeln!(out, "{f}")?;
+    }
+    let errors = findings.iter().filter(|f| f.severity == Severity::Error).count();
+    let warnings = findings.len() - errors;
+    let templates = lib.templates().filter(|t| !Library::is_triple(&t.iri)).count();
+    let plural = |n: usize, what: &str| format!("{n} {what}{}", if n == 1 { "" } else { "s" });
+    eprintln!("{}: {}, {}", plural(templates, "template"), plural(errors, "error"), plural(warnings, "warning"));
+    if errors > 0 || (args.deny_warnings && warnings > 0) {
+        bail!("the library has {}", if errors > 0 { plural(errors, "error") } else { plural(warnings, "warning") });
     }
     Ok(())
 }

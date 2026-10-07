@@ -288,6 +288,31 @@ fn loading_into_a_store() {
 }
 
 #[test]
+fn lint_libraries() {
+    let clean = tarka(&["lint", "-l", path(&fixture("retail/ottr"))], None);
+    assert!(clean.status.success());
+    assert!(String::from_utf8_lossy(&clean.stderr).contains("16 templates: 0 errors, 0 warnings"));
+    let flawed = tarka(&["lint", "-l", path(&fixture("lint/flawed.stottr"))], None);
+    assert!(!flawed.status.success());
+    let stdout = String::from_utf8_lossy(&flawed.stdout);
+    assert!(stdout.contains("flawed.stottr:20: error: ex:Nowhere is not defined [undefined-template]"), "{stdout}");
+    assert!(String::from_utf8_lossy(&flawed.stderr).contains("25 errors, 5 warnings"));
+    let errors = tarka(&["lint", "-l", path(&fixture("lint/flawed.stottr")), "--errors-only"], None);
+    assert!(!String::from_utf8_lossy(&errors.stdout).contains("warning:"));
+    // warnings fail the run only when asked
+    let dir = std::env::temp_dir().join(format!("tarka-cli-lint-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let lib = dir.join("warn.stottr");
+    std::fs::write(&lib, "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .\nex:T [ ?a, ?unused ] :: { ottr:Triple(ex:s, ex:p, ?a) } .")
+        .unwrap();
+    let warned = tarka(&["lint", "-l", path(&lib)], None);
+    assert!(warned.status.success());
+    assert!(String::from_utf8_lossy(&warned.stdout).contains("parameter ?unused is not used"));
+    assert!(!tarka(&["lint", "-l", path(&lib), "--deny-warnings"], None).status.success());
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;
     let mut df = df!(

@@ -206,7 +206,30 @@ The tests check the requests against a small HTTP server (method, graph paramete
 body), and, with `HOLOS_SERVER` set, load every retail mapping into a live HOLOS, read each graph
 back and compare it with the reference output, and check that a failed run loads nothing.
 
-## 10. What is next
+## 10. Types and lint
 
-* Mapping files (in the spirit of bOTTR's argument maps: language tags, null values, IRI
-  templates), and a linter for template libraries.
+`tarka_ottr::types` is OTTR's type system as Lutra implements it, worked out by running Lutra's
+linter on cases at the edges:
+
+* Basic types form a tree under `rdfs:Resource` (XSD's numeric and string types, `rdf:langString`
+  under `ottr:string`, the OWL and RDFS IRI types under `ottr:IRI`); a type the tree does not name
+  is read as `rdfs:Resource`, and so is an untyped parameter. `NEList<T>` is a subtype of
+  `List<T>`, lists are covariant, and everything is a subtype of `rdfs:Resource`.
+* A literal's type is exact: its datatype, `xsd:string` when plain, `rdf:langString` when
+  tagged. An IRI's is `LUB<ottr:IRI>` and a blank node's `LUB<rdfs:Resource>`: a least upper
+  bound fits any type above or below it, so an IRI fits `owl:Class` but an `ottr:IRI` parameter
+  does not.
+* A list constant is checked item by item against the element type; `++` lifts the parameter's
+  type to a list of it.
+* One argument given to several parameters must be able to have all their types: two basic
+  types must be on one branch of the tree.
+
+`tarka_ottr::lint` applies it to every template body, with the structural checks (undefined
+templates, arity, cycles, unused and undeclared variables, duplicates), and returns findings
+with a file, a line and a check name. A live test runs Lutra's linter on the same library of
+mistakes and requires the same findings, as often, in the same templates.
+
+## 11. What is next
+
+* Mapping files: bOTTR's instance maps over CSV and RDF sources, with their argument maps
+  (types, language tags, null values, translation tables, lists).
