@@ -1,0 +1,4 @@
+id,nul,tr,blank,flag,lang,typed,num,pfx
+ex:a,,N/A,_:x,yes,hello@en,42^^xsd:int,007,foo:bar
+ex:b,v,keep,new,no,bye@fr,1.5^^xsd:decimal,8,http://x.org/y
+ex:c,,S,_:x,maybe,plain,7^^xsd:integer,-3,ex:zz

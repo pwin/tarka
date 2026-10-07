@@ -15,6 +15,7 @@ tarka shapes -q people.rq -o shapes.ttl                                     # SH
 tarka run -q people.rq -i people.csv -o people.ttl --validate               # ... and the output checked against them
 tarka run -q people.rq -i people.csv --post http://127.0.0.1:7878/graph     # straight into HOLOS, or any Graph Store
 tarka lint -l templates/                                                    # check a template library
+tarka bottr -l templates/ people.bottr.ttl -o people.ttl                    # bOTTR mapping files, as Lutra runs them
 ```
 
 * **TARQL, as written for oxi-gen.** `tarka run` takes oxi-gen's options (`-q -i -o --ntriples
@@ -104,6 +105,43 @@ tarka run -l vendor/retail/ -l my-templates.stottr -T my:Customer -T my:Audit -i
 
 Templates may live in any file; a signature in one file can be defined in another. A root
 template's mandatory parameters drop only its own instance, so roots combine freely.
+
+### bOTTR mapping files
+
+A [bOTTR](https://spec.ottr.xyz/bOTTR/0.1/) file maps the rows of a query to instances of a
+template, with an argument map per column; the template's parameters need not be named like
+the columns, and the cells need not be written as OTTR would write them:
+
+```turtle
+[] a ottr:InstanceMap ;
+   ottr:template ex:Employee ;
+   ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT id, name, mail, boss, skills FROM CSVREAD('@@THIS_DIR@@/staff.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:languageTag "en" ] [ ottr:nullValue ex:NoMail ] [ ottr:type ottr:IRI ]
+                       [ ottr:type ( rdf:List xsd:string ) ; ottr:listSep ";" ] ) .
+```
+
+`tarka bottr -l templates/ staff.bottr.ttl` runs the maps as Lutra does, with the same output
+on this repository's fixtures, which test every argument map setting: types (IRIs expanded
+with the file's prefixes, typed literals as written, which must be valid, lists such as
+`(a,(b,c))`), `ottr:languageTag`, `ottr:languageTagSep`, `ottr:datatypeSep`, `ottr:nullValue`,
+translation tables, labelled (`_:x`) and fresh blank nodes, and `ottr:booleanTrue`/`False`. As
+in Lutra, an instance whose arguments cannot be made, or do not fit the template's parameter
+types, is left out and reported (every bad argument of the row), the others are written, and
+tarka exits with status 1.
+
+Two sources are read:
+
+* `ottr:H2Source` with `SELECT [DISTINCT] columns FROM CSVREAD('file.csv'[, columns[, options]])`,
+  in H2's CSV dialect (unquoted fields trimmed, an empty one NULL; `""` is an empty string). A
+  column may be a name, `*`, a string constant or `NULL`; other SQL (`WHERE`, functions, joins)
+  is refused, since tarka does not embed H2.
+* `ottr:RDFFileSource`: a SPARQL 1.1 SELECT over its `ottr:sourceURL` files. A term whose own
+  type fits the argument map's is kept as it is.
+
+Relative files are found from the bOTTR file's directory (H2 would use the working
+directory); `@@THIS_DIR@@` works as in Lutra. JDBC sources and SPARQL endpoints are not read.
+In Python: `tarka.bottr(["templates/"], ["staff.bottr.ttl"], "staff.ttl")`.
 
 ### Linting
 
@@ -280,6 +318,7 @@ of a mapping give the same terms.
 | `tarka` | the row engine, and the library API |
 | `tarka-polars` | Polars data frames, Parquet and Arrow IPC input |
 | `tarka-shacl` | SHACL shapes from plans; validation with SHACL_Engine |
+| `tarka-bottr` | bOTTR instance maps over CSV (H2's `CSVREAD`) and RDF files |
 | `tarka-cli` | the `tarka` command |
 | `tarka-python` | the `tarka` Python module |
 
@@ -296,8 +335,8 @@ python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests
 ```
 
-Every mapping is checked against a reference output: oxi-gen's for TARQL, Lutra's for OTTR, and
-the linter against Lutra's on a library of deliberate mistakes (`tests/fixtures/lint`). The
+Every mapping is checked against a reference output: oxi-gen's for TARQL, Lutra's for OTTR and
+bOTTR, and the linter against Lutra's on a library of deliberate mistakes (`tests/fixtures/lint`). The
 retail suite writes one transformation of three complex CSV files both as TARQL and as a modular
 OTTR library, and both must give oxi-gen's output exactly. The same mappings run over data frames
 must give the same RDF as over CSV, and every mapping's output must conform to the shapes made

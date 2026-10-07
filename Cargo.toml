@@ -38,6 +38,7 @@ tarka-ottr = { path = "crates/tarka-ottr", version = "0.1.0" }
 tarka = { path = "crates/tarka", version = "0.1.0" }
 tarka-polars = { path = "crates/tarka-polars", version = "0.1.0" }
 tarka-shacl = { path = "crates/tarka-shacl", version = "0.1.0" }
+tarka-bottr = { path = "crates/tarka-bottr", version = "0.1.0" }
 
 [profile.release]
 lto = "fat"

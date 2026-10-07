@@ -1,0 +1,7 @@
+# SQL: DISTINCT, a string constant, NULL with an ottr:nullValue, CSVREAD with column
+# names and options.
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex: <http://example.com/ns#> .
+[] a ottr:InstanceMap ; ottr:template ex:Q ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT DISTINCT ID, V, 'const' AS C, NULL FROM CSVREAD('@@THIS_DIR@@/semi.csv', 'ID;V', 'fieldSeparator=;')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ] [ ] [ ottr:nullValue "was null" ] ) .

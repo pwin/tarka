@@ -3473,6 +3473,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "tarka-bottr"
+version = "0.1.0"
+dependencies = [
+ "oxrdf",
+ "oxrdfio",
+ "oxsdatatypes",
+ "spareval",
+ "spargebra",
+ "tarka",
+ "tarka-core",
+ "tarka-io",
+ "tarka-ottr",
+ "tarka-tarql",
+ "thiserror",
+]
+
+[[package]]
 name = "tarka-cli"
 version = "0.1.0"
 dependencies = [
@@ -3482,6 +3499,7 @@ dependencies = [
  "oxrdf",
  "oxrdfio",
  "tarka",
+ "tarka-bottr",
  "tarka-polars",
  "tarka-shacl",
  "ureq",
@@ -3543,6 +3561,7 @@ dependencies = [
  "pyo3",
  "pyo3-polars",
  "tarka",
+ "tarka-bottr",
  "tarka-polars",
  "tarka-shacl",
 ]

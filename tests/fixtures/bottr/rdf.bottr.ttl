@@ -1,0 +1,9 @@
+# An RDF file source: a SPARQL SELECT over data.ttl. Terms that fit are kept; "Bob"@en
+# is read again as an xsd:string; the blank node is the data's own.
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+[] a ottr:InstanceMap ; ottr:template ex:R ;
+   ottr:source [ a ottr:RDFFileSource ; ottr:sourceURL "data.ttl" ] ;
+   ottr:query """PREFIX ex: <http://example.com/ns#> SELECT ?s ?name ?age ?k WHERE { ?s ex:name ?name OPTIONAL { ?s ex:age ?age } OPTIONAL { ?s ex:knows ?k } FILTER(isIRI(?s)) }""" ;
+   ottr:argumentMaps ( [ ] [ ottr:type xsd:string ] [ ottr:type xsd:decimal ] [ ] ) .

@@ -1,0 +1,8 @@
+# Lists: brackets, nesting, the empty list, a cell without brackets, an empty item.
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+[] a ottr:InstanceMap ; ottr:template ex:Tags ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT id, tags FROM CSVREAD('@@THIS_DIR@@/lists.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:type ( rdf:List xsd:string ) ] ) .

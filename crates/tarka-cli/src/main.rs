@@ -36,6 +36,8 @@ enum Command {
     Shapes(ShapesArgs),
     /// Check OTTR template libraries: undefined templates, arity, types, cycles …
     Lint(LintArgs),
+    /// Run bOTTR instance maps: OTTR templates over CSV (H2's CSVREAD) and RDF files
+    Bottr(BottrArgs),
 }
 
 /// The mapping: a TARQL query, or OTTR templates.
@@ -206,6 +208,23 @@ struct ShapesArgs {
 }
 
 #[derive(Args)]
+struct BottrArgs {
+    /// An OTTR template file or directory (repeat for more)
+    #[arg(short, long, required = true, action = clap::ArgAction::Append)]
+    library: Vec<PathBuf>,
+    /// bOTTR files (Turtle) with instance maps
+    #[arg(required = true)]
+    maps: Vec<PathBuf>,
+    #[command(flatten)]
+    output: OutputArgs,
+    #[command(flatten)]
+    load: LoadArgs,
+    /// Print what was read and made to standard error
+    #[arg(long)]
+    stats: bool,
+}
+
+#[derive(Args)]
 struct LintArgs {
     /// An OTTR template file or directory (repeat for more)
     #[arg(short, long, required = true, action = clap::ArgAction::Append)]
@@ -248,6 +267,7 @@ impl Command {
             Self::Expand(args) => expand(args),
             Self::Shapes(args) => shapes(args),
             Self::Lint(args) => lint(args),
+            Self::Bottr(args) => bottr(args),
         }
     }
 }
@@ -517,6 +537,35 @@ fn shapes(args: ShapesArgs) -> Result<()> {
     match &args.output {
         Some(p) if p.as_os_str() != "-" => std::fs::write(p, text).with_context(|| format!("cannot write {}", p.display()))?,
         _ => io::stdout().lock().write_all(text.as_bytes())?,
+    }
+    Ok(())
+}
+
+fn bottr(args: BottrArgs) -> Result<()> {
+    let lib = Library::load(&args.library)?;
+    let maps = tarka_bottr::load_all(&args.maps)?;
+    let mut prefixes = lib.prefixes.clone();
+    for m in &maps {
+        for (p, ns) in m.prefixes.iter() {
+            prefixes.insert_if_absent(p, ns);
+        }
+    }
+    let mut out = Output::open(&args.output, &args.load, &prefixes)?;
+    let result = tarka_bottr::run(&lib, &maps, out.sink(), &mut |reason| eprintln!("tarka: left out: {reason}"));
+    let stats = match result {
+        Ok(stats) => stats,
+        Err(e) => return Err(out.abandon(e.into())),
+    };
+    let answer = out.complete()?;
+    if args.stats {
+        eprintln!("{} rows, {} instances made, {} left out, {} triples made", stats.rows, stats.instances, stats.dropped, stats.triples);
+        if let Some(answer) = answer {
+            eprintln!("{answer}");
+        }
+    }
+    if stats.dropped > 0 {
+        let s = if stats.dropped == 1 { "" } else { "s" };
+        bail!("{} instance{s} left out; the other {} were made", stats.dropped, stats.instances);
     }
     Ok(())
 }
