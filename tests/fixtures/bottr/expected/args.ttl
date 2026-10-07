@@ -1,0 +1,23 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ex: <http://example.com/ns#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ottr: <http://ns.ottr.xyz/0.4/>
+
+ex:a    ex:blank  _:b0;
+        ex:lang   "hello"@en;
+        ex:typed  "42"^^xsd:int;
+        ex:nul    ex:Unknown;
+        ex:num    007;
+        ex:flag   true;
+        ex:pfx    <foo:bar> .
+
+ex:b    ex:blank  _:b1;
+        ex:lang   "bye"@fr;
+        ex:typed  1.5;
+        ex:nul    "v";
+        ex:num    8;
+        ex:tr     "keep";
+        ex:flag   false;
+        ex:pfx    <http://x.org/y> .

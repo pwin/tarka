@@ -1,0 +1,19 @@
+# Argument maps: null values, translation tables, labelled and fresh blank nodes, booleans,
+# language tag and datatype separators, typed literals as written, IRIs. Row 3 is left out:
+# 'maybe' is not a boolean and 'plain' has no language tag.
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex: <http://example.com/ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+[] a ottr:InstanceMap ; ottr:template ex:A ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT id, nul, tr, blank, flag, lang, typed, num, pfx FROM CSVREAD('@@THIS_DIR@@/args.csv')""" ;
+   ottr:argumentMaps (
+     [ ottr:type ottr:IRI ]
+     [ ottr:nullValue ex:Unknown ]
+     [ ottr:translationTable [ ottr:entry [ ottr:inValue "N/A" ; ottr:outValue ottr:none ] , [ ottr:inValue "S" ; ottr:outValue ex:Shipped ] ] ]
+     [ ottr:blankNodeFresh ( "new" ) ]
+     [ ottr:type xsd:boolean ; ottr:booleanTrue ( "yes" ) ; ottr:booleanFalse ( "no" ) ]
+     [ ottr:languageTagSep "@" ]
+     [ ottr:datatypeSep "^^" ]
+     [ ottr:type xsd:integer ]
+     [ ottr:type ottr:IRI ]
+   ) .

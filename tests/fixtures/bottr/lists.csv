@@ -1,0 +1,7 @@
+id,tags
+ex:a,"(x,y,z)"
+ex:b,(w)
+ex:c,()
+ex:d,"((n1,n2),m)"
+ex:e,"p, q"
+ex:f,"( s , ,t )"

@@ -313,6 +313,21 @@ fn lint_libraries() {
 }
 
 #[test]
+fn bottr_maps() {
+    let people = fixture("people/people.stottr");
+    let out = ok(&["bottr", "-l", path(&people), path(&fixture("bottr/people.bottr.ttl")), "--ntriples"], None);
+    assert!(out.contains("<http://example.com/ns#alice> <http://example.com/ns#skill> \"rust\" ."), "{out}");
+    // instances that cannot be made are reported, the others written, and the run fails
+    let templates = fixture("bottr/templates.stottr");
+    let args = tarka(&["bottr", "-l", path(&templates), path(&fixture("bottr/args.bottr.ttl")), "--ntriples"], None);
+    assert_eq!(args.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&args.stderr);
+    assert!(stderr.contains("left out: ") && stderr.contains("row 3: argument 5 (flag)"), "{stderr}");
+    assert!(stderr.contains("1 instance left out; the other 2 were made"), "{stderr}");
+    assert_eq!(String::from_utf8_lossy(&args.stdout).lines().count(), 15);
+}
+
+#[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;
     let mut df = df!(

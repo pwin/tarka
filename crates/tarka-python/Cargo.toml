@@ -22,5 +22,6 @@ oxrdf.workspace = true
 pyo3 = "0.29"
 pyo3-polars = "0.28"
 tarka.workspace = true
+tarka-bottr.workspace = true
 tarka-polars.workspace = true
 tarka-shacl.workspace = true

@@ -1,0 +1,19 @@
+# People, as bOTTR: ex:Person and ex:Employee (a list of skills split on ';') over the
+# people fixture.
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex:   <http://example.com/ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+[] a ottr:InstanceMap ;
+   ottr:template ex:Person ;
+   ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT person, name, email, manager FROM CSVREAD('@@THIS_DIR@@/../people/people.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:type xsd:string ] [ ottr:type xsd:string ] [ ottr:type ottr:IRI ] ) .
+
+[] a ottr:InstanceMap ;
+   ottr:template ex:Employee ;
+   ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT person, name, email, manager, skills FROM CSVREAD('@@THIS_DIR@@/../people/people.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:type xsd:string ] [ ottr:type xsd:string ] [ ottr:type ottr:IRI ]
+                       [ ottr:type ( rdf:List xsd:string ) ; ottr:listSep ";" ] ) .

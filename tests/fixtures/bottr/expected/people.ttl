@@ -1,0 +1,72 @@
+PREFIX schema: <https://schema.org/>
+PREFIX ex: <http://example.com/ns#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ottr: <http://ns.ottr.xyz/0.4/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+_:b0    ex:source  "hr.csv" .
+
+ex:alice  ex:record  _:b0;
+        ex:skill   "python";
+        ex:skill   "rust";
+        ex:skill   "sparql" .
+
+_:b1    ex:manager  ex:carol .
+
+ex:alice  ex:reporting  _:b1;
+        ex:reportsTo  ex:carol .
+
+_:b1    ex:source  "hr.csv" .
+
+ex:alice  rdf:type    schema:Person;
+        schema:name   "Alice";
+        schema:email  "alice@example.com" .
+
+_:b2    ex:source  "hr.csv" .
+
+ex:bob  ex:record  _:b2;
+        ex:skill   "sparql" .
+
+_:b3    ex:manager  ex:carol .
+
+ex:bob  ex:reporting  _:b3;
+        ex:reportsTo  ex:carol .
+
+_:b3    ex:source  "hr.csv" .
+
+ex:bob  rdf:type     schema:Person;
+        schema:name  "Bob" .
+
+_:b4    ex:source  "hr.csv" .
+
+ex:carol  ex:record   _:b4;
+        rdf:type      schema:Person;
+        schema:name   "Carol";
+        schema:email  "carol@example.com" .
+
+_:b5    ex:manager  ex:carol .
+
+ex:alice  ex:reporting  _:b5;
+        ex:reportsTo  ex:carol .
+
+_:b5    ex:source  "hr.csv" .
+
+ex:alice  rdf:type    schema:Person;
+        schema:name   "Alice";
+        schema:email  "alice@example.com" .
+
+_:b6    ex:manager  ex:carol .
+
+ex:bob  ex:reporting  _:b6;
+        ex:reportsTo  ex:carol .
+
+_:b6    ex:source  "hr.csv" .
+
+ex:bob  rdf:type     schema:Person;
+        schema:name  "Bob" .
+
+ex:carol  rdf:type    schema:Person;
+        schema:name   "Carol";
+        schema:email  "carol@example.com" .

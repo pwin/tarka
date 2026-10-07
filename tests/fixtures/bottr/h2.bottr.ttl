@@ -1,0 +1,9 @@
+# H2's CSV dialect: trimming, "" against an empty field, doubled quotes, SELECT *, and
+# a map without argument maps (plain literals, which do not fit ottr:IRI: all left out).
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex: <http://example.com/ns#> .
+[] a ottr:InstanceMap ; ottr:template ex:P ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT * FROM CSVREAD('@@THIS_DIR@@/h2.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ] ) .
+[] a ottr:InstanceMap ; ottr:template ex:P ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT id, plain FROM CSVREAD('@@THIS_DIR@@/h2.csv')""" .

@@ -1,0 +1,24 @@
+[package]
+name = "tarka-bottr"
+description = "bOTTR instance maps for tarka: OTTR templates over CSV (H2's CSVREAD) and RDF files"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+oxrdf.workspace = true
+oxrdfio.workspace = true
+oxsdatatypes.workspace = true
+spareval.workspace = true
+spargebra.workspace = true
+tarka-core.workspace = true
+tarka-io.workspace = true
+tarka-ottr.workspace = true
+tarka-tarql.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tarka.workspace = true

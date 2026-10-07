@@ -194,6 +194,44 @@ fn expand(
     })
 }
 
+/// Runs bOTTR instance maps (Turtle files) with a library of templates; writes to
+/// `output`, or returns the RDF as text when `output` is None. Instances that cannot be
+/// made are left out, and a ValueError lists them after the rest are written, unless
+/// `strict` is False.
+#[pyfunction]
+#[pyo3(signature = (library, maps, output = None, format = "turtle", graph = None, strict = true))]
+fn bottr(
+    py: Python<'_>,
+    library: Vec<PathBuf>,
+    maps: Vec<PathBuf>,
+    output: Option<PathBuf>,
+    format: &str,
+    graph: Option<&str>,
+    strict: bool,
+) -> PyResult<Option<String>> {
+    let options = output_options(format, graph, 0)?;
+    let mut reasons = Vec::new();
+    let text = py.detach(|| {
+        let lib = Library::load(&library).map_err(ottr_error)?;
+        let maps = tarka_bottr::load_all(&maps).map_err(value_error)?;
+        let mut plan = Plan::new("bottr", tarka::core::Lifting::Given);
+        plan.prefixes = lib.prefixes.clone();
+        for m in &maps {
+            for (p, ns) in m.prefixes.iter() {
+                plan.prefixes.insert_if_absent(p, ns);
+            }
+        }
+        write_to(output.as_deref(), &plan, options, |sink| {
+            tarka_bottr::run(&lib, &maps, sink, &mut |r| reasons.push(r)).map(|_| ()).map_err(value_error)
+        })
+    })?;
+    if strict && !reasons.is_empty() {
+        let s = if reasons.len() == 1 { "" } else { "s" };
+        return Err(value_error(format!("{} instance{s} left out:\n{}", reasons.len(), reasons.join("\n"))));
+    }
+    Ok(text)
+}
+
 fn output_options(format: &str, graph: Option<&str>, dedup: usize) -> PyResult<OutputOptions> {
     let format = match format {
         "turtle" | "ttl" => OutputFormat::Turtle,
@@ -236,6 +274,7 @@ fn write_to(
 fn tarka_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Mapping>()?;
     m.add_function(wrap_pyfunction!(expand, m)?)?;
+    m.add_function(wrap_pyfunction!(bottr, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

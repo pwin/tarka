@@ -1,0 +1,4 @@
+@prefix ex: <http://example.com/ns#> .
+ex:a ex:name "Alice" ; ex:age 42 ; ex:knows _:k .
+ex:b ex:name "Bob"@en ; ex:knows _:k .
+_:k ex:name "Kim" .

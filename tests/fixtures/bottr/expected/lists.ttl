@@ -1,0 +1,57 @@
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ex: <http://example.com/ns#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX ottr: <http://ns.ottr.xyz/0.4/>
+
+ex:a    ex:tags  _:b0 .
+
+_:b0    rdf:rest   _:b1;
+        rdf:first  "x" .
+
+_:b1    rdf:rest   _:b2;
+        rdf:first  "y" .
+
+_:b2    rdf:rest   rdf:nil;
+        rdf:first  "z" .
+
+ex:b    ex:tags  _:b3 .
+
+_:b3    rdf:rest   rdf:nil;
+        rdf:first  "w" .
+
+ex:c    ex:tags  rdf:nil .
+
+ex:d    ex:tags  _:b4 .
+
+_:b5    rdf:rest   rdf:nil;
+        rdf:first  "n2" .
+
+_:b6    rdf:rest   rdf:nil;
+        rdf:first  "m" .
+
+_:b7    rdf:rest   _:b5;
+        rdf:first  "n1" .
+
+_:b4    rdf:rest   _:b6;
+        rdf:first  _:b7 .
+
+ex:e    ex:tags  _:b8 .
+
+_:b9    rdf:rest   rdf:nil;
+        rdf:first  "q" .
+
+_:b8    rdf:rest   _:b9;
+        rdf:first  "p" .
+
+ex:f    ex:tags  _:b10 .
+
+_:b10   rdf:rest   _:b11;
+        rdf:first  "s" .
+
+_:b11   rdf:rest   _:b12;
+        rdf:first  "" .
+
+_:b12   rdf:rest   rdf:nil;
+        rdf:first  "t" .

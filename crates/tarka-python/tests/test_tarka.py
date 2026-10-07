@@ -167,6 +167,17 @@ def test_validation_with_shacl_engine(tmp_path):
     assert [r.focus_node for r in report.results] == ["<http://example.com/b>"]
 
 
+def test_bottr(tmp_path):
+    out = tmp_path / "people.ttl"
+    assert tarka.bottr([FIXTURES / "people" / "people.stottr"], [FIXTURES / "bottr" / "people.bottr.ttl"], out) is None
+    assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "people.ttl"), rdflib.Graph().parse(out), "people.bottr.ttl")
+    templates, args = [FIXTURES / "bottr" / "templates.stottr"], [FIXTURES / "bottr" / "args.bottr.ttl"]
+    with pytest.raises(ValueError, match="1 instance left out"):
+        tarka.bottr(templates, args)
+    text = tarka.bottr(templates, args, strict=False)
+    assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "args.ttl"), parse(text, "turtle"), "args.bottr.ttl")
+
+
 def test_errors():
     with pytest.raises(ValueError, match="CONSTRUCT"):
         tarka.Mapping.tarql("SELECT * WHERE { }")

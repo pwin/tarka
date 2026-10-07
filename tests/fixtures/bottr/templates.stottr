@@ -1,0 +1,18 @@
+@prefix ex:   <http://example.com/ns#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Templates for the bOTTR fixtures; each map file's comment says what it checks.
+
+ex:A [ ottr:IRI ?id, ? ?nul, ? ?tr, ? ?blank, ? xsd:boolean ?flag, ? ?lang, ? ?typed, ? xsd:integer ?num, ? ottr:IRI ?pfx ] :: {
+  ottr:Triple(?id, ex:nul, ?nul), ottr:Triple(?id, ex:tr, ?tr), ottr:Triple(?id, ex:blank, ?blank), ottr:Triple(?id, ex:flag, ?flag),
+  ottr:Triple(?id, ex:lang, ?lang), ottr:Triple(?id, ex:typed, ?typed), ottr:Triple(?id, ex:num, ?num), ottr:Triple(?id, ex:pfx, ?pfx) } .
+
+ex:R [ ottr:IRI ?s, ? ?name, ? ?age, ? ?k ] :: { ottr:Triple(?s, ex:n, ?name), ottr:Triple(?s, ex:a, ?age), ottr:Triple(?s, ex:k, ?k) } .
+
+ex:Q [ ottr:IRI ?id, ? ?v, ? ?c, ? ?n ] :: { ottr:Triple(?id, ex:v, ?v), ottr:Triple(?id, ex:c, ?c), ottr:Triple(?id, ex:n, ?n) } .
+
+ex:Tags [ ottr:IRI ?id, ? List<LUB<rdfs:Resource>> ?tags ] :: { ottr:Triple(?id, ex:tags, ?tags) } .
+
+ex:P [ ottr:IRI ?id, ? ?plain ] :: { ottr:Triple(?id, ex:plain, ?plain) } .

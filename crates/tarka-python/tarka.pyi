@@ -62,6 +62,19 @@ class Mapping:
         or returns it as text when `output` is None. Each `split` (column, new column,
         separator) repeats a row once per part of the column, as `--split` does."""
 
+def bottr(
+    library: list[_Path],
+    maps: list[_Path],
+    output: _Path | None = None,
+    format: _Format = "turtle",
+    graph: str | None = None,
+    strict: bool = True,
+) -> str | None:
+    """Runs bOTTR instance maps (Turtle files) with a library of templates; writes to
+    `output`, or returns the RDF as text when `output` is None. Instances that cannot be
+    made are left out, and a ValueError lists them after the rest are written, unless
+    `strict` is False."""
+
 def expand(
     library: list[_Path],
     instances: list[_Path],

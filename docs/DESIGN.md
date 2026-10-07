@@ -229,7 +229,28 @@ templates, arity, cycles, unused and undeclared variables, duplicates), and retu
 with a file, a line and a check name. A live test runs Lutra's linter on the same library of
 mistakes and requires the same findings, as often, in the same templates.
 
-## 11. What is next
+## 11. bOTTR
 
-* Mapping files: bOTTR's instance maps over CSV and RDF sources, with their argument maps
-  (types, language tags, null values, translation tables, lists).
+`tarka-bottr` reads bOTTR files and runs their instance maps. The semantics are Lutra's, read
+from its bytecode and confirmed by running it: a value goes through, in order, the null value,
+the labelled blank prefix, the fresh blank values, the translation table, and then the
+argument map's type (a list type through Lutra's list syntax, with nesting). Text from CSV is
+a plain literal by default; an RDF term is kept when its own type is a subtype of the map's,
+and otherwise read again from its lexical form or IRI. Typed literals keep their lexical form
+(`007` stays `"007"^^xsd:integer`), as Lutra writes them, unlike the TARQL and OTTR routes,
+which write spareval's canonical forms; a value outside its datatype's lexical space leaves
+the instance out instead of becoming an ill-typed literal.
+
+Each instance is then type-checked against the template's parameters with `tarka_ottr::types`
+and expanded like any OTTR instance (the template compiled once, with given values). H2's
+SQL is not embedded: tarka parses the part of it that reads a CSV file, and H2's CSV dialect,
+whose quirks the fixtures pin (trimming, NULL for empty fields, the column list split on the
+field separator). RDF sources are loaded into one dataset and queried with spareval.
+
+The fixtures under `tests/fixtures/bottr` were run through Lutra to make their expected
+output; a live test runs Lutra again when `LUTRA_JAR` is set.
+
+## 12. What is next
+
+* Evaluating `Columns` liftings over Polars frames as expressions, without the copy to cells.
+* More bOTTR sources (SPARQL endpoints, over the HTTP client tarka already has for loading).

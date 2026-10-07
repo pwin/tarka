@@ -30,6 +30,7 @@ oxrdf.workspace = true
 oxrdfio = { workspace = true, optional = true }
 tarka.workspace = true
 tarka-polars = { workspace = true, optional = true }
+tarka-bottr.workspace = true
 tarka-shacl.workspace = true
 ureq = { workspace = true, optional = true }
 
