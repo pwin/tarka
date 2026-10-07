@@ -29,7 +29,8 @@ rayon = "1"
 ureq = { version = "3.4", default-features = false, features = ["rustls"] }
 polars = { version = "0.55", default-features = false, features = ["fmt", "parquet", "ipc", "lazy", "dtype-full", "timezones"] }
 # SHACL_Engine (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
-shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "f572d45d0896ebadeb907bcec26e84305cb8b3ca", default-features = false }
+# Without its default features: no `rdf-12`, so the whole build stays RDF 1.1.
+shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "7982c9e45c06d9308d041a78cd105e22b11eba70", default-features = false }
 
 tarka-core = { path = "crates/tarka-core", version = "0.1.0" }
 tarka-io = { path = "crates/tarka-io", version = "0.1.0" }

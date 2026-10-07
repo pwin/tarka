@@ -8,6 +8,11 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
+[features]
+# For tests: the Oxigraph crates' RDF 1.2 parsing, as a build with RDF 1.2 crates in
+# it turns on, to check that tarka still refuses RDF 1.2 there. Not RDF 1.2 support.
+rdf-12-parsing = ["oxrdf/rdf-12", "spargebra/sparql-12", "spareval/sparql-12"]
+
 [dependencies]
 oxiri = "0.2"
 oxrdf.workspace = true

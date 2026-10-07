@@ -3133,7 +3133,7 @@ dependencies = [
 [[package]]
 name = "shacl"
 version = "0.3.2"
-source = "git+https://github.com/pwin/SHACL_Engine?rev=f572d45d0896ebadeb907bcec26e84305cb8b3ca#f572d45d0896ebadeb907bcec26e84305cb8b3ca"
+source = "git+https://github.com/pwin/SHACL_Engine?rev=7982c9e45c06d9308d041a78cd105e22b11eba70#7982c9e45c06d9308d041a78cd105e22b11eba70"
 dependencies = [
  "flate2",
  "foldhash 0.2.0",

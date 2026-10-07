@@ -1,9 +1,11 @@
 //! Keeps queries to SPARQL 1.1.
 //!
-//! spargebra parses SPARQL 1.2 when its `sparql-12` feature is on, and a build that
-//! includes SHACL_Engine or HOLOS turns it on for every crate. So the RDF 1.1 scope is
+//! spargebra parses SPARQL 1.2 when its `sparql-12` feature is on, and Cargo turns a
+//! feature on for every crate in a build: tarka built with HOLOS's crates, or with
+//! SHACL_Engine's `rdf-12` feature, would parse SPARQL 1.2. So the RDF 1.1 scope is
 //! checked here rather than left to the parser: triple terms, SPARQL 1.2 functions and
-//! literals with a base direction are rejected whichever way spargebra was built.
+//! literals with a base direction are rejected whichever way spargebra was built (CI
+//! runs these tests both ways: see the `rdf-12-parsing` feature).
 
 use spargebra::algebra::{AggregateExpression, Expression, Function, GraphPattern, OrderExpression};
 use spargebra::term::{GroundTerm, TermPattern, TriplePattern};

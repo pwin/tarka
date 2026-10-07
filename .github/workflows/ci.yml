@@ -20,6 +20,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace --exclude tarka-python
+      # The RDF 1.1 checks, in a build where the Oxigraph crates read RDF 1.2
+      - run: cargo test -p tarka-tarql -p tarka-ottr --features tarka-tarql/rdf-12-parsing
 
   python:
     strategy:
