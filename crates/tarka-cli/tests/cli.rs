@@ -194,6 +194,99 @@ fn shapes_and_validation() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
+/// What a one-request HTTP server was sent.
+struct Received {
+    request_line: String,
+    headers: Vec<(String, String)>,
+    body: String,
+}
+
+impl Received {
+    fn header(&self, name: &str) -> Option<&str> {
+        self.headers.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(_, v)| v.as_str())
+    }
+}
+
+/// An HTTP server for one request at `/graph`, answering `status` with `body`.
+fn serve_once(status: &'static str, body: &'static str) -> (String, std::thread::JoinHandle<Received>) {
+    use std::io::BufRead;
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/graph", listener.local_addr().unwrap());
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+        let mut line = String::new();
+        reader.read_line(&mut line).unwrap();
+        let request_line = line.trim_end().to_owned();
+        let mut headers = Vec::new();
+        loop {
+            line.clear();
+            reader.read_line(&mut line).unwrap();
+            match line.trim_end().split_once(':') {
+                Some((name, value)) => headers.push((name.trim().to_owned(), value.trim().to_owned())),
+                None => break,
+            }
+        }
+        let mut received = Received { request_line, headers, body: String::new() };
+        let mut raw = Vec::new();
+        if received.header("transfer-encoding").is_some_and(|t| t.eq_ignore_ascii_case("chunked")) {
+            loop {
+                line.clear();
+                reader.read_line(&mut line).unwrap();
+                let size = usize::from_str_radix(line.trim_end().split(';').next().unwrap(), 16).unwrap();
+                let mut chunk = vec![0; size + 2];
+                reader.read_exact(&mut chunk).unwrap();
+                if size == 0 {
+                    break;
+                }
+                raw.extend_from_slice(&chunk[..size]);
+            }
+        } else if let Some(n) = received.header("content-length").map(|n| n.parse::<usize>().unwrap()) {
+            raw.resize(n, 0);
+            reader.read_exact(&mut raw).unwrap();
+        }
+        received.body = String::from_utf8(raw).unwrap();
+        write!(stream, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+        received
+    });
+    (url, server)
+}
+
+#[test]
+fn loading_into_a_store() {
+    let (query, csv) = (fixture("extra/people.rq"), fixture("extra/people.csv"));
+    let run = ["run", "-q", path(&query), "-i", path(&csv)];
+    let (url, server) = serve_once("201 Created", "");
+    let header = "X-Holos-Principal: urn:example:loader";
+    ok(&[&run[..], &["--post", &url, "--graph", "http://example.com/g#1", "--header", header]].concat(), None);
+    let received = server.join().unwrap();
+    assert_eq!(received.request_line, "POST /graph?graph=http%3A%2F%2Fexample.com%2Fg%231 HTTP/1.1");
+    assert_eq!(received.header("content-type"), Some("application/n-triples"));
+    assert_eq!(received.header("x-holos-principal"), Some("urn:example:loader"));
+    // the body is the N-Triples the run writes (blank node labels are stable)
+    assert_eq!(sorted_lines(&received.body), sorted_lines(&ok(&[&run[..], &["--ntriples"]].concat(), None)));
+
+    // --replace PUTs, and without --graph the default graph is the target
+    let (url, server) = serve_once("204 No Content", "");
+    let library = fixture("people/people.stottr");
+    ok(&["expand", "-l", path(&library), path(&fixture("people/person.inst.stottr")), "--post", &url, "--replace"], None);
+    let received = server.join().unwrap();
+    assert_eq!(received.request_line, "PUT /graph?default HTTP/1.1");
+    assert!(received.body.lines().count() > 0);
+
+    // the store's refusal is the error
+    let (url, server) = serve_once("403 Forbidden", "this store is read-only");
+    let refused = tarka(&[&run[..], &["--post", &url]].concat(), None);
+    server.join().unwrap();
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert!(stderr.contains("?default answered 403: this store is read-only"), "{stderr}");
+
+    // the output goes to the store or to a file, not both
+    let both = tarka(&[&run[..], &["--post", "http://127.0.0.1:9/graph", "-o", "out.ttl"]].concat(), None);
+    assert!(String::from_utf8_lossy(&both.stderr).contains("cannot be used with"), "{}", String::from_utf8_lossy(&both.stderr));
+}
+
 #[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;

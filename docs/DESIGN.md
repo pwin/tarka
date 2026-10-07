@@ -189,8 +189,24 @@ functions and literals with a base direction are refused whichever way spargebra
 the tests run both ways. The Python module leaves validation to SHACL_Engine's own package and
 is built without it.
 
-## 9. What is next
+## 9. Loading into a store
 
-* Loading into HOLOS (and other stores) over the SPARQL Graph Store Protocol.
+`--post` loads the output over the SPARQL 1.1 Graph Store Protocol rather than linking a store
+in: HOLOS persists to RocksDB (a C++ build) and builds the Oxigraph crates with their RDF 1.2
+features, and the protocol reaches HOLOS, Oxigraph, Fuseki and GraphDB alike.
+
+The run writes N-Triples into one end of an OS pipe; the request, on its own thread, sends the
+other end as a chunked body (ureq, with rustls). Nothing is buffered beyond the pipe, and the
+store sees one request, so a POST or PUT is one transaction there. If the run fails, the
+request body ends in an error instead of its last chunk: the connection drops before the body
+is complete, and the store takes nothing. If the store refuses the request first, the run sees
+a broken pipe, and the store's answer is reported instead.
+
+The tests check the requests against a small HTTP server (method, graph parameter, headers,
+body), and, with `HOLOS_SERVER` set, load every retail mapping into a live HOLOS, read each graph
+back and compare it with the reference output, and check that a failed run loads nothing.
+
+## 10. What is next
+
 * Mapping files (in the spirit of bOTTR's argument maps: language tags, null values, IRI
   templates), and a linter for template libraries.
