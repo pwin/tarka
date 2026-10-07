@@ -14,12 +14,14 @@ use crate::parser::{merge_prefixes, parse_stottr};
 pub struct Library {
     templates: HashMap<String, Template>,
     order: Vec<String>,
+    /// Where each template with a pattern was defined, every time it was.
+    definitions: HashMap<String, Vec<(String, usize)>>,
     pub prefixes: PrefixMap,
 }
 
 impl Default for Library {
     fn default() -> Self {
-        let mut lib = Self { templates: HashMap::new(), order: Vec::new(), prefixes: PrefixMap::new() };
+        let mut lib = Self { templates: HashMap::new(), order: Vec::new(), definitions: HashMap::new(), prefixes: PrefixMap::new() };
         lib.insert(Template::triple());
         lib
     }
@@ -47,6 +49,9 @@ impl Library {
     pub fn add(&mut self, doc: Document) {
         merge_prefixes(&mut self.prefixes, &doc.prefixes);
         for t in doc.templates {
+            if t.kind == Kind::Template {
+                self.definitions.entry(t.iri.clone()).or_default().push((t.file.clone(), t.line));
+            }
             if matches!(self.templates.get(&t.iri), Some(prev) if prev.kind == Kind::Template && t.kind != Kind::Template) {
                 continue;
             }
@@ -59,6 +64,13 @@ impl Library {
             self.order.push(t.iri.clone());
         }
         self.templates.insert(t.iri.clone(), t);
+    }
+
+    /// Templates defined more than once, and where (the last definition is the one used).
+    pub fn duplicates(&self) -> impl Iterator<Item = (&str, &[(String, usize)])> {
+        let mut out: Vec<_> = self.definitions.iter().filter(|(_, d)| d.len() > 1).map(|(i, d)| (i.as_str(), d.as_slice())).collect();
+        out.sort();
+        out.into_iter()
     }
 
     pub fn get(&self, iri: &str) -> Option<&Template> {

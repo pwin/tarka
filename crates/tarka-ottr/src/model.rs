@@ -54,6 +54,8 @@ pub struct Template {
     pub body: Vec<Instance>,
     pub annotations: Vec<Instance>,
     pub kind: Kind,
+    /// Where the template is defined (empty for `ottr:Triple`).
+    pub file: String,
     pub line: usize,
 }
 
@@ -76,6 +78,7 @@ impl Template {
             body: Vec::new(),
             annotations: Vec::new(),
             kind: Kind::Base,
+            file: String::new(),
             line: 0,
         }
     }
