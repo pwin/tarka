@@ -8,7 +8,7 @@ import pytest
 import rdflib
 from rdflib.compare import graph_diff, isomorphic, to_isomorphic
 
-import tarka
+import tarka_rdf
 
 # compare lexical forms as written: "01"^^xsd:integer is not "1"^^xsd:integer
 rdflib.NORMALIZE_LITERALS = False
@@ -43,7 +43,7 @@ def text_frame(rel):
 
 
 def test_tarql_over_a_frame():
-    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     assert m.name == "people"
     assert ("foaf", "http://xmlns.com/foaf/0.1/") in m.prefixes
     triples = m.triplify(text_frame("extra/people.csv"))
@@ -56,7 +56,7 @@ def test_ottr_over_a_frame_with_text_or_list_cells():
     employee = expected("people/expected/employee.nt")
     library = [FIXTURES / "people" / "people.stottr"]
     # a text column split on ";"
-    m = tarka.Mapping.ottr(library, ["ex:Employee"], lists={"skills": ";"})
+    m = tarka_rdf.Mapping.ottr(library, ["ex:Employee"], lists={"skills": ";"})
     assert_same(employee, frame_graph(m.triplify(text_frame("people/people.csv"))), "text skills")
     # a list column needs no separator
     df = pl.DataFrame(
@@ -68,7 +68,7 @@ def test_ottr_over_a_frame_with_text_or_list_cells():
             "skills": [["python", "rust", "sparql"], ["sparql"], None],
         }
     )
-    m = tarka.Mapping.ottr(library, ["ex:Employee"])
+    m = tarka_rdf.Mapping.ottr(library, ["ex:Employee"])
     assert_same(employee, frame_graph(m.triplify(df)), "list skills")
 
 
@@ -76,8 +76,8 @@ def test_tarql_and_ottr_mappings_agree_on_csv():
     for dataset, root in [("customers", "rt:CustomerRow"), ("products", "rt:ProductRow"), ("orders", "rt:OrderRow")]:
         want = expected(f"retail/expected/{dataset}.nt")
         csv = FIXTURES / "retail" / f"{dataset}.csv"
-        native_tarql = tarka.Mapping.tarql_file(FIXTURES / "retail" / "tarql" / f"{dataset}.rq")
-        native_ottr = tarka.Mapping.ottr([FIXTURES / "retail" / "ottr"], [root])
+        native_tarql = tarka_rdf.Mapping.tarql_file(FIXTURES / "retail" / "tarql" / f"{dataset}.rq")
+        native_ottr = tarka_rdf.Mapping.ottr([FIXTURES / "retail" / "ottr"], [root])
         for m in (native_tarql, native_ottr):
             assert_same(want, parse(m.run_csv(csv, format="ntriples"), "nt"), f"{dataset} with {m!r}")
 
@@ -102,7 +102,7 @@ def test_typed_columns(tmp_path):
             "at": [dt.datetime(2024, 3, 5, 10, 15), None],
         }
     ).with_columns(pl.col("at").dt.replace_time_zone("UTC"))
-    m = tarka.Mapping.ottr([tmp_path], ["http://example.com/Row"])
+    m = tarka_rdf.Mapping.ottr([tmp_path], ["http://example.com/Row"])
     got = {(str(s), str(p), o) for s, p, o in frame_graph(m.triplify(df))}
     ex = "http://example.com/"
     lit = lambda v, t: rdflib.Literal(v, datatype=rdflib.URIRef(XSD + t))
@@ -119,7 +119,7 @@ def test_typed_columns(tmp_path):
 
 
 def test_write(tmp_path):
-    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     df = text_frame("extra/people.csv")
     want = expected("extra/expected/people.nt")
     out = tmp_path / "people.ttl"
@@ -133,12 +133,12 @@ def test_write(tmp_path):
 def test_expand():
     lib = [FIXTURES / "people" / "people.stottr"]
     for name in ("person", "employee"):
-        text = tarka.expand(lib, [FIXTURES / "people" / f"{name}.inst.stottr"])
+        text = tarka_rdf.expand(lib, [FIXTURES / "people" / f"{name}.inst.stottr"])
         assert_same(expected(f"people/expected/{name}.nt"), parse(text, "turtle"), f"{name} instances")
 
 
 def test_shapes():
-    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     shapes = m.shapes()
     g = parse(shapes, "turtle")
     sh = rdflib.Namespace("http://www.w3.org/ns/shacl#")
@@ -150,7 +150,7 @@ def test_shapes():
 
 def test_validation_with_shacl_engine(tmp_path):
     shacl = pytest.importorskip("shacl")
-    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+    m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     shapes = shacl.Shapes.from_turtle(m.shapes())
     assert shapes.validate_turtle(m.write(text_frame("extra/people.csv"))).conforms
     # an ill-typed value breaks the shapes of a typed OTTR parameter
@@ -160,7 +160,7 @@ def test_validation_with_shacl_engine(tmp_path):
         ex:Item [ ottr:IRI ?id, ? xsd:integer ?qty ] :: { ottr:Triple(?id, rdf:type, ex:Item), ottr:Triple(?id, ex:qty, ?qty) } .""",
         encoding="utf-8",
     )
-    items = tarka.Mapping.ottr([tmp_path], ["http://example.com/Item"])
+    items = tarka_rdf.Mapping.ottr([tmp_path], ["http://example.com/Item"])
     df = pl.DataFrame({"id": ["ex:a", "ex:b"], "qty": ["7", "seven"]})
     report = shacl.Shapes.from_turtle(items.shapes()).validate_turtle(items.write(df))
     assert not report.conforms
@@ -169,29 +169,29 @@ def test_validation_with_shacl_engine(tmp_path):
 
 def test_bottr(tmp_path):
     out = tmp_path / "people.ttl"
-    assert tarka.bottr([FIXTURES / "people" / "people.stottr"], [FIXTURES / "bottr" / "people.bottr.ttl"], out) is None
+    assert tarka_rdf.bottr([FIXTURES / "people" / "people.stottr"], [FIXTURES / "bottr" / "people.bottr.ttl"], out) is None
     assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "people.ttl"), rdflib.Graph().parse(out), "people.bottr.ttl")
     templates, args = [FIXTURES / "bottr" / "templates.stottr"], [FIXTURES / "bottr" / "args.bottr.ttl"]
     with pytest.raises(ValueError, match="1 instance left out"):
-        tarka.bottr(templates, args)
-    text = tarka.bottr(templates, args, strict=False)
+        tarka_rdf.bottr(templates, args)
+    text = tarka_rdf.bottr(templates, args, strict=False)
     assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "args.ttl"), parse(text, "turtle"), "args.bottr.ttl")
 
 
 def test_errors():
     with pytest.raises(ValueError, match="CONSTRUCT"):
-        tarka.Mapping.tarql("SELECT * WHERE { }")
+        tarka_rdf.Mapping.tarql("SELECT * WHERE { }")
     with pytest.raises(ValueError):
-        tarka.Mapping.ottr([FIXTURES / "people" / "people.stottr"], ["ex:Nobody"])
+        tarka_rdf.Mapping.ottr([FIXTURES / "people" / "people.stottr"], ["ex:Nobody"])
     with pytest.raises(OSError):
-        tarka.Mapping.tarql_file(FIXTURES / "missing.rq")
-    m = tarka.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
+        tarka_rdf.Mapping.tarql_file(FIXTURES / "missing.rq")
+    m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     df = text_frame("extra/people.csv")
     with pytest.raises(ValueError, match="format"):
         m.write(df, format="rdfxml")
     with pytest.raises(ValueError, match="graph"):
         m.write(df, format="nquads")
     # a list parameter's text cells need a separator; a list column needs none
-    employee = tarka.Mapping.ottr([FIXTURES / "people" / "people.stottr"], ["ex:Employee"])
+    employee = tarka_rdf.Mapping.ottr([FIXTURES / "people" / "people.stottr"], ["ex:Employee"])
     with pytest.raises(ValueError, match=r'lists=\{"skills": ";"\}'):
         employee.triplify(text_frame("people/people.csv"))

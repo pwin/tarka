@@ -41,5 +41,5 @@ jobs:
       - run: pip install maturin polars pytest rdflib shacl
       # the dev profile: the release profile's fat LTO over Polars takes long
       - run: maturin build --profile dev -m crates/tarka-python/Cargo.toml -o dist
-      - run: pip install --no-index --find-links dist tarka
+      - run: pip install --no-index --find-links dist tarka-rdf
       - run: pytest crates/tarka-python/tests -v

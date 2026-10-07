@@ -156,7 +156,8 @@ faster.
 
 ## 7. Python
 
-`tarka-python` is a PyO3 module built with maturin. A `Mapping` holds a compiled plan; frames
+`tarka-python` is a PyO3 module built with maturin: the `tarka-rdf` distribution, imported as
+`tarka_rdf`, against Python's stable ABI (one wheel per platform for CPython 3.10 on). A `Mapping` holds a compiled plan; frames
 cross with pyo3-polars, which passes each column's chunks through the Arrow C data interface
 without copying. Mapping runs release the GIL. Errors become `ValueError`, or `OSError` when a
 file cannot be read.

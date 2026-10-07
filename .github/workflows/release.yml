@@ -1,0 +1,209 @@
+name: release
+
+# Tag a commit `v0.1.0` (the workspace version) to cut a release: the CLI for three
+# platforms, the Python wheels and the source distribution, built natively on each
+# platform and tested there, go on a GitHub release. PyPI is a separate, manual step
+# (see `pypi` below). A manual run without publishing rehearses the builds.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish_to_pypi:
+        description: "Upload the Python distributions to an index (run this against a tag, not a branch)"
+        type: boolean
+        default: false
+      pypi_repository:
+        description: "Which index. Rehearse on testpypi first: a version can never be re-uploaded."
+        type: choice
+        options: [testpypi, pypi]
+        default: testpypi
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      # A tag must name the version the crates and the wheel carry.
+      - name: The tag is the version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::the tag is $GITHUB_REF_NAME but the workspace version is $VERSION"; exit 1
+          fi
+      - run: cargo test --workspace --exclude tarka-python
+      - run: cargo test -p tarka-tarql -p tarka-ottr --features tarka-tarql/rdf-12-parsing
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo fmt --all --check
+
+  cli:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          # Apple Silicon only: the free Intel macOS runners are gone. Intel Macs can
+          # build from source (`cargo install --path crates/tarka-cli`).
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: .exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release -p tarka-cli --target ${{ matrix.target }}
+      # The binary reports its version, and maps a fixture as the tests expect.
+      - name: Smoke test
+        shell: bash
+        run: |
+          TARKA=./target/${{ matrix.target }}/release/tarka${{ matrix.ext }}
+          $TARKA --version
+          $TARKA run -q tests/fixtures/extra/people.rq -i tests/fixtures/extra/people.csv --ntriples -o out.nt
+          # as many distinct triples as the reference (blank node labels differ)
+          test "$(sort -u out.nt | wc -l)" -eq "$(sort -u tests/fixtures/extra/expected/people.nt | wc -l)"
+          $TARKA lint -l tests/fixtures/retail/ottr
+      # Archived, not bare: a downloaded file loses its executable bit, and the
+      # licences travel with the binary.
+      - name: Package
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ "$VERSION" = "$GITHUB_REF_NAME" ] && VERSION=dev
+          NAME="tarka-$VERSION-${{ matrix.target }}"
+          mkdir -p "staging/$NAME" dist
+          cp "target/${{ matrix.target }}/release/tarka${{ matrix.ext }}" "staging/$NAME/"
+          cp LICENSE-MIT LICENSE-APACHE README.md "staging/$NAME/"
+          cd staging
+          if [ -n "${{ matrix.ext }}" ]; then
+            7z a -tzip "../dist/$NAME.zip" "$NAME" >/dev/null
+          else
+            tar czf "../dist/$NAME.tar.gz" "$NAME"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+
+  wheels:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-latest
+          # One universal2 wheel covers both Mac architectures.
+          - os: macos-latest
+            target: universal2-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # abi3: one wheel per platform serves every CPython from 3.10 on.
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --out dist --manifest-path crates/tarka-python/Cargo.toml
+          target: ${{ matrix.target }}
+          manylinux: auto
+      # The wheel is installed from dist alone (`--no-index`): `tarka` on PyPI is
+      # another project, and a failed build must not quietly test something else.
+      - name: Smoke test
+        shell: bash
+        run: |
+          python -m pip install polars pytest rdflib shacl
+          python -m pip install --no-index --no-deps --find-links dist --force-reinstall tarka-rdf
+          python -m pytest crates/tarka-python/tests -q
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-${{ matrix.os }}
+          path: dist/*.whl
+
+  sdist:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist --manifest-path crates/tarka-python/Cargo.toml
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  publish:
+    needs: [cli, wheels, sdist]
+    runs-on: ubuntu-latest
+    # Only on a tag push: a manual run is a rehearsal, or the PyPI upload below.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: staged
+      - name: Collect and checksum
+        run: |
+          mkdir -p dist
+          cp staged/cli-*/* staged/wheels-*/*.whl staged/sdist/*.tar.gz dist/
+          (cd dist && sha256sum ./* > SHA256SUMS)
+          ls -la dist
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true
+
+  # Not triggered by the tag: a PyPI upload cannot be undone (a yanked version is never
+  # free again), so it is a separate act. Run this workflow by hand against the tag,
+  # with `publish_to_pypi`, after looking at the release.
+  #
+  # Trusted Publishing: PyPI trusts this repository's `release.yml` in the environment
+  # named after the index (`pypi`, `testpypi`), and the job exchanges a short-lived
+  # OIDC token for the upload. No API token is stored.
+  pypi:
+    needs: [cli, wheels, sdist]
+    if: inputs.publish_to_pypi
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.pypi_repository }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: staged
+      # Only the Python distributions: the CLI archives are .tar.gz too.
+      - name: Collect distributions
+        run: |
+          mkdir -p dist
+          cp staged/wheels-*/*.whl staged/sdist/*.tar.gz dist/
+          ls -la dist
+      # PyPI only from a tag; TestPyPI, a rehearsal, from anywhere.
+      - name: Check the ref suits the index
+        env:
+          INDEX: ${{ inputs.pypi_repository }}
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/*) echo "publishing $GITHUB_REF_NAME to $INDEX" ;;
+            *) if [ "$INDEX" = "pypi" ]; then
+                 echo "::error::Publishing to PyPI needs a tag, not $GITHUB_REF_NAME"; exit 1
+               fi
+               echo "::warning::Rehearsing $GITHUB_REF_NAME on $INDEX; only a tag may reach PyPI" ;;
+          esac
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ inputs.pypi_repository == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
