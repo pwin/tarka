@@ -127,7 +127,7 @@ pub fn parse(text: &str, file: &str, dir: &Path) -> Result<Vec<InstanceMap>, Bot
         };
         let arguments = match g.object(node, "argumentMaps") {
             None => None,
-            Some(list) => Some(g.list(&list).map_err(&err)?.iter().map(|a| g.argument_map(a)).collect::<Result<Vec<_>, _>>().map_err(err)?),
+            Some(list) => Some(g.list(&list).map_err(err)?.iter().map(|a| g.argument_map(a)).collect::<Result<Vec<_>, _>>().map_err(err)?),
         };
         out.push(InstanceMap { file: file.into(), index, template, source, query, arguments, prefixes: prefixes.clone() });
     }
