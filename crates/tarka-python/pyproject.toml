@@ -13,7 +13,7 @@ dynamic = ["version"]
 classifiers = ["Programming Language :: Rust", "Topic :: Database"]
 
 [project.optional-dependencies]
-test = ["pytest>=8", "rdflib>=7"]
+test = ["pytest>=8", "rdflib>=7", "shacl>=0.3"]
 
 [project.urls]
 Repository = "https://github.com/pwin/tarka"

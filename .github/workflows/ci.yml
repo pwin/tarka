@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install maturin polars pytest rdflib
+      - run: pip install maturin polars pytest rdflib shacl
       # the dev profile: the release profile's fat LTO over Polars takes long
       - run: maturin build --profile dev -m crates/tarka-python/Cargo.toml -o dist
       - run: pip install --no-index --find-links dist tarka

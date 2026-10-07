@@ -1,17 +1,18 @@
 //! The `tarka` command.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use oxrdf::NamedNode;
-use tarka::io::{CsvOptions, CsvSource, OutputFormat, OutputOptions, RdfWriter, Split};
+use oxrdf::{NamedNode, Triple};
+use tarka::io::{CsvOptions, CsvSource, OutputFormat, OutputOptions, RdfWriter, Split, TripleSink};
 use tarka::ottr::{CompileOptions, Library};
-use tarka::{Plan, RunOptions};
+use tarka::{Plan, RunOptions, RunStats};
 
 #[derive(Parser)]
 #[command(name = "tarka", version, about = "Turn CSV into RDF with TARQL queries or OTTR templates")]
@@ -27,10 +28,13 @@ enum Command {
     Run(RunArgs),
     /// Expand OTTR instances (stOTTR files) to RDF, as Lutra does
     Expand(ExpandArgs),
+    /// Write SHACL shapes for the RDF a mapping makes
+    Shapes(ShapesArgs),
 }
 
+/// The mapping: a TARQL query, or OTTR templates.
 #[derive(Args)]
-struct RunArgs {
+struct MappingArgs {
     /// A TARQL query (SPARQL CONSTRUCT)
     #[arg(short, long, conflicts_with_all = ["library", "template"])]
     query: Option<PathBuf>,
@@ -44,10 +48,19 @@ struct RunArgs {
     /// The cells of a list-typed parameter are split on SEPARATOR
     #[arg(long, num_args = 2, value_names = ["COLUMN", "SEPARATOR"], action = clap::ArgAction::Append)]
     list: Vec<String>,
+}
+
+#[derive(Args)]
+struct RunArgs {
+    #[command(flatten)]
+    mapping: MappingArgs,
     #[command(flatten)]
     csv: CsvArgs,
     #[command(flatten)]
     output: OutputArgs,
+    #[cfg(feature = "shacl")]
+    #[command(flatten)]
+    check: CheckArgs,
     /// Records to evaluate together
     #[arg(long, default_value_t = 512)]
     batch_size: usize,
@@ -123,6 +136,22 @@ enum Format {
     Nquads,
 }
 
+/// Validation of the output with SHACL. The output is written either way; if it does
+/// not conform, tarka exits with status 3.
+#[cfg(feature = "shacl")]
+#[derive(Args)]
+struct CheckArgs {
+    /// Validate the output against the shapes made from the mapping (as `tarka shapes` writes them)
+    #[arg(long)]
+    validate: bool,
+    /// Validate the output against the SHACL shapes in FILE (repeat for more; with --validate, as well)
+    #[arg(long, value_name = "FILE", action = clap::ArgAction::Append)]
+    shapes: Vec<PathBuf>,
+    /// Write the SHACL validation report to FILE, in Turtle
+    #[arg(long, value_name = "FILE")]
+    report: Option<PathBuf>,
+}
+
 #[derive(Args)]
 struct ExpandArgs {
     /// An OTTR template file or directory (repeat for more)
@@ -135,12 +164,37 @@ struct ExpandArgs {
     output: OutputArgs,
 }
 
+#[derive(Args)]
+struct ShapesArgs {
+    #[command(flatten)]
+    mapping: MappingArgs,
+    /// The output file (default: standard output)
+    #[arg(short, long)]
+    output: Option<PathBuf>,
+    /// The namespace of the shapes' IRIs
+    #[arg(long, default_value = "urn:tarka:shapes:")]
+    base: String,
+}
+
+/// The output was written, but does not conform to the shapes.
+#[derive(Debug)]
+struct NotConforming(usize);
+
+impl fmt::Display for NotConforming {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = if self.0 == 1 { "" } else { "s" };
+        write!(f, "the output does not conform to the shapes ({} result{s})", self.0)
+    }
+}
+
+impl std::error::Error for NotConforming {}
+
 fn main() -> ExitCode {
     match Cli::parse().command.run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("tarka: {e:#}");
-            ExitCode::FAILURE
+            if e.downcast_ref::<NotConforming>().is_some() { ExitCode::from(3) } else { ExitCode::FAILURE }
         }
     }
 }
@@ -150,12 +204,13 @@ impl Command {
         match self {
             Self::Run(args) => run(args),
             Self::Expand(args) => expand(args),
+            Self::Shapes(args) => shapes(args),
         }
     }
 }
 
 fn run(args: RunArgs) -> Result<()> {
-    let plan = mapping(&args)?;
+    let plan = mapping(&args.mapping)?;
     let input = args.csv.input.clone().or_else(|| plan.default_input.as_ref().map(PathBuf::from));
     #[cfg(feature = "polars")]
     if let Some(path) = input.as_deref().filter(|p| tarka_polars::is_frame_file(p)) {
@@ -167,13 +222,8 @@ fn run(args: RunArgs) -> Result<()> {
     };
     let source = CsvSource::new(io::BufReader::with_capacity(1 << 16, reader), csv_options(&args.csv)?)?;
     let columns = source.columns().to_vec();
-    let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
     let options = RunOptions { batch_size: args.batch_size, jobs: args.jobs };
-    let stats = tarka::run(&plan, &columns, source, &mut out, &options)?;
-    if args.stats {
-        eprintln!("{} records, {} solutions, {} triples made, {} written", stats.records, stats.solutions, stats.triples, out.written());
-    }
-    Ok(())
+    write_output(&args, &plan, |sink| Ok(tarka::run(&plan, &columns, source, sink, &options)?))
 }
 
 /// A Parquet or Arrow IPC input, read with Polars.
@@ -186,17 +236,141 @@ fn run_frame(args: &RunArgs, plan: &Plan, path: &Path) -> Result<()> {
     if let Some(n) = args.csv.test {
         df = df.head(Some(n as usize));
     }
-    let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
     let options = RunOptions { batch_size: args.batch_size, jobs: args.jobs };
     let frame = tarka_polars::FrameOptions { bind_empty_strings: args.csv.bind_empty_strings };
-    let stats = tarka_polars::run_frame(plan, &df, &frame, &mut out, &options)?;
+    write_output(args, plan, |sink| Ok(tarka_polars::run_frame(plan, &df, &frame, sink, &options)?))
+}
+
+/// Runs `body` with the output as its sink, keeping a copy of the triples to validate
+/// when asked to.
+fn write_output(args: &RunArgs, plan: &Plan, body: impl FnOnce(&mut dyn TripleSink) -> Result<RunStats>) -> Result<()> {
+    // the shapes are read first, so that a mistake in them is found before the run
+    #[cfg(feature = "shacl")]
+    let check = Check::new(&args.check, plan)?;
+    #[cfg(not(feature = "shacl"))]
+    let check: Option<Check> = None;
+    let mut out = RdfWriter::create(args.output.output.as_deref(), &plan.prefixes, output_options(&args.output)?)?;
+    let mut tee = Tee { out: &mut out, kept: check.is_some().then(HashSet::new) };
+    let stats = body(&mut tee)?;
+    let kept = tee.kept.take();
     if args.stats {
         eprintln!("{} records, {} solutions, {} triples made, {} written", stats.records, stats.solutions, stats.triples, out.written());
     }
-    Ok(())
+    match (check, kept) {
+        (Some(check), Some(kept)) => check.validate(plan, &kept),
+        _ => Ok(()),
+    }
 }
 
-fn mapping(args: &RunArgs) -> Result<Plan> {
+/// Writes rows to `out`, keeping the triples too when `kept` is set.
+struct Tee<'a> {
+    out: &'a mut dyn TripleSink,
+    kept: Option<HashSet<Triple>>,
+}
+
+impl TripleSink for Tee<'_> {
+    fn row(&mut self, triples: Vec<Triple>) -> io::Result<()> {
+        if let Some(kept) = &mut self.kept {
+            kept.extend(triples.iter().cloned());
+        }
+        self.out.row(triples)
+    }
+
+    fn finish(&mut self) -> io::Result<()> {
+        self.out.finish()
+    }
+}
+
+/// The shapes to validate the output against.
+#[cfg(feature = "shacl")]
+struct Check {
+    shapes: Vec<Triple>,
+    report: Option<PathBuf>,
+}
+
+/// Without SHACL_Engine there is nothing to validate with.
+#[cfg(not(feature = "shacl"))]
+enum Check {}
+
+#[cfg(not(feature = "shacl"))]
+impl Check {
+    fn validate(self, _: &Plan, _: &HashSet<Triple>) -> Result<()> {
+        match self {}
+    }
+}
+
+#[cfg(feature = "shacl")]
+impl Check {
+    fn new(args: &CheckArgs, plan: &Plan) -> Result<Option<Self>> {
+        if !args.validate && args.shapes.is_empty() && args.report.is_none() {
+            return Ok(None);
+        }
+        let mut shapes = Vec::new();
+        if args.validate || args.shapes.is_empty() {
+            shapes.extend(tarka_shacl::shapes(plan, &Default::default()).triples());
+        }
+        for path in &args.shapes {
+            shapes.extend(read_rdf(path).with_context(|| format!("cannot read the shapes in {}", path.display()))?);
+        }
+        Ok(Some(Self { shapes, report: args.report.clone() }))
+    }
+
+    fn validate(self, plan: &Plan, data: &HashSet<Triple>) -> Result<()> {
+        let v = tarka_shacl::validate(data, &self.shapes)?;
+        if let Some(path) = &self.report {
+            let mut prefixes = plan.prefixes.clone();
+            prefixes.insert("sh", tarka_shacl::SH);
+            let options = OutputOptions { window: usize::MAX, ..OutputOptions::default() };
+            let mut out = RdfWriter::create(Some(path), &prefixes, options).with_context(|| path.display().to_string())?;
+            out.row(v.report.iter().map(|t| t.into_owned()).collect())?;
+            out.finish()?;
+        }
+        if v.conforms {
+            return Ok(());
+        }
+        let mut prefixes = plan.prefixes.clone();
+        prefixes.insert_if_absent("sh", tarka_shacl::SH);
+        prefixes.insert_if_absent("xsd", "http://www.w3.org/2001/XMLSchema#");
+        let iri = |iri: &str| prefixes.compact(iri).unwrap_or_else(|| format!("<{iri}>"));
+        // a term as in N-Triples, with its IRIs shortened
+        let short = |t: &str| match t.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {
+            Some(i) => iri(i),
+            None => match t.rsplit_once("^^<") {
+                Some((lexical, dt)) if t.starts_with('"') => format!("{lexical}^^{}", iri(dt.trim_end_matches('>'))),
+                _ => t.to_owned(),
+            },
+        };
+        for f in v.findings.iter().take(10) {
+            let path = f.path.as_deref().map(|p| format!(" {}", short(p))).unwrap_or_default();
+            let value = f.value.as_deref().map(|v| format!(": {}", short(v))).unwrap_or_default();
+            eprintln!("  {}{path} {}{value}", short(&f.focus_node), short(&f.component));
+        }
+        if v.findings.len() > 10 {
+            eprintln!(
+                "  … and {} more{}",
+                v.findings.len() - 10,
+                if self.report.is_some() { " (see the report)" } else { " (see --report)" }
+            );
+        }
+        Err(NotConforming(v.findings.len()).into())
+    }
+}
+
+/// The triples in an RDF file, in the format its extension names (Turtle if none).
+#[cfg(feature = "shacl")]
+fn read_rdf(path: &Path) -> Result<Vec<Triple>> {
+    use oxrdfio::{RdfFormat, RdfParser};
+    let format = path.extension().and_then(|e| e.to_str()).and_then(RdfFormat::from_extension).unwrap_or(RdfFormat::Turtle);
+    let file = File::open(path)?;
+    let mut out = Vec::new();
+    for quad in RdfParser::from_format(format).for_reader(io::BufReader::new(file)) {
+        let quad = quad?;
+        out.push(Triple::new(quad.subject, quad.predicate, quad.object));
+    }
+    Ok(out)
+}
+
+fn mapping(args: &MappingArgs) -> Result<Plan> {
     if let Some(q) = &args.query {
         let text = std::fs::read_to_string(q).with_context(|| format!("cannot read {}", q.display()))?;
         return tarka::tarql::parse_tarql(&text, &stem(q)).with_context(|| q.display().to_string());
@@ -223,6 +397,17 @@ fn expand(args: ExpandArgs) -> Result<()> {
     }
     let mut out = RdfWriter::create(args.output.output.as_deref(), &lib.prefixes, output_options(&args.output)?)?;
     tarka::expand_instances(&lib, &instances, &mut out)?;
+    Ok(())
+}
+
+fn shapes(args: ShapesArgs) -> Result<()> {
+    NamedNode::new(args.base.as_str()).with_context(|| format!("--base {}", args.base))?;
+    let plan = mapping(&args.mapping)?;
+    let text = tarka_shacl::shapes(&plan, &tarka_shacl::ShapeOptions { base: args.base }).to_turtle();
+    match &args.output {
+        Some(p) if p.as_os_str() != "-" => std::fs::write(p, text).with_context(|| format!("cannot write {}", p.display()))?,
+        _ => io::stdout().lock().write_all(text.as_bytes())?,
+    }
     Ok(())
 }
 

@@ -26,6 +26,8 @@ thiserror = "2"
 anyhow = "1"
 rayon = "1"
 polars = { version = "0.55", default-features = false, features = ["fmt", "parquet", "ipc", "lazy", "dtype-full", "timezones"] }
+# SHACL_Engine (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
+shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "f572d45d0896ebadeb907bcec26e84305cb8b3ca", default-features = false }
 
 tarka-core = { path = "crates/tarka-core", version = "0.1.0" }
 tarka-io = { path = "crates/tarka-io", version = "0.1.0" }
@@ -33,6 +35,7 @@ tarka-tarql = { path = "crates/tarka-tarql", version = "0.1.0" }
 tarka-ottr = { path = "crates/tarka-ottr", version = "0.1.0" }
 tarka = { path = "crates/tarka", version = "0.1.0" }
 tarka-polars = { path = "crates/tarka-polars", version = "0.1.0" }
+tarka-shacl = { path = "crates/tarka-shacl", version = "0.1.0" }
 
 [profile.release]
 lto = "fat"

@@ -1,6 +1,6 @@
 [package]
 name = "tarka-polars"
-description = "A column-wise tarka backend: plans run over Polars data frames"
+description = "Polars data frames, Parquet and Arrow IPC files as tarka input"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

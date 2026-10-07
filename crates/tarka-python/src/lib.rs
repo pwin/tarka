@@ -151,6 +151,14 @@ impl Mapping {
         })
     }
 
+    /// SHACL shapes for the RDF this mapping makes, as Turtle. Validate with SHACL_Engine's
+    /// Python package: `shacl.Shapes.from_turtle(m.shapes()).validate_turtle(m.write(df))`.
+    #[pyo3(signature = (base = "urn:tarka:shapes:"))]
+    fn shapes(&self, base: &str) -> PyResult<String> {
+        NamedNode::new(base).map_err(|e| value_error(format!("base {base}: {e}")))?;
+        Ok(tarka_shacl::shapes(&self.plan, &tarka_shacl::ShapeOptions { base: base.to_owned() }).to_turtle())
+    }
+
     fn __repr__(&self) -> String {
         format!("<tarka.Mapping {}>", self.plan.name)
     }

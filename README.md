@@ -11,6 +11,8 @@ tarka run -q people.rq -i people.csv -o people.ttl                          # TA
 tarka run -l templates/ -T ex:Person -i people.csv -o people.ttl            # OTTR
 tarka run -q people.rq -i people.parquet -o people.ttl                      # Parquet or Arrow IPC input
 tarka expand -l templates/ instances.stottr -o people.ttl                   # OTTR instances, as Lutra does
+tarka shapes -q people.rq -o shapes.ttl                                     # SHACL shapes for what a mapping makes
+tarka run -q people.rq -i people.csv -o people.ttl --validate               # ... and the output checked against them
 ```
 
 * **TARQL, as written for oxi-gen.** `tarka run` takes oxi-gen's options (`-q -i -o --ntriples
@@ -27,6 +29,9 @@ tarka expand -l templates/ instances.stottr -o people.ttl                   # OT
 * **Polars data frames.** Parquet and Arrow IPC files are read with Polars, and the Python module
   maps a `polars.DataFrame` to a frame of triples. Typed columns (numbers, dates, datetimes)
   become typed literals, and list columns become OTTR lists.
+* **Shapes from mappings.** tarka writes SHACL shapes for the RDF a mapping makes (classes,
+  datatypes, node kinds, required properties), and validates its output against them, or any
+  shapes, with [SHACL_Engine](https://github.com/pwin/SHACL_Engine).
 * **Faster than oxi-gen.** Rows are evaluated in batches on every core. On a 200,000-row file
   (the retail orders mapping, 8 cores), tarka ran the TARQL query 1.7 times as fast as oxi-gen,
   and the OTTR templates 2.6 times as fast.
@@ -134,6 +139,56 @@ tarka.expand(["templates/"], ["instances.stottr"], "people.ttl")
 `lists={"skills": ";"}` gives the separator of a text column that feeds an OTTR list parameter.
 The mapping runs without the GIL, on every core.
 
+`m.shapes()` gives the mapping's SHACL shapes as Turtle; SHACL_Engine's Python package validates
+with them:
+
+```python
+import shacl
+report = shacl.Shapes.from_turtle(m.shapes()).validate_turtle(m.write(df))
+report.conforms, [(r.focus_node, r.path, r.component) for r in report.results]
+```
+
+## Shapes and validation
+
+`tarka shapes` writes SHACL shapes for the RDF a mapping makes:
+
+```turtle
+shape:PersonShape a sh:NodeShape ;
+    sh:targetClass foaf:Person ;
+    sh:property
+        [ sh:path ex:worksFor ; sh:nodeKind sh:IRI ; sh:class foaf:Organization ] ,
+        [ sh:path foaf:age ; sh:datatype xsd:integer ] ,
+        [ sh:path foaf:name ; sh:datatype xsd:string ] ,
+        [ sh:path schema:address ; sh:minCount 1 ; sh:nodeKind sh:BlankNode ; sh:class schema:PostalAddress ] .
+```
+
+* Each class the mapping asserts (`?person a foaf:Person`) gets a shape, and so does each
+  constant subject (`ex:dataset`).
+* A property is required (`sh:minCount 1`) when the mapping always writes it with the class:
+  an OTTR mandatory parameter, a constant, a blank node, the row number. A column that can be
+  empty gives an optional property.
+* Values get `sh:datatype` or `sh:nodeKind` from the OTTR parameter types, or from what a TARQL
+  query binds (`xsd:integer(?age)`, `STRDT(?d, xsd:date)`, `IRI(…)`, `tarql:expandPrefixedName`,
+  through `COALESCE` and `IF`); a column used as it is holds strings.
+* An object the mapping always types gets `sh:class`, and a blank node described without a class
+  a `sh:node` shape of its own.
+
+`--base IRI` sets the shapes' namespace (`urn:tarka:shapes:` by default). The shapes are a
+starting point for your own: they say what the mapping makes, not what the data should be.
+
+`tarka run --validate` checks the output against the mapping's shapes, `--shapes FILE` against
+your own (repeat it; with `--validate` as well as the mapping's), and `--report FILE` writes the
+SHACL validation report. The output is written either way; when it does not conform, tarka lists
+the first results and exits with status 3:
+
+```text
+  ex:b ex:qty sh:DatatypeConstraintComponent: "seven"^^xsd:integer
+tarka: the output does not conform to the shapes (1 result)
+```
+
+A typed OTTR parameter keeps a value that is not of its type as written (`"seven"^^xsd:integer`),
+so validation is how such cells are found. Validation holds the output in memory.
+
 ## As a library
 
 ```rust
@@ -173,6 +228,7 @@ of a mapping give the same terms.
 | `tarka-io` | CSV input in oxi-gen's dialect; N-Triples, Turtle and N-Quads output |
 | `tarka` | the row engine, and the library API |
 | `tarka-polars` | Polars data frames, Parquet and Arrow IPC input |
+| `tarka-shacl` | SHACL shapes from plans; validation with SHACL_Engine |
 | `tarka-cli` | the `tarka` command |
 | `tarka-python` | the `tarka` Python module |
 
@@ -181,17 +237,18 @@ How it works is in [docs/DESIGN.md](docs/DESIGN.md).
 ## Tests
 
 ```sh
-cargo test --workspace
-OXI_GEN=path/to/oxi_gen LUTRA_JAR=path/to/lutra.jar cargo test --workspace   # also compare with them live
+cargo test --workspace --exclude tarka-python
+OXI_GEN=path/to/oxi_gen LUTRA_JAR=path/to/lutra.jar cargo test --workspace --exclude tarka-python   # also compare with them live
 
-python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib
+python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests
 ```
 
 Every mapping is checked against a reference output: oxi-gen's for TARQL, Lutra's for OTTR. The
 retail suite writes one transformation of three complex CSV files both as TARQL and as a modular
 OTTR library, and both must give oxi-gen's output exactly. The same mappings run over data frames
-must give the same RDF as over CSV.
+must give the same RDF as over CSV, and every mapping's output must conform to the shapes made
+from it.
 
 The fixtures in `tests/fixtures/oxigen` come from oxi-gen and stay under its Apache-2.0 licence
 (see `tests/fixtures/oxigen/LICENSE`).
