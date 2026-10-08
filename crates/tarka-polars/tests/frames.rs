@@ -174,6 +174,30 @@ fn columns_lift_as_cells_would() {
     assert_same(&by_cells.into_iter().collect(), &by_columns.into_iter().collect(), "with empty strings bound");
 }
 
+/// `triplify` gives each triple once, where it first appears, as N-Triples terms.
+#[test]
+fn triple_frames_keep_first_occurrences_in_order() {
+    let df = csv_frame(&fixture("extra/people.csv"), CsvOptions::default());
+    let plan = tarql(&fixture("extra/people.rq"));
+    let mut triples: Vec<Triple> = Vec::new();
+    run_frame(&plan, &df, &FrameOptions::default(), &mut triples, &RunOptions::default()).unwrap();
+    let mut seen = std::collections::HashSet::new();
+    let expected: Vec<[String; 3]> = triples
+        .iter()
+        .filter(|t| seen.insert(*t))
+        .map(|t| [t.subject.to_string(), t.predicate.to_string(), t.object.to_string()])
+        .collect();
+    assert!(expected.len() < triples.len(), "the fixture repeats triples across rows");
+    let frame = triplify(&plan, &df, &FrameOptions::default()).unwrap();
+    let column = |name: &str| -> Vec<String> { frame.column(name).unwrap().str().unwrap().iter().map(|v| v.unwrap().to_owned()).collect() };
+    let (s, p, o) = (column("subject"), column("predicate"), column("object"));
+    let got: Vec<[String; 3]> = (0..frame.height()).map(|i| [s[i].clone(), p[i].clone(), o[i].clone()]).collect();
+    assert_eq!(got, expected);
+    // an empty run gives an empty frame with the three columns
+    let empty = triplify(&plan, &df.head(Some(0)), &FrameOptions::default()).unwrap();
+    assert_eq!((empty.height(), empty.width()), (0, 3));
+}
+
 #[test]
 fn parquet_files_and_triple_frames() {
     let mut df = csv_frame(&fixture("retail/orders.csv"), CsvOptions::default());

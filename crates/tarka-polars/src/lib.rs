@@ -198,20 +198,66 @@ fn integer(v: i64, datatype: &NamedNode) -> Value {
 pub fn triplify(plan: &Plan, df: &DataFrame, options: &FrameOptions) -> Result<DataFrame, FrameError> {
     let mut triples: Vec<Triple> = Vec::new();
     run_frame(plan, df, options, &mut triples, &RunOptions::default())?;
-    let mut seen = std::collections::HashSet::new();
-    triples.retain(|t| seen.insert(t.clone()));
-    triples_frame(&triples)
+    // each triple's first occurrence, in order, without copying any
+    let mut seen = PlHashSet::with_capacity(triples.len());
+    let firsts: Vec<&Triple> = triples.iter().filter(|t| seen.insert(*t)).collect();
+    drop(seen);
+    frame_of(&firsts)
 }
 
 /// A frame of N-Triples terms (`subject`, `predicate`, `object`) for `triples`.
 pub fn triples_frame(triples: &[Triple]) -> Result<DataFrame, FrameError> {
-    let s: Vec<String> = triples.iter().map(|t| t.subject.to_string()).collect();
-    let p: Vec<String> = triples.iter().map(|t| t.predicate.to_string()).collect();
-    let o: Vec<String> = triples.iter().map(|t| t.object.to_string()).collect();
-    Ok(DataFrame::new(
-        triples.len(),
-        vec![Column::new("subject".into(), s), Column::new("predicate".into(), p), Column::new("object".into(), o)],
-    )?)
+    frame_of(&triples.iter().collect::<Vec<_>>())
+}
+
+/// The frame of `triples`: each column built in parallel chunks, each term written into
+/// one reused buffer rather than a string of its own.
+fn frame_of(triples: &[&Triple]) -> Result<DataFrame, FrameError> {
+    use std::fmt::Write;
+    const CHUNK: usize = 1 << 16;
+    fn column(name: &str, triples: &[&Triple], term: fn(&Triple, &mut String)) -> Result<Column, FrameError> {
+        let chunks: Vec<StringChunked> = triples
+            .par_chunks(CHUNK)
+            .map(|chunk| {
+                let mut builder = StringChunkedBuilder::new(name.into(), chunk.len());
+                let mut buf = String::new();
+                for t in chunk {
+                    buf.clear();
+                    term(t, &mut buf);
+                    builder.append_value(&buf);
+                }
+                builder.finish()
+            })
+            .collect();
+        let mut chunks = chunks.into_iter();
+        let mut out = chunks.next().unwrap_or_else(|| StringChunkedBuilder::new(name.into(), 0).finish());
+        for c in chunks {
+            out.append(&c)?;
+        }
+        Ok(out.into_series().into_column())
+    }
+    let ((s, p), o) = rayon::join(
+        || {
+            rayon::join(
+                || {
+                    column("subject", triples, |t, b| {
+                        let _ = write!(b, "{}", t.subject);
+                    })
+                },
+                || {
+                    column("predicate", triples, |t, b| {
+                        let _ = write!(b, "{}", t.predicate);
+                    })
+                },
+            )
+        },
+        || {
+            column("object", triples, |t, b| {
+                let _ = write!(b, "{}", t.object);
+            })
+        },
+    );
+    Ok(DataFrame::new(triples.len(), vec![s?, p?, o?])?)
 }
 
 /// Reads a data frame from a Parquet (`.parquet`) or Arrow IPC (`.arrow`, `.ipc`,
