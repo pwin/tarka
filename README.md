@@ -214,6 +214,9 @@ tarka_rdf.expand(["templates/"], ["instances.stottr"], "people.ttl")
 `lists={"skills": ";"}` gives the separator of a text column that feeds an OTTR list parameter.
 The mapping runs without the GIL, on every core.
 
+[`examples/python/retail.py`](examples/python/retail.py) runs the retail mapping as OTTR templates
+and as a TARQL query over 200,000 typed rows, compares the two, and runs a bOTTR map.
+
 `m.shapes()` gives the mapping's SHACL shapes as Turtle; SHACL_Engine's Python package validates
 with them:
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Python: `Mapping.triplify` is four to five times faster on large outputs (it no longer copies
+  every triple to remove duplicates, and builds its columns in parallel).
+- `examples/python/retail.py`: OTTR and TARQL over 200,000 typed rows, and a bOTTR map.
+
 ## 0.1.0 (2026-10-07)
 
 The first release.
