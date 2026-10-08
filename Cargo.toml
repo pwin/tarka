@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 rust-version = "1.90"
 license = "MIT OR Apache-2.0"
@@ -33,14 +33,14 @@ polars = { version = "0.55", default-features = false, features = ["fmt", "parqu
 # Without its default features: no `rdf-12`, so the whole build stays RDF 1.1.
 shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "7982c9e45c06d9308d041a78cd105e22b11eba70", default-features = false }
 
-tarka-core = { path = "crates/tarka-core", version = "0.1.0" }
-tarka-io = { path = "crates/tarka-io", version = "0.1.0" }
-tarka-tarql = { path = "crates/tarka-tarql", version = "0.1.0" }
-tarka-ottr = { path = "crates/tarka-ottr", version = "0.1.0" }
-tarka = { path = "crates/tarka", version = "0.1.0" }
-tarka-polars = { path = "crates/tarka-polars", version = "0.1.0" }
-tarka-shacl = { path = "crates/tarka-shacl", version = "0.1.0" }
-tarka-bottr = { path = "crates/tarka-bottr", version = "0.1.0" }
+tarka-core = { path = "crates/tarka-core", version = "0.1.1" }
+tarka-io = { path = "crates/tarka-io", version = "0.1.1" }
+tarka-tarql = { path = "crates/tarka-tarql", version = "0.1.1" }
+tarka-ottr = { path = "crates/tarka-ottr", version = "0.1.1" }
+tarka = { path = "crates/tarka", version = "0.1.1" }
+tarka-polars = { path = "crates/tarka-polars", version = "0.1.1" }
+tarka-shacl = { path = "crates/tarka-shacl", version = "0.1.1" }
+tarka-bottr = { path = "crates/tarka-bottr", version = "0.1.1" }
 
 [profile.release]
 lto = "fat"

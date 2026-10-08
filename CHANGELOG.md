@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-10-08)
 
 - Python: `Mapping.triplify` is four to five times faster on large outputs (it no longer copies
   every triple to remove duplicates, and builds its columns in parallel).
