@@ -327,6 +327,62 @@ fn bottr_maps() {
     assert_eq!(String::from_utf8_lossy(&args.stdout).lines().count(), 15);
 }
 
+/// `run -l` reads an IRI cell as bOTTR does (a declared prefix is expanded, and anything
+/// else is a full IRI, so `mailto:` needs no prefix), and a row with a cell its
+/// parameter cannot take is left out and reported, and the run fails, as in bOTTR.
+#[test]
+fn ottr_rows_that_cannot_be_made() {
+    let dir = std::env::temp_dir().join(format!("tarka-left-out-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let write = |name: &str, text: &str| {
+        let p = dir.join(name);
+        std::fs::write(&p, text).unwrap();
+        p
+    };
+    let template = |mbox: &str| {
+        format!(
+            "@prefix ex: <http://example.com/> . @prefix foaf: <http://xmlns.com/foaf/0.1/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+             ex:Person [ ottr:IRI ?person, {mbox}ottr:IRI ?mbox, ?name ] :: {{
+               ottr:Triple(?person, foaf:name, ?name), ottr:Triple(?person, foaf:mbox, ?mbox) }} ."
+        )
+    };
+    let mandatory = write("mandatory.stottr", &template(""));
+    let optional = write("optional.stottr", &template("? "));
+    let good = write("good.csv", "person,mbox,name\nex:ada,mailto:ada@example.com,Ada\nhttp://example.org/bo,mailto:bo@example.com,Bo\n");
+    let run = |library: &Path, csv: &Path| tarka(&["run", "-l", path(library), "-T", "ex:Person", "-i", path(csv), "--ntriples"], None);
+
+    let by_columns = run(&mandatory, &good);
+    assert!(by_columns.status.success(), "{}", String::from_utf8_lossy(&by_columns.stderr));
+    let by_columns = String::from_utf8(by_columns.stdout).unwrap();
+    assert!(by_columns.contains("<http://example.com/ada> <http://xmlns.com/foaf/0.1/mbox> <mailto:ada@example.com> ."), "{by_columns}");
+    let map = write(
+        "people.bottr.ttl",
+        "@prefix ottr: <http://ns.ottr.xyz/0.4/> . @prefix ex: <http://example.com/> .
+         [] a ottr:InstanceMap ; ottr:template ex:Person ; ottr:source [ a ottr:H2Source ] ;
+            ottr:query \"SELECT person, mbox, name FROM CSVREAD('@@THIS_DIR@@/good.csv')\" ;
+            ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:type ottr:IRI ] [ ] ) .",
+    );
+    let by_bottr = ok(&["bottr", "-l", path(&mandatory), path(&map), "--ntriples"], None);
+    assert_eq!(sorted_lines(&by_columns), sorted_lines(&by_bottr));
+    assert_eq!(sorted_lines(&by_columns).len(), 4);
+
+    // row 2's mailbox is not an IRI; row 3 has none, which is OTTR's none and not reported
+    let bad = write("bad.csv", "person,mbox,name\nex:ada,mailto:ada@example.com,Ada\nex:bo,n/a,Bo\nex:cy,,Cy\n");
+    for (library, made) in [(&mandatory, 2), (&optional, 3)] {
+        let out = run(library, &bad);
+        assert_eq!(out.status.code(), Some(1));
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(stderr.contains("tarka: left out: row 2: column mbox: 'n/a' is not an IRI"), "{stderr}");
+        assert!(stderr.contains("1 row left out; the other 2 were made"), "{stderr}");
+        assert_eq!(stderr.lines().count(), 2, "{stderr}");
+        // the others are written; nothing of row 2, even where ?mbox is optional
+        let stdout = String::from_utf8(out.stdout).unwrap();
+        assert_eq!(sorted_lines(&stdout).len(), made, "{stdout}");
+        assert!(!stdout.contains("/bo>"), "{stdout}");
+    }
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;

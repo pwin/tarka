@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- OTTR over columns (`tarka run -l`, `Mapping.ottr`) no longer drops instances silently. A
+  row with a cell its parameter cannot take (`n/a` for an `ottr:IRI`) is left out and
+  reported with every bad cell, the other rows are written, and tarka exits with status 1, as
+  bOTTR already did. In Python, `triplify`, `write` and `run_csv` raise a `ValueError` listing
+  the rows once the rest is written, unless `strict=False`. Before, the cell was taken as
+  empty: a mandatory parameter dropped the instance and an optional one the triple, with
+  nothing said. An empty cell is still OTTR's `none`.
+- An IRI cell is read as bOTTR (and Lutra) reads one: a prefixed name with a declared prefix
+  is expanded, and anything else is a full IRI. `mailto:…`, `urn:…` and `tag:…` cells no longer
+  need a prefix declared, where `run -l` took only text containing `://` as a full IRI.
+- Library: `tarka::run`, `tarka::run_envs`, `tarka_polars::run_frame` and
+  `tarka_polars::triplify` take a callback for the rows left out, and `RunStats::left_out`
+  counts them; `Conversion::apply` returns why a cell cannot be converted.
+
 ## 0.1.1 (2026-10-08)
 
 - Python: `Mapping.triplify` is four to five times faster on large outputs (it no longer copies

@@ -25,6 +25,9 @@
 //! becomes `xsd:integer` literals without being written out and read back), and the
 //! rows go straight to the shape layer. A TARQL query's rows are turned into cells and
 //! evaluated as CSV rows are.
+//!
+//! A row with a value its parameter cannot take is left out and reported, as a CSV
+//! record is (see [`tarka::engine`]).
 
 /// The Polars version tarka is built with.
 pub use polars;
@@ -95,31 +98,47 @@ pub fn frame_records(plan: &Plan, df: &DataFrame, options: &FrameOptions) -> Res
     Ok((columns, records))
 }
 
-/// Runs `plan` over `df` and writes the triples to `sink`.
+/// Runs `plan` over `df` and writes the triples to `sink`. Each row left out is passed
+/// to `left_out`, with its reason, in order.
 pub fn run_frame(
     plan: &Plan,
     df: &DataFrame,
     options: &FrameOptions,
     sink: &mut dyn TripleSink,
     run: &RunOptions,
+    left_out: &mut dyn FnMut(String),
 ) -> Result<RunStats, FrameError> {
     if let Lifting::Columns(bindings) = &plan.lifting {
-        let columns: Vec<Vec<Option<Value>>> =
+        let columns: Vec<Vec<Lifted>> =
             bindings.par_iter().map(|b| lift_column(plan, b, df, options)).collect::<Result<_, FrameError>>()?;
         let vars: Vec<usize> = bindings.iter().map(|b| b.var.0).collect();
         let mut columns: Vec<_> = columns.into_iter().map(Vec::into_iter).collect();
         let width = plan.vars.len();
-        let envs = (0..df.height()).map(move |_| {
+        let envs = (0..df.height() as u64).map(move |row| {
             let mut env = vec![None; width];
+            let mut problems = Vec::new();
             for (var, column) in vars.iter().zip(columns.iter_mut()) {
-                env[*var] = column.next().flatten();
+                match column.next().expect("a value per row") {
+                    Ok(value) => env[*var] = value,
+                    Err(problem) => problems.push(problem),
+                }
             }
-            Ok::<_, RunError>(env)
+            if problems.is_empty() { Ok(env) } else { Err(RunError::LeftOut(tarka::engine::left_out(row, &problems))) }
         });
-        return Ok(tarka::run_envs(plan, envs, sink, run)?);
+        return Ok(tarka::run_envs(plan, envs, sink, run, left_out)?);
     }
     let (columns, records) = frame_records(plan, df, options)?;
-    Ok(tarka::run(plan, &columns, records.into_iter().map(Ok::<_, Infallible>), sink, run)?)
+    Ok(tarka::run(plan, &columns, records.into_iter().map(Ok::<_, Infallible>), sink, run, left_out)?)
+}
+
+/// A value, or the problem that leaves its row out.
+type Lifted = Result<Option<Value>, String>;
+
+fn lifted(value: Result<Option<Value>, RunError>) -> Result<Lifted, FrameError> {
+    match value {
+        Err(RunError::LeftOut(problem)) => Ok(Err(problem)),
+        value => Ok(Ok(value?)),
+    }
 }
 
 /// The datatypes whose canonical form for an integer is the integer as Rust writes it.
@@ -141,19 +160,19 @@ const INTEGER_FORMS: [NamedNodeRef<'static>; 14] = [
 ];
 
 /// One binding's values for every row of the frame, the same as the cells' would be.
-fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOptions) -> Result<Vec<Option<Value>>, FrameError> {
+fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOptions) -> Result<Vec<Lifted>, FrameError> {
     let height = df.height();
     let name = match &b.source {
-        CellSource::RowNumber => return Ok((0..height).map(|i| Some(Value::Term(Literal::from(i as i64).into()))).collect()),
+        CellSource::RowNumber => return Ok((0..height).map(|i| Ok(Some(Value::Term(Literal::from(i as i64).into())))).collect()),
         CellSource::Column(c) => c,
     };
-    let Ok(column) = df.column(name) else { return Ok(vec![None; height]) };
+    let Ok(column) = df.column(name) else { return Ok(vec![Ok(None); height]) };
     let s = column.as_materialized_series();
     let blank = |t: &str| !options.bind_empty_strings && t.trim().is_empty();
-    let text = |t: Option<&str>| -> Result<Option<Value>, FrameError> {
+    let text = |t: Option<&str>| -> Result<Lifted, FrameError> {
         match t {
-            Some(t) if !blank(t) => Ok(tarka::engine::convert_text(t, b, plan)?),
-            _ => Ok(None),
+            Some(t) if !blank(t) => lifted(tarka::engine::convert_text(t, b, plan)),
+            _ => Ok(Ok(None)),
         }
     };
     // the cases that need no text
@@ -164,21 +183,21 @@ fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOp
             if let Ok(ints) = ints
                 && ints.null_count() == s.null_count()
             {
-                return Ok(ints.i64()?.iter().map(|v| v.map(|v| integer(v, datatype))).collect());
+                return Ok(ints.i64()?.iter().map(|v| Ok(v.map(|v| integer(v, datatype)))).collect());
             }
         }
         (DataType::Boolean, Conversion::Typed(datatype), false) if datatype.as_ref() == xsd::BOOLEAN => {
-            return Ok(s.bool()?.iter().map(|v| v.map(|v| Value::Term(Literal::from(v).into()))).collect());
+            return Ok(s.bool()?.iter().map(|v| Ok(v.map(|v| Value::Term(Literal::from(v).into())))).collect());
         }
         (DataType::List(_), _, _) => {
             let lists = s.list()?;
             let mut out = Vec::with_capacity(height);
             for i in 0..lists.len() {
                 out.push(match lists.get_as_series(i) {
-                    None => None,
+                    None => Ok(None),
                     Some(inner) => {
                         let items = texts(name, &inner)?;
-                        tarka::engine::convert_items(items.iter().flatten().map(String::as_str), b, plan)?
+                        lifted(tarka::engine::convert_items(items.iter().flatten().map(String::as_str), b, plan))?
                     }
                 });
             }
@@ -194,10 +213,11 @@ fn integer(v: i64, datatype: &NamedNode) -> Value {
 }
 
 /// Runs `plan` over `df` and returns the triples as a frame of N-Triples terms, with
-/// the columns `subject`, `predicate` and `object`. Duplicates are removed.
-pub fn triplify(plan: &Plan, df: &DataFrame, options: &FrameOptions) -> Result<DataFrame, FrameError> {
+/// the columns `subject`, `predicate` and `object`. Duplicates are removed. Each row
+/// left out is passed to `left_out`, as [`run_frame`] does.
+pub fn triplify(plan: &Plan, df: &DataFrame, options: &FrameOptions, left_out: &mut dyn FnMut(String)) -> Result<DataFrame, FrameError> {
     let mut triples: Vec<Triple> = Vec::new();
-    run_frame(plan, df, options, &mut triples, &RunOptions::default())?;
+    run_frame(plan, df, options, &mut triples, &RunOptions::default(), left_out)?;
     // each triple's first occurrence, in order, without copying any
     let mut seen = PlHashSet::with_capacity(triples.len());
     let firsts: Vec<&Triple> = triples.iter().filter(|t| seen.insert(*t)).collect();

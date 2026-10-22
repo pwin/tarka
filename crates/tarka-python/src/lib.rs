@@ -74,17 +74,23 @@ impl Mapping {
     }
 
     /// The RDF of a Polars data frame, as a data frame of N-Triples terms with the
-    /// columns `subject`, `predicate` and `object` (no duplicates).
-    #[pyo3(signature = (df, bind_empty_strings = false))]
-    fn triplify(&self, py: Python<'_>, df: PyDataFrame, bind_empty_strings: bool) -> PyResult<PyDataFrame> {
+    /// columns `subject`, `predicate` and `object` (no duplicates). A row with a value its
+    /// parameter cannot take is left out, and a ValueError lists them, unless `strict`
+    /// is False.
+    #[pyo3(signature = (df, bind_empty_strings = false, strict = true))]
+    fn triplify(&self, py: Python<'_>, df: PyDataFrame, bind_empty_strings: bool, strict: bool) -> PyResult<PyDataFrame> {
         let options = FrameOptions { bind_empty_strings };
-        let out = py.detach(|| tarka_polars::triplify(&self.plan, &df.0, &options)).map_err(value_error)?;
+        let mut reasons = Vec::new();
+        let out = py.detach(|| tarka_polars::triplify(&self.plan, &df.0, &options, &mut |r| reasons.push(r))).map_err(value_error)?;
+        left_out(strict, &reasons)?;
         Ok(PyDataFrame(out))
     }
 
     /// Writes the RDF of a Polars data frame to `path`, or returns it as text when
-    /// `path` is None. `format` is "turtle", "ntriples" or "nquads" (with `graph`).
-    #[pyo3(signature = (df, path = None, format = "turtle", graph = None, dedup = 0, bind_empty_strings = false))]
+    /// `path` is None. `format` is "turtle", "ntriples" or "nquads" (with `graph`). Rows
+    /// left out are listed in a ValueError once the rest is written, unless `strict` is
+    /// False.
+    #[pyo3(signature = (df, path = None, format = "turtle", graph = None, dedup = 0, bind_empty_strings = false, strict = true))]
     #[allow(clippy::too_many_arguments)]
     fn write(
         &self,
@@ -95,22 +101,29 @@ impl Mapping {
         graph: Option<&str>,
         dedup: usize,
         bind_empty_strings: bool,
+        strict: bool,
     ) -> PyResult<Option<String>> {
         let output = output_options(format, graph, dedup)?;
         let frame = FrameOptions { bind_empty_strings };
         let plan = &self.plan;
-        py.detach(|| {
+        let mut reasons = Vec::new();
+        let text = py.detach(|| {
             write_to(path.as_deref(), plan, output, |sink| {
-                tarka_polars::run_frame(plan, &df.0, &frame, sink, &RunOptions::default()).map(|_| ()).map_err(value_error)
+                tarka_polars::run_frame(plan, &df.0, &frame, sink, &RunOptions::default(), &mut |r| reasons.push(r))
+                    .map(|_| ())
+                    .map_err(value_error)
             })
-        })
+        })?;
+        left_out(strict, &reasons)?;
+        Ok(text)
     }
 
     /// Maps a CSV file (read the way oxi-gen reads it) and writes the RDF to `output`,
     /// or returns it as text when `output` is None. Each `split` (column, new column,
-    /// separator) repeats a row once per part of the column, as `--split` does.
+    /// separator) repeats a row once per part of the column, as `--split` does. Rows left
+    /// out are listed in a ValueError once the rest is written, unless `strict` is False.
     #[pyo3(signature = (input, output = None, format = "turtle", graph = None, dedup = 0, delimiter = ",", quote = "\"",
-                        escape = "\\", has_header = true, bind_empty_strings = false, split = None))]
+                        escape = "\\", has_header = true, bind_empty_strings = false, split = None, strict = true))]
     #[allow(clippy::too_many_arguments)]
     fn run_csv(
         &self,
@@ -126,6 +139,7 @@ impl Mapping {
         has_header: bool,
         bind_empty_strings: bool,
         split: Option<Vec<(String, String, String)>>,
+        strict: bool,
     ) -> PyResult<Option<String>> {
         let byte = |s: &str, what: &str| match s.as_bytes() {
             [b] => Ok(*b),
@@ -142,14 +156,17 @@ impl Mapping {
         };
         let output_opts = output_options(format, graph, dedup)?;
         let plan = &self.plan;
-        py.detach(|| {
+        let mut reasons = Vec::new();
+        let text = py.detach(|| {
             let file = std::fs::File::open(&input).map_err(|e| PyIOError::new_err(format!("{}: {e}", input.display())))?;
             let source = CsvSource::new(std::io::BufReader::new(file), csv).map_err(value_error)?;
             let columns = source.columns().to_vec();
             write_to(output.as_deref(), plan, output_opts, |sink| {
-                tarka::run(plan, &columns, source, sink, &RunOptions::default()).map(|_| ()).map_err(value_error)
+                tarka::run(plan, &columns, source, sink, &RunOptions::default(), &mut |r| reasons.push(r)).map(|_| ()).map_err(value_error)
             })
-        })
+        })?;
+        left_out(strict, &reasons)?;
+        Ok(text)
     }
 
     /// SHACL shapes for the RDF this mapping makes, as Turtle. Validate with SHACL_Engine's
@@ -231,6 +248,15 @@ fn bottr(
         return Err(value_error(format!("{} instance{s} left out:\n{}", reasons.len(), reasons.join("\n"))));
     }
     Ok(text)
+}
+
+/// The ValueError for rows left out, when `strict`.
+fn left_out(strict: bool, reasons: &[String]) -> PyResult<()> {
+    if strict && !reasons.is_empty() {
+        let s = if reasons.len() == 1 { "" } else { "s" };
+        return Err(value_error(format!("{} row{s} left out:\n{}", reasons.len(), reasons.join("\n"))));
+    }
+    Ok(())
 }
 
 fn output_options(format: &str, graph: Option<&str>, dedup: usize) -> PyResult<OutputOptions> {

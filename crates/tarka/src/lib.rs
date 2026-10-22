@@ -10,7 +10,8 @@
 //! let source = CsvSource::new(std::fs::File::open("people.csv")?, CsvOptions::default())?;
 //! let columns = source.columns().to_vec();
 //! let mut out = RdfWriter::create(None, &plan.prefixes, OutputOptions::default())?;
-//! tarka::run(&plan, &columns, source, &mut out, &RunOptions::default())?;
+//! // a row with a cell its parameter cannot take is left out, and reported here
+//! tarka::run(&plan, &columns, source, &mut out, &RunOptions::default(), &mut |why| eprintln!("left out: {why}"))?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 

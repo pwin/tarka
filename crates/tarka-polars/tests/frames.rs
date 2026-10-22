@@ -36,7 +36,7 @@ fn csv_frame(path: &Path, options: CsvOptions) -> DataFrame {
 
 fn run(plan: &Plan, df: &DataFrame) -> Graph {
     let mut triples: Vec<Triple> = Vec::new();
-    run_frame(plan, df, &FrameOptions::default(), &mut triples, &RunOptions::default()).unwrap();
+    run_frame(plan, df, &FrameOptions::default(), &mut triples, &RunOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     triples.into_iter().collect()
 }
 
@@ -130,7 +130,8 @@ fn typed_columns() {
 }
 
 /// The column-by-column lifting gives the terms the cells would: every fast path and
-/// the edges around it (nulls, blanks, large and negative integers, floats as decimals).
+/// the edges around it (nulls, blanks, large and negative integers, floats as decimals),
+/// and leaves out, and reports, the same rows.
 #[test]
 fn columns_lift_as_cells_would() {
     use chrono::NaiveDate;
@@ -158,20 +159,22 @@ fn columns_lift_as_cells_would() {
         "x" => [Some(1.5e3f64), Some(f64::NAN), None, Some(-0.0)],
     )
     .unwrap();
-    // the cell path: cells first, then the row engine
-    let (columns, records) = tarka_polars::frame_records(&plan, &df, &FrameOptions::default()).unwrap();
-    let mut by_cells: Vec<Triple> = Vec::new();
-    tarka::run(&plan, &columns, records.into_iter().map(Ok::<_, std::convert::Infallible>), &mut by_cells, &RunOptions::default()).unwrap();
-    let by_cells: Graph = by_cells.into_iter().collect();
-    assert_same(&by_cells, &run(&plan, &df), "columns against cells");
-    assert!(by_cells.to_string().contains("\"18446744073709551615\"^^<http://www.w3.org/2001/XMLSchema#integer>"));
-    let blanks = FrameOptions { bind_empty_strings: true };
-    let (columns, records) = tarka_polars::frame_records(&plan, &df, &blanks).unwrap();
-    let mut by_cells: Vec<Triple> = Vec::new();
-    tarka::run(&plan, &columns, records.into_iter().map(Ok::<_, std::convert::Infallible>), &mut by_cells, &RunOptions::default()).unwrap();
-    let mut by_columns: Vec<Triple> = Vec::new();
-    run_frame(&plan, &df, &blanks, &mut by_columns, &RunOptions::default()).unwrap();
-    assert_same(&by_cells.into_iter().collect(), &by_columns.into_iter().collect(), "with empty strings bound");
+    let left_out = vec!["row 4: column id: 'not an iri' is not an IRI".to_owned()];
+    for options in [FrameOptions::default(), FrameOptions { bind_empty_strings: true }] {
+        // the cell path: cells first, then the row engine
+        let (columns, records) = tarka_polars::frame_records(&plan, &df, &options).unwrap();
+        let (mut by_cells, mut cells_left_out): (Vec<Triple>, _) = (Vec::new(), Vec::new());
+        let records = records.into_iter().map(Ok::<_, std::convert::Infallible>);
+        let stats = tarka::run(&plan, &columns, records, &mut by_cells, &RunOptions::default(), &mut |r| cells_left_out.push(r)).unwrap();
+        assert_eq!((stats.records, stats.left_out), (4, 1));
+        let (mut by_columns, mut columns_left_out): (Vec<Triple>, _) = (Vec::new(), Vec::new());
+        let stats = run_frame(&plan, &df, &options, &mut by_columns, &RunOptions::default(), &mut |r| columns_left_out.push(r)).unwrap();
+        assert_eq!((stats.records, stats.left_out), (4, 1));
+        let by_cells: Graph = by_cells.into_iter().collect();
+        assert_same(&by_cells, &by_columns.into_iter().collect(), &format!("columns against cells, {options:?}"));
+        assert!(by_cells.to_string().contains("\"18446744073709551615\"^^<http://www.w3.org/2001/XMLSchema#integer>"));
+        assert_eq!((&cells_left_out, &columns_left_out), (&left_out, &left_out));
+    }
 }
 
 /// `triplify` gives each triple once, where it first appears, as N-Triples terms.
@@ -180,7 +183,7 @@ fn triple_frames_keep_first_occurrences_in_order() {
     let df = csv_frame(&fixture("extra/people.csv"), CsvOptions::default());
     let plan = tarql(&fixture("extra/people.rq"));
     let mut triples: Vec<Triple> = Vec::new();
-    run_frame(&plan, &df, &FrameOptions::default(), &mut triples, &RunOptions::default()).unwrap();
+    run_frame(&plan, &df, &FrameOptions::default(), &mut triples, &RunOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     let mut seen = std::collections::HashSet::new();
     let expected: Vec<[String; 3]> = triples
         .iter()
@@ -188,13 +191,13 @@ fn triple_frames_keep_first_occurrences_in_order() {
         .map(|t| [t.subject.to_string(), t.predicate.to_string(), t.object.to_string()])
         .collect();
     assert!(expected.len() < triples.len(), "the fixture repeats triples across rows");
-    let frame = triplify(&plan, &df, &FrameOptions::default()).unwrap();
+    let frame = triplify(&plan, &df, &FrameOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     let column = |name: &str| -> Vec<String> { frame.column(name).unwrap().str().unwrap().iter().map(|v| v.unwrap().to_owned()).collect() };
     let (s, p, o) = (column("subject"), column("predicate"), column("object"));
     let got: Vec<[String; 3]> = (0..frame.height()).map(|i| [s[i].clone(), p[i].clone(), o[i].clone()]).collect();
     assert_eq!(got, expected);
     // an empty run gives an empty frame with the three columns
-    let empty = triplify(&plan, &df.head(Some(0)), &FrameOptions::default()).unwrap();
+    let empty = triplify(&plan, &df.head(Some(0)), &FrameOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     assert_eq!((empty.height(), empty.width()), (0, 3));
 }
 
@@ -208,7 +211,7 @@ fn parquet_files_and_triple_frames() {
     let back = read_frame(&path).unwrap();
     let plan = ottr(&[fixture("retail/ottr")], &["rt:OrderRow"], &[]);
     assert_same(&read_graph(&fixture("retail/expected/orders.nt")), &run(&plan, &back), "orders from Parquet");
-    let triples = triplify(&plan, &back, &FrameOptions::default()).unwrap();
+    let triples = triplify(&plan, &back, &FrameOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     let names: Vec<String> = triples.get_column_names().iter().map(|c| c.to_string()).collect();
     assert_eq!(names, ["subject", "predicate", "object"]);
     assert_eq!(triples.height(), 111);
@@ -221,7 +224,9 @@ fn parquet_files_and_triple_frames() {
 fn list_and_text_cells_must_match_the_parameters() {
     let error = |plan: &Plan, df: &DataFrame| {
         let mut triples: Vec<Triple> = Vec::new();
-        run_frame(plan, df, &FrameOptions::default(), &mut triples, &RunOptions::default()).unwrap_err().to_string()
+        run_frame(plan, df, &FrameOptions::default(), &mut triples, &RunOptions::default(), &mut |r| panic!("left out: {r}"))
+            .unwrap_err()
+            .to_string()
     };
     let lists = df!("person" => ["ex:alice"], "name" => ["Alice"])
         .unwrap()

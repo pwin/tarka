@@ -26,9 +26,10 @@ tarka bottr -l templates/ people.bottr.ttl -o people.ttl                    # bO
 * **OTTR templates, used as modules.** Load a library from any number of files and directories
   (`-l` repeats), use any template in it as the root (`-T`), and give several roots to instantiate
   for every row (`-T` repeats). A template's parameters are read from the CSV columns of the same
-  names, converted by their types: IRIs from prefixed names or full IRIs, `xsd:*` literals,
-  lists split on a separator (`--list COLUMN SEPARATOR`). Mandatory parameters, defaults, blank
-  nodes, `cross`, `zipMin` and `zipMax` follow OTTR; the output matches Lutra's.
+  names, converted by their types: IRIs from prefixed names or full IRIs, as bOTTR reads them,
+  `xsd:*` literals, lists split on a separator (`--list COLUMN SEPARATOR`). Mandatory
+  parameters, defaults, blank nodes, `cross`, `zipMin` and `zipMax` follow OTTR; the output
+  matches Lutra's. A row with a cell its parameter cannot take is left out and reported.
 * **Polars data frames.** Parquet and Arrow IPC files are read with Polars, and the Python module
   maps a `polars.DataFrame` to a frame of triples. Typed columns (numbers, dates, datetimes)
   become typed literals, and list columns become OTTR lists.
@@ -93,11 +94,24 @@ and `manager`. The type of a parameter says how a cell is read:
 
 | Parameter type | A cell becomes |
 |---|---|
-| `ottr:IRI`, `owl:Class`, `owl:NamedIndividual` … | an IRI: a prefixed name (`ex:alice`) or a full IRI |
+| `ottr:IRI`, `owl:Class`, `owl:NamedIndividual` … | an IRI: a prefixed name with a declared prefix (`ex:alice`), or else a full IRI (`https://…`, `mailto:…`, `urn:…`), as in bOTTR |
 | `xsd:date`, `xsd:decimal` … | a typed literal, in canonical form if the text is a valid value |
 | untyped, `xsd:string` | a plain string |
 | `List<T>` | a list of `T`: a text cell is split on the separator given with `--list`; a list column needs none |
 | a parameter named `ROWNUM` | the row number |
+
+An empty cell is OTTR's `none`: a mandatory parameter's drops the instance, an optional one's
+the triples that use it. A cell the parameter cannot take (`n/a` for an IRI) is not: as in
+bOTTR, its row is left out and reported (with every bad cell of the row), the other rows are
+written, and tarka exits with status 1:
+
+```text
+tarka: left out: row 2: column mbox: 'n/a' is not an IRI
+tarka: 1 row left out; the other 2 were made
+```
+
+In Python, the rows left out are listed in a `ValueError` once the rest is written, unless
+`strict=False` is given.
 
 A root template whose WHERE clause is recorded in `tq:` annotations (as written by
 [ottr2sparql](https://github.com/pwin/ottr2sparql)'s `decompose`) is evaluated with that
@@ -290,8 +304,9 @@ tarka: http://127.0.0.1:7878/graph?graph=http%3A%2F%2Fexample.com%2Fpeople answe
 ```
 
 With `--validate`, the output is checked as it is loaded, so the store has it even when it does not
-conform (tarka still exits with status 3). From Python, send `m.write(df, format="ntriples")`
-with any HTTP client.
+conform (tarka still exits with status 3). Rows left out are alike: the store has the other
+rows, and tarka exits with status 1. From Python, send `m.write(df, format="ntriples")` with
+any HTTP client.
 
 ## As a library
 
@@ -305,8 +320,11 @@ let plan = tarka::ottr::compile(&lib, "ex:Person", &CompileOptions::default())?;
 let source = CsvSource::new(std::fs::File::open("people.csv")?, CsvOptions::default())?;
 let columns = source.columns().to_vec();
 let mut out = RdfWriter::create(None, &plan.prefixes, OutputOptions::default())?;
-tarka::run(&plan, &columns, source, &mut out, &tarka::RunOptions::default())?;
+let stats = tarka::run(&plan, &columns, source, &mut out, &tarka::RunOptions::default(), &mut |why| eprintln!("left out: {why}"))?;
 ```
+
+A row with a cell its parameter cannot take is left out and passed to the last argument with
+its reason (`row 3: column mbox: 'n/a' is not an IRI`); `stats.left_out` counts them.
 
 ## Where tarka differs from oxi-gen
 
