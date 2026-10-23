@@ -137,6 +137,18 @@ mod validation {
         }
     }
 
+    /// A shapes graph's shapes as SHACL_Engine finds them: against none, anything conforms.
+    #[test]
+    fn shapes_are_counted() {
+        let (what, plan, csv, options) = cases().into_iter().find(|(what, ..)| what == "extra/people.rq").unwrap();
+        let s = shapes(&plan, &Default::default());
+        assert!(tarka_shacl::count_shapes(&s.triples()).unwrap() > 0, "{what}");
+        // data is no shapes graph, and an empty graph has nothing in it
+        let data = output(&plan, &csv, options);
+        assert_eq!(tarka_shacl::count_shapes(&data).unwrap(), 0, "{what}");
+        assert_eq!(tarka_shacl::count_shapes(&Vec::<Triple>::new()).unwrap(), 0);
+    }
+
     #[test]
     fn shapes_catch_bad_and_missing_values() {
         let lib = "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .

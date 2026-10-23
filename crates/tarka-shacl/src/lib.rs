@@ -19,4 +19,4 @@ mod validate;
 
 pub use shapes::{NodeKind, NodeShape, PropertyShape, SH, ShapeOptions, Shapes, Target, shapes};
 #[cfg(feature = "validate")]
-pub use validate::{Finding, Validation, ValidationError, validate};
+pub use validate::{Finding, Validation, ValidationError, count_shapes, validate};

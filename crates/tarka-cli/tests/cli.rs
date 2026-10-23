@@ -191,6 +191,24 @@ fn shapes_and_validation() {
     let only = tarka(&[&base[..], &["--shapes", path(&extra)]].concat(), Some(csv));
     assert!(String::from_utf8_lossy(&only.stderr).contains("ex:c ex:qty sh:MinCountConstraintComponent"));
     assert!(String::from_utf8_lossy(&only.stderr).contains("(1 result)"));
+
+    // a shapes file that declares no shapes (empty, or the data by mistake) would check
+    // nothing and pass, so it is refused before the run, even beside the generated shapes
+    let (empty, data) = (dir.join("empty.ttl"), dir.join("data.ttl"));
+    std::fs::write(&empty, "").unwrap();
+    std::fs::write(&data, "@prefix ex: <http://example.com/> . ex:a a ex:Item ; ex:qty 7 .").unwrap();
+    std::fs::remove_file(&output).unwrap();
+    for (shapes, validate) in [(&empty, false), (&data, false), (&data, true)] {
+        let args = [&base[..], &["--shapes", path(shapes)], if validate { &["--validate"][..] } else { &[] }].concat();
+        let refused = tarka(&args, Some(csv));
+        assert_eq!(refused.status.code(), Some(1), "{shapes:?}");
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert!(stderr.contains(&format!("{} declares no shapes", shapes.display())), "{stderr}");
+        assert!(stderr.contains("--allow-no-shapes"), "{stderr}");
+        assert!(!output.exists(), "nothing is written");
+    }
+    // unless that is what is meant
+    ok(&[&base[..], &["--shapes", path(&data), "--allow-no-shapes"]].concat(), Some(csv));
     std::fs::remove_dir_all(&dir).ok();
 }
 

@@ -281,6 +281,10 @@ tarka: the output does not conform to the shapes (1 result)
 A typed OTTR parameter keeps a value that is not of its type as written (`"seven"^^xsd:integer`),
 so validation is how such cells are found. Validation holds the output in memory.
 
+A `--shapes` file that declares no shapes (an empty file, or data given by mistake) would check
+nothing, and the output would be said to conform, so tarka refuses it before the run, with status
+1. `--allow-no-shapes` validates against it all the same, as SHACL_Engine's own command line does.
+
 ## Loading into a store
 
 ```sh
