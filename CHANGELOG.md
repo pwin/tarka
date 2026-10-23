@@ -15,6 +15,13 @@
 - Library: `tarka::run`, `tarka::run_envs`, `tarka_polars::run_frame` and
   `tarka_polars::triplify` take a callback for the rows left out, and `RunStats::left_out`
   counts them; `Conversion::apply` returns why a cell cannot be converted.
+- Built with the Oxigraph crates' latest releases (spargebra 0.4.8, spareval 0.2.9,
+  oxsdatatypes 0.2.4 and the rest of Oxigraph 0.5.13), which fix SPARQL bugs a TARQL query can
+  meet: a signed number after an operand (`?a + 2 * 3`, `10 - 2 -3`) is grouped as SPARQL
+  says, `SUBSTR` takes a start of 0 or less, `IF` infers its type, a `FILTER` in nested
+  `OPTIONAL`s keeps its scope, and decimals round, multiply and print correctly. A query that
+  met one of these now gives the right output, which can differ from before. Also ureq 3.5,
+  and SHACL_Engine 0.3.4.
 
 ## 0.1.1 (2026-10-08)
 
