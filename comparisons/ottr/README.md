@@ -151,8 +151,8 @@ needs about 9 GB of memory.
 | File | What it does |
 |---|---|
 | `data.py` | The templates, the typed frames, and the same rows as CSV with a bOTTR map for Lutra |
-| `run.py` | One timed run of one tool, in its own process, printed as JSON. Lutra's triples are counted by loading its file into [HOLOS](https://github.com/pwin/triplestore) (`holosdb`), which holds each triple once |
+| `run.py` | One timed run of one tool, in its own process, printed as JSON. Lutra's file is counted twice: its statements, parsed with pyoxigraph, as the others' files are counted, and its distinct triples, loaded into [HOLOS](https://github.com/pwin/triplestore) (`holosdb`), which holds each triple once |
 | `bench.py` | The 8-row comparison, then the timed runs, in turn, and a table of medians |
 | `compare.py` | Two RDF files as graphs: isomorphic or not, and the incomplete nodes |
 | `edge_cases.py` | Prefixed names, `mailto:`, cells that are not IRIs, and nulls, in each tool |
-| `results/` | Raw results, one JSON line per run: the morning's two tools, the afternoon's three. The afternoon's Lutra counts are the statements in its file, counted before `run.py` loaded the file into HOLOS; `run.py` now gives distinct triples (2.6 million at 200,000 rows, as tarka's `triplify` does) |
+| `results/` | Raw results, one JSON line per run: the morning's two tools, the afternoon's three (Lutra's distinct triples were counted afterwards: 2.6 million at 200,000 rows, as tarka's `triplify` gives) |
