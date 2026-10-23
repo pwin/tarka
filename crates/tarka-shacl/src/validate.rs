@@ -29,6 +29,16 @@ pub struct Validation {
     pub report: Graph,
 }
 
+/// How many shapes SHACL_Engine finds in the shapes graph `shapes`: nodes declared shapes,
+/// carrying a target, or carrying a constraint. Against none, any data conforms.
+pub fn count_shapes<'a>(shapes: impl IntoIterator<Item = &'a Triple>) -> Result<usize, ValidationError> {
+    let mut store = TermStore::new();
+    let vocab = Vocab::new(&mut store);
+    let shapes_graph = graph(shapes, 1, &mut store);
+    let compiled = shacl::shapes::Shapes::compile(&shapes_graph, &store, &vocab).map_err(|e| ValidationError(e.to_string()))?;
+    Ok(compiled.len())
+}
+
 /// Validates `data` against the shapes graph `shapes`.
 pub fn validate<'a>(
     data: impl IntoIterator<Item = &'a Triple>,

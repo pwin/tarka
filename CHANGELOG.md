@@ -22,6 +22,10 @@
   `OPTIONAL`s keeps its scope, and decimals round, multiply and print correctly. A query that
   met one of these now gives the right output, which can differ from before. Also ureq 3.5,
   and SHACL_Engine 0.3.4.
+- `tarka run --shapes FILE` refuses a file that declares no shapes, before the run: validating
+  against it would check nothing and report that the output conforms. `--allow-no-shapes`
+  validates against it all the same. `tarka_shacl::count_shapes` counts a graph's shapes as
+  SHACL_Engine finds them.
 
 ## 0.1.1 (2026-10-08)
 

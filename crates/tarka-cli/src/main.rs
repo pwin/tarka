@@ -179,6 +179,9 @@ struct CheckArgs {
     /// Write the SHACL validation report to FILE, in Turtle
     #[arg(long, value_name = "FILE")]
     report: Option<PathBuf>,
+    /// Validate against a --shapes file that declares no shapes, instead of refusing to
+    #[arg(long)]
+    allow_no_shapes: bool,
 }
 
 #[derive(Args)]
@@ -456,7 +459,18 @@ impl Check {
             shapes.extend(tarka_shacl::shapes(plan, &Default::default()).triples());
         }
         for path in &args.shapes {
-            shapes.extend(read_rdf(path).with_context(|| format!("cannot read the shapes in {}", path.display()))?);
+            let file = read_rdf(path).with_context(|| format!("cannot read the shapes in {}", path.display()))?;
+            // A file that declares no shapes checks nothing, and the output would be said to
+            // conform: most likely it is the wrong file. (One that cannot be compiled on its
+            // own, for want of another file, is left to the validation to judge.)
+            if !args.allow_no_shapes && matches!(tarka_shacl::count_shapes(&file), Ok(0)) {
+                bail!(
+                    "{} declares no shapes, so it would check nothing, and the output would be said to conform; \
+                     check that it is the file you meant, or pass --allow-no-shapes",
+                    path.display()
+                );
+            }
+            shapes.extend(file);
         }
         Ok(Some(Self { shapes, report: args.report.clone() }))
     }
