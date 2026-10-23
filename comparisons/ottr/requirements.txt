@@ -4,3 +4,4 @@ polars==2.0.0
 psutil==7.2.2
 rdflib==7.6.0
 holosdb==0.25.0
+pyoxigraph==0.5.13
