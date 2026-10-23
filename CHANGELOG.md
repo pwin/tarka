@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-23)
 
 - OTTR over columns (`tarka run -l`, `Mapping.ottr`) no longer drops instances silently. A
   row with a cell its parameter cannot take (`n/a` for an `ottr:IRI`) is left out and
