@@ -341,11 +341,16 @@ fn write_output(args: &RunArgs, plan: &Plan, body: impl FnOnce(&mut dyn TripleSi
         if let Err(e) = validated {
             eprintln!("tarka: {e:#}");
         }
-        let made = stats.records - stats.left_out;
-        let s = if stats.left_out == 1 { "" } else { "s" };
-        bail!("{} row{s} left out; the other {made} were made", stats.left_out);
+        bail!("{}", left_out_summary(stats.left_out, stats.records, "row"));
     }
     validated
+}
+
+/// What a run that left some out says last: `1 of 3 rows left out`.
+fn left_out_summary(left_out: u64, total: u64, what: &str) -> String {
+    let s = if total == 1 { "" } else { "s" };
+    let nothing = if left_out == total { "; nothing was made" } else { "" };
+    format!("{left_out} of {total} {what}{s} left out{nothing}")
 }
 
 /// Where the output goes: a file (or standard output), or a store.
@@ -578,8 +583,7 @@ fn bottr(args: BottrArgs) -> Result<()> {
         }
     }
     if stats.dropped > 0 {
-        let s = if stats.dropped == 1 { "" } else { "s" };
-        bail!("{} instance{s} left out; the other {} were made", stats.dropped, stats.instances);
+        bail!("{}", left_out_summary(stats.dropped, stats.dropped + stats.instances, "instance"));
     }
     Ok(())
 }

@@ -107,7 +107,7 @@ written, and tarka exits with status 1:
 
 ```text
 tarka: left out: row 2: column mbox: 'n/a' is not an IRI
-tarka: 1 row left out; the other 2 were made
+tarka: 1 of 3 rows left out
 ```
 
 In Python, the rows left out are listed in a `ValueError` once the rest is written, unless

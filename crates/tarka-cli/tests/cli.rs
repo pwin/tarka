@@ -323,7 +323,7 @@ fn bottr_maps() {
     assert_eq!(args.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&args.stderr);
     assert!(stderr.contains("left out: ") && stderr.contains("row 3: argument 5 (flag)"), "{stderr}");
-    assert!(stderr.contains("1 instance left out; the other 2 were made"), "{stderr}");
+    assert_eq!(stderr.lines().last(), Some("tarka: 1 of 3 instances left out"), "{stderr}");
     assert_eq!(String::from_utf8_lossy(&args.stdout).lines().count(), 15);
 }
 
@@ -373,13 +373,18 @@ fn ottr_rows_that_cannot_be_made() {
         assert_eq!(out.status.code(), Some(1));
         let stderr = String::from_utf8_lossy(&out.stderr);
         assert!(stderr.contains("tarka: left out: row 2: column mbox: 'n/a' is not an IRI"), "{stderr}");
-        assert!(stderr.contains("1 row left out; the other 2 were made"), "{stderr}");
+        assert_eq!(stderr.lines().last(), Some("tarka: 1 of 3 rows left out"), "{stderr}");
         assert_eq!(stderr.lines().count(), 2, "{stderr}");
         // the others are written; nothing of row 2, even where ?mbox is optional
         let stdout = String::from_utf8(out.stdout).unwrap();
         assert_eq!(sorted_lines(&stdout).len(), made, "{stdout}");
         assert!(!stdout.contains("/bo>"), "{stdout}");
     }
+    let only_bad = write("only-bad.csv", "person,mbox,name\nex:bo,n/a,Bo\n");
+    let out = run(&mandatory, &only_bad);
+    assert_eq!(out.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert_eq!(stderr.lines().last(), Some("tarka: 1 of 1 row left out; nothing was made"), "{stderr}");
     std::fs::remove_dir_all(&dir).ok();
 }
 
