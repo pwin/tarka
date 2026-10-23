@@ -195,3 +195,34 @@ def test_errors():
     employee = tarka_rdf.Mapping.ottr([FIXTURES / "people" / "people.stottr"], ["ex:Employee"])
     with pytest.raises(ValueError, match=r'lists=\{"skills": ";"\}'):
         employee.triplify(text_frame("people/people.csv"))
+
+
+def test_rows_that_cannot_be_made(tmp_path):
+    """An IRI cell is read as bOTTR reads it (mailto: needs no prefix), and a row with a cell
+    its parameter cannot take is left out and listed in a ValueError, unless strict=False."""
+    library = tmp_path / "person.stottr"
+    library.write_text(
+        "@prefix ex: <http://example.com/> . @prefix foaf: <http://xmlns.com/foaf/0.1/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .\n"
+        "ex:Person [ ottr:IRI ?person, ? ottr:IRI ?mbox, ?name ] :: {\n"
+        "  ottr:Triple(?person, foaf:name, ?name), ottr:Triple(?person, foaf:mbox, ?mbox) } .\n"
+    )
+    m = tarka_rdf.Mapping.ottr([library], ["ex:Person"])
+    good = pl.DataFrame({"person": ["ex:ada"], "mbox": ["mailto:ada@example.com"], "name": ["Ada"]})
+    assert "<mailto:ada@example.com>" in m.write(good, format="ntriples")
+    bad = pl.DataFrame({"person": ["ex:ada", "ex:bo"], "mbox": ["mailto:ada@example.com", "n/a"], "name": ["Ada", "Bo"]})
+    csv = tmp_path / "bad.csv"
+    bad.write_csv(csv)
+    message = r"1 row left out:\nrow 2: column mbox: 'n/a' is not an IRI"
+    out = tmp_path / "out.nt"
+    for run in (
+        lambda **kw: m.triplify(bad, **kw),
+        lambda **kw: m.write(bad, out, format="ntriples", **kw),
+        lambda **kw: m.run_csv(csv, out, format="ntriples", **kw),
+    ):
+        with pytest.raises(ValueError, match=message):
+            run()
+    # the rest is written all the same, and with strict=False nothing is raised
+    assert len(out.read_text().splitlines()) == 2
+    triples = m.triplify(bad, strict=False)
+    assert triples.height == 2 and not triples.filter(pl.col("subject") == "<http://example.com/bo>").height
+    assert m.run_csv(csv, format="ntriples", strict=False).count("\n") == 2

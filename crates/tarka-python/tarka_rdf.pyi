@@ -28,9 +28,11 @@ class Mapping:
     @property
     def prefixes(self) -> list[tuple[str, str]]:
         """The prefixes, for Turtle output."""
-    def triplify(self, df: pl.DataFrame, bind_empty_strings: bool = False) -> pl.DataFrame:
+    def triplify(self, df: pl.DataFrame, bind_empty_strings: bool = False, strict: bool = True) -> pl.DataFrame:
         """The RDF of a data frame, as a data frame of N-Triples terms with the columns
-        `subject`, `predicate` and `object` (no duplicates)."""
+        `subject`, `predicate` and `object` (no duplicates). A row with a value its
+        parameter cannot take is left out, and a ValueError lists them, unless `strict`
+        is False."""
     def write(
         self,
         df: pl.DataFrame,
@@ -39,8 +41,11 @@ class Mapping:
         graph: str | None = None,
         dedup: int = 0,
         bind_empty_strings: bool = False,
+        strict: bool = True,
     ) -> str | None:
-        """Writes the RDF of a data frame to `path`, or returns it as text when `path` is None."""
+        """Writes the RDF of a data frame to `path`, or returns it as text when `path` is None.
+        Rows left out are listed in a ValueError once the rest is written, unless `strict`
+        is False."""
     def shapes(self, base: str = "urn:tarka:shapes:") -> str:
         """SHACL shapes for the RDF this mapping makes, as Turtle. Validate with SHACL_Engine's
         Python package: `shacl.Shapes.from_turtle(m.shapes()).validate_turtle(m.write(df))`."""
@@ -57,10 +62,12 @@ class Mapping:
         has_header: bool = True,
         bind_empty_strings: bool = False,
         split: list[tuple[str, str, str]] | None = None,
+        strict: bool = True,
     ) -> str | None:
         """Maps a CSV file (read the way oxi-gen reads it) and writes the RDF to `output`,
         or returns it as text when `output` is None. Each `split` (column, new column,
-        separator) repeats a row once per part of the column, as `--split` does."""
+        separator) repeats a row once per part of the column, as `--split` does. Rows left
+        out are listed in a ValueError once the rest is written, unless `strict` is False."""
 
 def bottr(
     library: list[_Path],

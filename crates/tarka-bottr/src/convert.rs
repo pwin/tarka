@@ -175,7 +175,7 @@ fn literal_term(text: &str, ty: &TypeRef, map: &ArgumentMap, prefixes: &PrefixMa
     if let Some(sep) = &map.datatype_sep {
         let (value, dt) =
             text.rsplit_once(sep.as_str()).ok_or_else(|| format!("value '{text}' does not contain datatype separator '{sep}'"))?;
-        let dt = NamedNode::new(expand(dt, prefixes)).map_err(|_| format!("'{dt}' is not a datatype IRI"))?;
+        let dt = NamedNode::new(prefixes.resolve(dt)).map_err(|_| format!("'{dt}' is not a datatype IRI"))?;
         return typed(value, &dt);
     }
     to_term(text, ty, map, prefixes)
@@ -184,8 +184,7 @@ fn literal_term(text: &str, ty: &TypeRef, map: &ArgumentMap, prefixes: &PrefixMa
 /// A term from text, by type.
 fn to_term(text: &str, ty: &TypeRef, map: &ArgumentMap, prefixes: &PrefixMap) -> Result<Term, String> {
     if types::subtype(ty, &basic(types::IRI)) && !matches!(ty, TypeRef::Basic(n) if n.as_str() == types::BOT) {
-        let iri = expand(text, prefixes);
-        return NamedNode::new(&iri).map(Into::into).map_err(|_| format!("'{text}' is not an IRI"));
+        return NamedNode::new(prefixes.resolve(text)).map(Into::into).map_err(|_| format!("'{text}' is not an IRI"));
     }
     let literal = basic(LITERAL);
     if let TypeRef::Basic(dt) = ty
@@ -217,17 +216,6 @@ fn typed(text: &str, dt: &NamedNode) -> Result<Term, String> {
         return Err(format!("the value '{text}' is not in the lexical space of its datatype {}", dt.as_str()));
     }
     Ok(Literal::new_typed_literal(text, dt.clone()).into())
-}
-
-/// A prefixed name expanded with `prefixes`; anything else as it is.
-fn expand(text: &str, prefixes: &PrefixMap) -> String {
-    match text.split_once(':') {
-        Some((p, local)) if !local.starts_with("//") => match prefixes.get(p) {
-            Some(ns) => format!("{ns}{local}"),
-            None => text.to_owned(),
-        },
-        _ => text.to_owned(),
-    }
 }
 
 /// Whether `text` is a value of an XSD datatype (true for datatypes tarka does not know).

@@ -103,7 +103,7 @@ pub enum CellSource {
 pub enum Conversion {
     /// A plain string literal.
     Plain,
-    /// A full IRI (if the text contains `://`) or a prefixed name.
+    /// A prefixed name with a declared prefix, or else a full IRI (see [`PrefixMap::resolve`]).
     Iri,
     /// A literal of this datatype, in canonical form when the text is a valid value.
     Typed(NamedNode),
@@ -112,17 +112,16 @@ pub enum Conversion {
 }
 
 impl Conversion {
-    /// The term for `text`, or `None` if it cannot become one (an unknown prefix, an
-    /// invalid IRI or language tag).
-    pub fn apply(&self, text: &str, prefixes: &PrefixMap) -> Option<Term> {
+    /// The term for `text`, or why it cannot become one (it is not an IRI, or the
+    /// language tag is not one).
+    pub fn apply(&self, text: &str, prefixes: &PrefixMap) -> Result<Term, String> {
         match self {
-            Self::Plain => Some(Literal::new_simple_literal(text).into()),
-            Self::Iri => {
-                let iri = if text.contains("://") { text.to_owned() } else { prefixes.expand(text)? };
-                NamedNode::new(iri).ok().map(Into::into)
+            Self::Plain => Ok(Literal::new_simple_literal(text).into()),
+            Self::Iri => NamedNode::new(prefixes.resolve(text)).map(Into::into).map_err(|_| format!("'{text}' is not an IRI")),
+            Self::Typed(dt) => Ok(typed_literal(text, dt.as_ref()).into()),
+            Self::Lang(tag) => {
+                Literal::new_language_tagged_literal(text, tag).map(Into::into).map_err(|_| format!("'{tag}' is not a language tag"))
             }
-            Self::Typed(dt) => Some(typed_literal(text, dt.as_ref()).into()),
-            Self::Lang(tag) => Literal::new_language_tagged_literal(text, tag).ok().map(Into::into),
         }
     }
 }
@@ -241,16 +240,19 @@ mod tests {
     #[test]
     fn conversions() {
         let pm: PrefixMap = [("ex", "http://example.com/")].into_iter().collect();
-        let iri = |t: &str| Conversion::Iri.apply(t, &pm);
-        assert_eq!(iri("ex:a"), Some(NamedNode::new_unchecked("http://example.com/a").into()));
-        assert_eq!(iri("http://x.org/y"), Some(NamedNode::new_unchecked("http://x.org/y").into()));
-        assert_eq!(iri("nope:a"), None);
+        let iri = |t: &str| Conversion::Iri.apply(t, &pm).ok();
+        let named = |i: &str| Some(NamedNode::new_unchecked(i).into());
+        assert_eq!(iri("ex:a"), named("http://example.com/a"));
+        assert_eq!(iri("http://x.org/y"), named("http://x.org/y"));
+        // an undeclared prefix is a scheme, as in bOTTR and Lutra
+        assert_eq!(iri("mailto:a@example.com"), named("mailto:a@example.com"));
+        assert_eq!(iri("urn:isbn:0451450523"), named("urn:isbn:0451450523"));
         assert_eq!(iri("ex:a b"), None);
-        assert_eq!(iri("plain"), None);
+        assert_eq!(Conversion::Iri.apply("plain", &pm), Err("'plain' is not an IRI".into()));
         let dec = Conversion::Typed(xsd::DECIMAL.into());
-        assert_eq!(dec.apply("9.50", &pm), Some(Literal::new_typed_literal("9.5", xsd::DECIMAL).into()));
-        assert_eq!(Conversion::Lang("en".into()).apply("hi", &pm), Some(Literal::new_language_tagged_literal_unchecked("hi", "en").into()));
-        assert_eq!(Conversion::Lang("not a tag".into()).apply("hi", &pm), None);
+        assert_eq!(dec.apply("9.50", &pm), Ok(Literal::new_typed_literal("9.5", xsd::DECIMAL).into()));
+        assert_eq!(Conversion::Lang("en".into()).apply("hi", &pm), Ok(Literal::new_language_tagged_literal_unchecked("hi", "en").into()));
+        assert!(Conversion::Lang("not a tag".into()).apply("hi", &pm).is_err());
     }
 
     #[test]

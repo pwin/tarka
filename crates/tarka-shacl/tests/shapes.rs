@@ -123,7 +123,7 @@ mod validation {
         let source = CsvSource::new(std::fs::File::open(csv).unwrap(), options).unwrap();
         let columns = source.columns().to_vec();
         let mut triples: Vec<Triple> = Vec::new();
-        tarka::run(plan, &columns, source, &mut triples, &RunOptions::default()).unwrap();
+        tarka::run(plan, &columns, source, &mut triples, &RunOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
         triples
     }
 

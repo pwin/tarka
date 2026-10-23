@@ -92,11 +92,23 @@ The root template's parameters become the plan's variables. Where their values c
    `decompose` writes them): a `Sparql` lifting built from them. Parameters that no BIND makes
    are read from columns of the same name.
 2. Otherwise **columns**: each parameter reads the column of its name, converted by its type.
-   IRI types (`ottr:IRI` and its OWL subtypes) take a full IRI (containing `://`) or a prefixed
-   name; `xsd:*` types (except `xsd:string`) make a typed literal; anything else a plain
-   string. A list type splits the cell on its separator and converts each part. A parameter
-   named `ROWNUM` takes the row number.
+   IRI types (`ottr:IRI` and its OWL subtypes) expand a prefixed name whose prefix is declared,
+   and take anything else as a full IRI, so `mailto:…` and `urn:…` need no prefix
+   (`PrefixMap::resolve`, which bOTTR uses too, as Lutra reads an IRI type); `xsd:*` types
+   (except `xsd:string`) make a typed literal; anything else a plain string. A list type
+   splits the cell on its separator and converts each part. A parameter named `ROWNUM` takes
+   the row number.
 3. For **instances**, the given arguments.
+
+**Rows left out.** An empty cell is OTTR's `none`, and leaves its variable unbound. A cell
+that cannot be converted (text that is not an IRI, for an IRI type) is not `none`: leaving it
+unbound would drop the instance, or a triple, with nothing said, which is how a forgotten
+prefix once emptied a whole mapping. So its record is left out instead, as bOTTR leaves out an
+instance, and reported with every bad cell (`row 2: column mbox: 'n/a' is not an IRI`). The run
+goes on; the CLI exits with status 1 once the output is written, and Python raises a
+`ValueError` unless `strict=False`. A whole record goes, even where the parameter is optional,
+so `run -l` and bOTTR make the same output from the same rows. A typed value outside its
+datatype's lexical space is still kept, as §4 says.
 
 **Several roots.** `compile_many` instantiates several root templates for each record. Each
 root's parameters read the columns of the same names; roots share a variable when they convert a
@@ -124,7 +136,9 @@ The OTTR route keeps the declared datatype.
 `tarka::run` reads records in batches (512 by default), lifts and shapes several batches in
 parallel, and writes each record's triples in input order. Blank node labels are made from a
 record's position in the input (`b{record}x{n}`), so the output does not depend on how the work
-was split. Duplicates are removed within each record, or within a window of distinct triples
+was split. A record left out (§3) keeps its position, with no triples, so the labels of the
+others do not move; its reason goes to a callback in input order, and `RunStats` counts it.
+Duplicates are removed within each record, or within a window of distinct triples
 (`--dedup N`), as in oxi-gen; Turtle output sorts each window, so a subject's triples come out
 together.
 
@@ -148,11 +162,13 @@ That is how a TARQL query's rows are made. A plan whose lifting reads columns (O
 cells: each binding's column becomes its parameter's terms directly, the columns in parallel,
 and the rows go to the shape layer (`tarka::run_envs`). Integer columns for integer or decimal
 parameters, boolean columns for `xsd:boolean` and string columns are converted without writing
-values out as text; the rest go through the same text conversion as cells. A test compares the
-two routes term for term on every fast path and its edges. On the 200,000-row orders file the
-column route does a fifth less work than the cells did (single-threaded: 3.8 s against 4.8 s
-from Parquet); with every core busy the shape layer dominates, and the run is a few percent
-faster.
+values out as text; the rest go through the same text conversion as cells. A row with a value
+that cannot be converted reaches `run_envs` as `RunError::LeftOut`, with its problems gathered
+across the columns in binding order. A test compares the two routes term for term on every fast
+path and its edges, and requires them to leave out and report the same rows. On the 200,000-row
+orders file the column route does a fifth less work than the cells did (single-threaded: 3.8 s
+against 4.8 s from Parquet); with every core busy the shape layer dominates, and the run is a
+few percent faster.
 
 ## 7. Python
 
@@ -202,19 +218,33 @@ SHACL_Engine's own package and is built without it.
 ## 9. Loading into a store
 
 `--post` loads the output over the SPARQL 1.1 Graph Store Protocol rather than linking a store
-in: HOLOS persists to RocksDB (a C++ build) and builds the Oxigraph crates with their RDF 1.2
-features, and the protocol reaches HOLOS, Oxigraph, Fuseki and GraphDB alike.
+in. HOLOS's engine builds without RocksDB by default, but then keeps its store in memory; a
+store that persists is RocksDB, a C++ build. Every HOLOS crate also builds the Oxigraph crates
+with their RDF 1.2 features, which Cargo would turn on for tarka too (§8). And the protocol
+reaches HOLOS, Oxigraph, Fuseki and GraphDB alike.
 
 The run writes N-Triples into one end of an OS pipe; the request, on its own thread, sends the
 other end as a chunked body (ureq, with rustls). Nothing is buffered beyond the pipe, and the
 store sees one request, so a POST or PUT is one transaction there. If the run fails, the
 request body ends in an error instead of its last chunk: the connection drops before the body
 is complete, and the store takes nothing. If the store refuses the request first, the run sees
-a broken pipe, and the store's answer is reported instead.
+a broken pipe, and the store's answer is reported instead. Rows left out (§3) do not fail the
+run: the store takes the others, and the exit status says so afterwards, as a failed
+validation does.
+
+One transaction has a ceiling. HOLOS reads the whole body, and parses all of it, before it
+writes any (which is also why a body cut short loads nothing), so tarka's memory stays flat
+while the server's grows with the load. A persistent HOLOS (0.21.0) buffers a request's writes
+in one RocksDB batch and refuses a batch of more than 4,194,304 writes, about 419,000 quads at
+its estimate of ten a quad: the retail orders mapping, over its rows repeated with new order
+IRIs, loads 388,500 triples in one request and is refused at 444,000, with a 400, and the store
+takes nothing. An output that size goes into a persistent HOLOS as a file, through HOLOS's own
+bulk load (`--data`), which is not atomic. The in-memory store has no ceiling.
 
 The tests check the requests against a small HTTP server (method, graph parameter, headers,
 body), and, with `HOLOS_SERVER` set, load every retail mapping into a live HOLOS, read each graph
-back and compare it with the reference output, and check that a failed run loads nothing.
+back and compare it with the reference output, and check that a failed run loads nothing. That
+HOLOS is given no `--store`, so it runs in memory and never meets the ceiling.
 
 ## 10. Types and lint
 
@@ -257,9 +287,13 @@ SQL is not embedded: tarka parses the part of it that reads a CSV file, and H2's
 whose quirks the fixtures pin (trimming, NULL for empty fields, the column list split on the
 field separator). RDF sources are loaded into one dataset and queried with spareval; a
 SPARQL endpoint gets the query as an `application/sparql-query` POST, and its JSON or XML
-results (sparesults) are read like spareval's solutions. The endpoint tests check the request,
-and, with `HOLOS_SERVER` set, run the RDF file fixture's map against HOLOS serving the same data:
-the output must be the file source's, and Lutra's against the same endpoint.
+results (sparesults) are read like spareval's solutions. A term in them that is RDF 1.2 (a
+triple term, or a literal with a base direction, both of which HOLOS can return) is an error,
+as in an RDF file source, with one gap: in XML results, sparesults built without RDF 1.2 skips
+a literal's `its:dir`, so the literal arrives as a language-tagged string without its
+direction. tarka asks for JSON first, and HOLOS sends it. The endpoint tests check the
+request, and, with `HOLOS_SERVER` set, run the RDF file fixture's map against HOLOS serving the
+same data: the output must be the file source's, and Lutra's against the same endpoint.
 
 The fixtures under `tests/fixtures/bottr` were run through Lutra to make their expected
 output; a live test runs Lutra again when `LUTRA_JAR` is set.

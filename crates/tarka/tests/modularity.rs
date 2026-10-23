@@ -25,7 +25,7 @@ fn run_text(plan: &Plan, csv: &str) -> Graph {
     let source = CsvSource::new(csv.as_bytes(), CsvOptions::default()).unwrap();
     let columns = source.columns().to_vec();
     let mut triples: Vec<Triple> = Vec::new();
-    tarka::run(plan, &columns, source, &mut triples, &RunOptions::default()).unwrap();
+    tarka::run(plan, &columns, source, &mut triples, &RunOptions::default(), &mut |r| panic!("left out: {r}")).unwrap();
     triples.into_iter().collect()
 }
 

@@ -59,6 +59,21 @@ impl PrefixMap {
         Some(format!("{}{local}", self.get(prefix)?))
     }
 
+    /// The IRI `text` names, the way Lutra reads a value of an IRI type: a prefixed name
+    /// with a declared prefix is expanded, and anything else is kept as it is, to be read
+    /// as a full IRI (`mailto:x@example.com`, `urn:isbn:…`). A local part never starts
+    /// with `//`, so `http://…` is kept even where `http` is a prefix. The caller
+    /// validates the IRI.
+    pub fn resolve(&self, text: &str) -> String {
+        match text.split_once(':') {
+            Some((prefix, local)) if !local.starts_with("//") => match self.get(prefix) {
+                Some(ns) => format!("{ns}{local}"),
+                None => text.to_owned(),
+            },
+            _ => text.to_owned(),
+        }
+    }
+
     /// `ns:local` for `iri`, using the longest matching namespace whose remainder is a
     /// simple local name; `None` if there is none.
     pub fn compact(&self, iri: &str) -> Option<String> {
@@ -113,5 +128,15 @@ mod tests {
         pm.insert("ex", "http://other/");
         assert_eq!(pm.get("ex"), Some("http://other/"));
         assert_eq!(pm.len(), 3);
+    }
+
+    #[test]
+    fn resolve() {
+        let pm: PrefixMap = [("ex", "http://example.com/"), ("http", "http://wrong/")].into_iter().collect();
+        assert_eq!(pm.resolve("ex:alice"), "http://example.com/alice");
+        assert_eq!(pm.resolve("ex:a?u=http://x"), "http://example.com/a?u=http://x");
+        assert_eq!(pm.resolve("mailto:a@example.com"), "mailto:a@example.com");
+        assert_eq!(pm.resolve("http://example.org/x"), "http://example.org/x");
+        assert_eq!(pm.resolve("plain"), "plain");
     }
 }

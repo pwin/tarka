@@ -27,7 +27,9 @@ tarka_rdf.bottr(["templates/"], ["people.bottr.ttl"], "people.ttl")     # bOTTR 
 ```
 
 Typed columns become typed literals for typed OTTR parameters (`xsd:integer`, `xsd:date` …),
-and list columns feed OTTR list parameters. The package is called `tarka-rdf` and imported as
-`tarka_rdf`, because `tarka` on PyPI is another project.
+and list columns feed OTTR list parameters. A row with a value its parameter cannot take
+(`n/a` for an `ottr:IRI`) is left out, as bOTTR leaves out an instance: the rest is made, and a
+`ValueError` lists the rows left out, unless `strict=False`. The package is called `tarka-rdf`
+and imported as `tarka_rdf`, because `tarka` on PyPI is another project.
 
 Licensed MIT OR Apache-2.0.
