@@ -358,9 +358,37 @@ fn left_out_summary(left_out: u64, total: u64, what: &str) -> String {
 
 /// Where the output goes: a file (or standard output), or a store.
 enum Output {
-    File(RdfWriter<Box<dyn Write>>),
+    /// A file is written under another name beside its path, and moved there once the
+    /// run is complete: a run that fails leaves no part of a file, and an earlier file
+    /// as it was. (The writer is dropped first, closing the file.)
+    File(RdfWriter<Box<dyn Write>>, Option<Pending>),
     #[cfg(feature = "gsp")]
     Store(gsp::Upload),
+}
+
+/// A file being written under another name, and the path it goes to once complete.
+/// Dropped before then, it is removed.
+struct Pending {
+    temp: PathBuf,
+    path: PathBuf,
+}
+
+impl Pending {
+    fn new(path: &Path) -> Self {
+        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        Self { temp: path.with_file_name(format!(".{name}.tarka-{}.tmp", std::process::id())), path: path.to_owned() }
+    }
+
+    fn commit(self) -> Result<()> {
+        std::fs::rename(&self.temp, &self.path).with_context(|| format!("cannot write {}", self.path.display()))
+    }
+}
+
+impl Drop for Pending {
+    fn drop(&mut self) {
+        // after a commit there is nothing left to remove
+        let _ = std::fs::remove_file(&self.temp);
+    }
 }
 
 impl Output {
@@ -372,12 +400,19 @@ impl Output {
         }
         #[cfg(not(feature = "gsp"))]
         let _ = load;
-        Ok(Self::File(RdfWriter::create(output.output.as_deref(), prefixes, output_options(output)?)?))
+        let options = output_options(output)?;
+        let Some(path) = output.output.as_deref().filter(|p| p.as_os_str() != "-") else {
+            return Ok(Self::File(RdfWriter::create(None, prefixes, options)?, None));
+        };
+        let pending = Pending::new(path);
+        let writer =
+            RdfWriter::create(Some(&pending.temp), prefixes, options).with_context(|| format!("cannot write {}", path.display()))?;
+        Ok(Self::File(writer, Some(pending)))
     }
 
     fn sink(&mut self) -> &mut dyn TripleSink {
         match self {
-            Self::File(w) => w,
+            Self::File(w, _) => w,
             #[cfg(feature = "gsp")]
             Self::Store(u) => u,
         }
@@ -385,26 +420,32 @@ impl Output {
 
     fn written(&self) -> u64 {
         match self {
-            Self::File(w) => w.written(),
+            Self::File(w, _) => w.written(),
             #[cfg(feature = "gsp")]
             Self::Store(u) => u.written(),
         }
     }
 
-    /// Waits for the store to take the output; what it answered.
+    /// Finishes the file and moves it to its path, or waits for the store to take the
+    /// output; what the store answered.
     fn complete(self) -> Result<Option<String>> {
         match self {
-            Self::File(_) => Ok(None),
+            Self::File(w, pending) => {
+                // closed before it is moved, which also ends a gzip stream
+                drop(w.into_inner()?);
+                pending.map(Pending::commit).transpose()?;
+                Ok(None)
+            }
             #[cfg(feature = "gsp")]
             Self::Store(u) => u.complete().map(Some),
         }
     }
 
     /// After a failed run: the error to report (a store's refusal rather than a broken
-    /// pipe), with nothing loaded.
+    /// pipe), with nothing loaded and no file written.
     fn abandon(self, e: anyhow::Error) -> anyhow::Error {
         match self {
-            Self::File(_) => e,
+            Self::File(..) => e,
             #[cfg(feature = "gsp")]
             Self::Store(u) => u.abandon(e),
         }

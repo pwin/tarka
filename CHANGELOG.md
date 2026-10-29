@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- `tarka lint` reports a parameter that may be blank given to a non-blank (`!`) parameter, as
+  Lutra does (`non-blank-flags`, an error). `ottr:Triple`'s predicate is non-blank, so a
+  parameter used as a predicate must be marked `!`; before, only Lutra said so.
+- `-o FILE` is written all or nothing, for `run`, `expand` and `bottr`: under another name
+  beside it, moved into place once the run is complete. A run that failed partway left a
+  truncated `FILE`; now it leaves an earlier one as it was.
+
 ## 0.2.0 (2026-10-23)
 
 - OTTR over columns (`tarka run -l`, `Mapping.ottr`) no longer drops instances silently. A
