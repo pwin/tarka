@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-10-29)
 
 - `tarka lint` reports a parameter that may be blank given to a non-blank (`!`) parameter, as
   Lutra does (`non-blank-flags`, an error). `ottr:Triple`'s predicate is non-blank, so a
