@@ -179,8 +179,9 @@ templates/core.stottr:20: error: ex:Nowhere is not defined [undefined-template]
 `tarka lint` type-checks a library with OTTR's type system and reports what Lutra's linter
 reports: undefined templates, the wrong number of arguments, cycles, arguments whose type does
 not fit (an `xsd:integer` where an `ottr:IRI` is wanted, a `List` where an `NEList` is), one
-argument given to parameters of incompatible types, unused parameters and duplicate
-definitions. It also reports variables that are not parameters, blank nodes given to non-blank
+argument given to parameters of incompatible types, a parameter that may be blank given to a
+non-blank (`!`) one (`ottr:Triple`'s predicate is non-blank, so a parameter used as a predicate
+must be marked `!`), unused parameters and duplicate definitions. It also reports variables that are not parameters, blank nodes given to non-blank
 (`!`) parameters, expanders without `++` arguments and the reverse, literal subjects and non-IRI
 predicates in `ottr:Triple`, types OTTR does not have, and defaults that do not fit their
 parameters. It exits with status 1 when there are errors (`--deny-warnings`: or warnings);
@@ -338,6 +339,10 @@ its reason (`row 3: column mbox: 'n/a' is not an IRI`); `stats.left_out` counts 
 * **Errors are messages, not crashes.** A query that calls a function spareval does not have
   (`xsd:date(…)`) is reported before any input is read; a malformed row stops the run with its
   row number.
+* **A failed run leaves no part of a file.** `-o FILE` is written under another name beside it
+  and moved into place once the run is complete (for `run`, `expand` and `bottr` alike), so a
+  run that fails partway leaves an earlier `FILE` as it was. Rows left out, or output that does
+  not conform to the shapes, are not failures of the run: the file is written.
 * **Blank node labels are stable**: the same input gives the same output.
 
 Typed values are written the way spareval writes them, as oxi-gen does: `"129.90"^^xsd:decimal`

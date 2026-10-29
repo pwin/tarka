@@ -124,6 +124,71 @@ fn expand_and_nquads() {
     assert_eq!(sorted_lines(&out).len(), 26);
 }
 
+/// A run that fails partway leaves no part of a file behind, and an earlier file as it
+/// was: the output is written under another name and moved into place once complete.
+#[test]
+fn a_failed_run_leaves_no_file() {
+    use std::io::Read;
+    let dir = std::env::temp_dir().join(format!("tarka-cli-atomic-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let lib = dir.join("lib.stottr");
+    std::fs::write(
+        &lib,
+        "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+         @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+         ex:Named [ ottr:IRI ?x, ?label ] :: { ottr:Triple(?x, rdfs:label, ?label) } .",
+    )
+    .unwrap();
+    // enough instances to be written to disk before the last one fails (it lacks an argument)
+    let good: String = (0..2000).map(|i| format!("ex:Named(ex:n{i}, \"name number {i}\") .\n")).collect();
+    let prefixes = "@prefix ex: <http://example.com/> .\n";
+    let (fine, broken) = (dir.join("fine.stottr"), dir.join("broken.stottr"));
+    std::fs::write(&fine, format!("{prefixes}{good}")).unwrap();
+    std::fs::write(&broken, format!("{prefixes}{good}ex:Named(ex:bad) .\n")).unwrap();
+    let output = dir.join("out.ttl");
+    let expand = |instances: &Path, extra: &[&str]| {
+        tarka(&[&["expand", "-l", path(&lib), path(instances), "-o", path(&output)][..], extra].concat(), None)
+    };
+    let leftovers = || -> Vec<String> {
+        let mut names: Vec<String> =
+            std::fs::read_dir(&dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        names.retain(|n| n.contains(".tmp"));
+        names
+    };
+
+    let failed = expand(&broken, &[]);
+    assert!(!failed.status.success());
+    assert!(String::from_utf8_lossy(&failed.stderr).contains("argument"), "{}", String::from_utf8_lossy(&failed.stderr));
+    assert!(!output.exists(), "a failed expansion leaves no file");
+    assert_eq!(leftovers(), Vec::<String>::new());
+
+    std::fs::write(&output, "previous\n").unwrap();
+    assert!(!expand(&broken, &[]).status.success());
+    assert_eq!(std::fs::read_to_string(&output).unwrap(), "previous\n", "an earlier file is kept as it was");
+
+    let done = expand(&fine, &["--ntriples"]);
+    assert!(done.status.success(), "{}", String::from_utf8_lossy(&done.stderr));
+    assert_eq!(std::fs::read_to_string(&output).unwrap().lines().count(), 2000);
+    // a compressed file is complete once moved into place
+    assert!(expand(&fine, &["--ntriples", "--gzip"]).status.success());
+    let mut text = String::new();
+    flate2::read::GzDecoder::new(std::fs::File::open(&output).unwrap()).read_to_string(&mut text).unwrap();
+    assert_eq!(text.lines().count(), 2000);
+    assert_eq!(leftovers(), Vec::<String>::new());
+
+    // run alike: a ragged row near the end of the input
+    let mut csv: String = "id,pref_label\n".into();
+    csv.extend((0..2000).map(|i| format!("ex:n{i},name {i}\n")));
+    csv.push_str("ex:ragged\n");
+    let run_output = dir.join("run.nt");
+    let run =
+        tarka(&["run", "-q", path(&fixture("oxigen/successor_field.rq")), "--ntriples", "-o", path(&run_output)], Some(csv.as_bytes()));
+    assert!(!run.status.success());
+    assert!(!run_output.exists(), "a failed run leaves no file");
+    assert_eq!(leftovers(), Vec::<String>::new());
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn errors_are_reported_cleanly() {
     let bad_query = tarka(&["run", "-q", path(&fixture("retail/customers.csv"))], Some(b""));
@@ -314,7 +379,15 @@ fn lint_libraries() {
     assert!(!flawed.status.success());
     let stdout = String::from_utf8_lossy(&flawed.stdout);
     assert!(stdout.contains("flawed.stottr:20: error: ex:Nowhere is not defined [undefined-template]"), "{stdout}");
-    assert!(String::from_utf8_lossy(&flawed.stderr).contains("25 errors, 5 warnings"));
+    // a parameter that may be blank as ottr:Triple's predicate: Lutra's error too
+    assert!(
+        stdout.contains(
+            "flawed.stottr:80: error: ?p may be blank, but is given to the non-blank parameter ?predicate of ottr:Triple: \
+             mark ?p non-blank (!) [non-blank-flags]"
+        ),
+        "{stdout}"
+    );
+    assert!(String::from_utf8_lossy(&flawed.stderr).contains("27 errors, 5 warnings"));
     let errors = tarka(&["lint", "-l", path(&fixture("lint/flawed.stottr")), "--errors-only"], None);
     assert!(!String::from_utf8_lossy(&errors.stdout).contains("warning:"));
     // warnings fail the run only when asked

@@ -93,6 +93,7 @@ fn lutra_lint(lutra: &str, library: &Path) -> Vec<(String, String, String)> {
         ("[ERROR] Cyclic dependency in template ", "error", "cycle"),
         ("[WARNING] Unused parameter in template ", "warning", "unused-parameter"),
         ("[ERROR] Type error in template ", "error", "type"),
+        ("[ERROR] Inconsistent non-blank parameter flags in template ", "error", "non-blank-flags"),
         ("[WARNING] There exist duplicate templates which may conflict with each other: ", "warning", "duplicate"),
     ];
     let mut out = Vec::new();

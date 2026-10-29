@@ -3,8 +3,9 @@
 //! It reports what Lutra's linter reports, with the same severities:
 //!
 //! * errors: an undefined template, the wrong number of arguments, a cycle, an argument
-//!   whose type does not fit its parameter, and one argument given to parameters of
-//!   incompatible types;
+//!   whose type does not fit its parameter, one argument given to parameters of
+//!   incompatible types, and a parameter that may be blank given to a non-blank one
+//!   (`ottr:Triple`'s predicate among them);
 //! * warnings: an unused parameter, and a template defined more than once.
 //!
 //! and some it does not: a variable that is not a parameter, a blank node for a
@@ -42,6 +43,7 @@ pub enum Check {
     Duplicate,
     UndeclaredVariable,
     NonBlank,
+    NonBlankFlags,
     Expander,
     Triple,
     UnknownType,
@@ -60,6 +62,7 @@ impl Check {
             Self::Duplicate => "duplicate",
             Self::UndeclaredVariable => "undeclared-variable",
             Self::NonBlank => "non-blank",
+            Self::NonBlankFlags => "non-blank-flags",
             Self::Expander => "expander",
             Self::Triple => "triple",
             Self::UnknownType => "unknown-type",
@@ -258,6 +261,18 @@ impl Linter<'_> {
                 let message = format!("a blank node is given to the non-blank parameter ?{} of {}", param.name, self.name(&callee.iri));
                 self.push(t, line, Severity::Error, Check::NonBlank, message);
             }
+            // a parameter that may be blank, given (or expanded with ++) to a non-blank one
+            if param.non_blank
+                && let OTerm::Var(v) = arg
+                && t.params.iter().any(|p| &p.name == v && !p.non_blank)
+            {
+                let message = format!(
+                    "?{v} may be blank, but is given to the non-blank parameter ?{} of {}: mark ?{v} non-blank (!)",
+                    param.name,
+                    self.name(&callee.iri)
+                );
+                self.push(t, line, Severity::Error, Check::NonBlankFlags, message);
+            }
             if triple {
                 self.triple_argument(t, line, i, arg, types);
                 continue;
@@ -445,7 +460,15 @@ mod tests {
             ex:Pong [ ottr:IRI ?a ] :: { ex:Ping(?a) } .
             ex:E1 [ ?u ] :: { ex:Named(?u) } .
             ex:E4 [ ] :: { ex:Named(_:b), ex:Str(_:b) } .
-            ex:Str [ xsd:string ?s ] :: { ottr:Triple(ex:s, ex:p, ?s) } .";
+            ex:Str [ xsd:string ?s ] :: { ottr:Triple(ex:s, ex:p, ?s) } .
+            ex:AsPredicate [ ottr:IRI ?s, ottr:IRI ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .
+            ex:OptionalPredicate [ ottr:IRI ?s, ? ottr:IRI ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .
+            ex:UntypedPredicate [ ottr:IRI ?s, ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .
+            ex:InList [ List<ottr:IRI> ?ps ] :: { cross | ottr:Triple(ex:s, ++?ps, ex:o) } .
+            ex:Inner [ ! ottr:IRI ?q ] :: { ottr:Triple(ex:s, ?q, ex:o) } .
+            ex:Outer [ ottr:IRI ?p ] :: { ex:Inner(?p) } .
+            ex:OuterFine [ ! ottr:IRI ?p ] :: { ex:Inner(?p) } .
+            ex:PredicateFine [ ottr:IRI ?s, ! ottr:IRI ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .";
         let mut found = checks(text);
         found.sort();
         let mut expected: Vec<(Check, String)> = [
@@ -458,6 +481,12 @@ mod tests {
             (Check::Cycle, "Pong"),
             (Check::Type, "E1"),
             (Check::InconsistentUses, "E4"),
+            // a parameter that may be blank, as ottr:Triple's predicate or another non-blank one
+            (Check::NonBlankFlags, "AsPredicate"),
+            (Check::NonBlankFlags, "OptionalPredicate"),
+            (Check::NonBlankFlags, "UntypedPredicate"),
+            (Check::NonBlankFlags, "InList"),
+            (Check::NonBlankFlags, "Outer"),
         ]
         .into_iter()
         .map(|(c, t)| (c, t.to_owned()))

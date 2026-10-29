@@ -142,6 +142,12 @@ Duplicates are removed within each record, or within a window of distinct triple
 (`--dedup N`), as in oxi-gen; Turtle output sorts each window, so a subject's triples come out
 together.
 
+The command line writes a file as the store takes a load (§9): all or nothing. `-o FILE` is
+written to `.FILE.tarka-PID.tmp` beside it, closed (which also ends a gzip stream) and renamed
+to `FILE` once the run is complete; a run that fails, at any point, drops the writer and removes
+the temporary file, so it leaves an earlier `FILE` as it was. Standard output is written as it
+goes.
+
 ## 6. Data frames
 
 A record's cells are text or lists (`Cell::Text`, `Cell::List`). tarka-polars converts a frame
@@ -265,7 +271,9 @@ linter on cases at the edges:
   types must be on one branch of the tree.
 
 `tarka_ottr::lint` applies it to every template body, with the structural checks (undefined
-templates, arity, cycles, unused and undeclared variables, duplicates), and returns findings
+templates, arity, cycles, unused and undeclared variables, duplicates, and Lutra's non-blank
+flags: a parameter not marked `!` given to one that is, `ottr:Triple`'s predicate among them),
+and returns findings
 with a file, a line and a check name. A live test runs Lutra's linter on the same library of
 mistakes and requires the same findings, as often, in the same templates.
 

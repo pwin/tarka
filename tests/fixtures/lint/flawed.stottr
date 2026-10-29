@@ -75,3 +75,9 @@ ex:F5 [ schema:Thing ?x ] :: { ex:Named2(?x) } .
 ex:F6 [ ottr:IRI ?x ] :: { ex:Named2(?x) } .
 ex:F6 [ ottr:IRI ?x ] :: { ex:Named2(?x) } .
 ex:F7 [ ottr:IRI ?x ] :: { ottr:Triple(?x, ex:p, ex:o), ottr:Triple("lit", ex:p, ex:o), ottr:Triple(?x, "p", ex:o) } .
+
+# a parameter that may be blank, used as a predicate or given to a non-blank parameter
+ex:AsPredicate [ ottr:IRI ?s, ottr:IRI ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .
+ex:InnerNB [ ! ottr:IRI ?q ] :: { ottr:Triple(ex:s, ?q, ex:o) } .
+ex:OuterNB [ ottr:IRI ?p ] :: { ex:InnerNB(?p) } .
+ex:PredicateFine [ ottr:IRI ?s, ! ottr:IRI ?p, ?o ] :: { ottr:Triple(?s, ?p, ?o) } .
