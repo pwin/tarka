@@ -1,6 +1,21 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+# Everything but the Python module, which maturin builds. Built in the same cargo run, it turns
+# on pyo3 in polars-error (through pyo3-polars), which links python3.dll into the `tarka`
+# command, and the command then cannot start without Python. So a plain `cargo build` or
+# `cargo test` leaves it out; `--workspace` brings it back.
+default-members = [
+    "crates/tarka",
+    "crates/tarka-bottr",
+    "crates/tarka-cli",
+    "crates/tarka-core",
+    "crates/tarka-io",
+    "crates/tarka-ottr",
+    "crates/tarka-polars",
+    "crates/tarka-shacl",
+    "crates/tarka-tarql",
+]
 
 [workspace.package]
 version = "0.2.1"

@@ -55,6 +55,10 @@ cargo install --path crates/tarka-cli        # Rust 1.90 or later; installs the 
 pip install ./crates/tarka-python            # the Python module, tarka-rdf (builds with maturin)
 ```
 
+`cargo build --release` in the repository builds the command too, as `target/release/tarka`.
+It leaves out the Python module: built in the same run (`--workspace`), that module's
+dependencies would link Python into the command, which then would not start without it.
+
 What changed in each version is in [CHANGELOG.md](CHANGELOG.md). A release is cut by tagging
 the workspace version (`v0.1.0`); `.github/workflows/release.yml` builds and tests everything on
 each platform and publishes the GitHub release, and a manual run of it uploads to PyPI.
