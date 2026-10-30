@@ -67,6 +67,121 @@ fn flate2_read(path: &Path, out: &mut String) {
     flate2::read::GzDecoder::new(&bytes[..]).read_to_string(out).unwrap();
 }
 
+/// Options and file names come in any order: a command's words, grouped as each option with
+/// its values, give the same output however the groups are arranged. A bare `--dedup` or
+/// `--test` before a file name takes its default, not the file name as its number.
+#[test]
+fn arguments_in_any_order() {
+    fn orders(groups: &[Vec<String>]) -> Vec<Vec<String>> {
+        if groups.is_empty() {
+            return vec![vec![]];
+        }
+        let mut out = Vec::new();
+        for i in 0..groups.len() {
+            let mut rest = groups.to_vec();
+            let first = rest.remove(i);
+            out.extend(orders(&rest).into_iter().map(|tail| first.iter().cloned().chain(tail).collect()));
+        }
+        out
+    }
+    let group = |words: &[&str]| words.iter().map(|w| w.to_string()).collect::<Vec<_>>();
+    let people = fixture("people/people.stottr");
+    let cases = [
+        (
+            "expand",
+            vec![
+                group(&["-l", path(&people)]),
+                group(&[path(&fixture("people/employee.inst.stottr"))]),
+                group(&["--ntriples"]),
+                group(&["--dedup"]),
+            ],
+        ),
+        (
+            "bottr",
+            vec![
+                group(&["-l", path(&people)]),
+                group(&[path(&fixture("bottr/people.bottr.ttl"))]),
+                group(&["--ntriples"]),
+                group(&["--dedup", "50"]),
+            ],
+        ),
+        (
+            "run",
+            vec![
+                group(&["-q", path(&fixture("extra/people.rq"))]),
+                group(&["-i", path(&fixture("extra/people.csv"))]),
+                group(&["--ntriples"]),
+                group(&["--test"]),
+                group(&["--dedup"]),
+            ],
+        ),
+        (
+            "run",
+            vec![
+                group(&["-l", path(&people)]),
+                group(&["-T", "ex:Employee"]),
+                group(&["--list", "skills", ";"]),
+                group(&["-i", path(&fixture("people/people.csv"))]),
+                group(&["--ntriples", "--test", "2"]),
+            ],
+        ),
+    ];
+    for (command, groups) in cases {
+        let mut first: Option<Vec<String>> = None;
+        for order in orders(&groups) {
+            let args: Vec<&str> = std::iter::once(command).chain(order.iter().map(String::as_str)).collect();
+            let lines = sorted_lines(&ok(&args, None));
+            assert!(!lines.is_empty(), "tarka {}", args.join(" "));
+            match &first {
+                None => first = Some(lines),
+                Some(first) => assert_eq!(&lines, first, "tarka {}", args.join(" ")),
+            }
+        }
+    }
+}
+
+/// `--test [N]` maps only the first N rows (5 when N is not given); `--dedup [N]` removes
+/// duplicate triples across rows, within a window of N distinct triples (1000 when N is not
+/// given), where without it duplicates are removed within each row only.
+#[test]
+fn test_and_dedup_options() {
+    let dir = std::env::temp_dir().join(format!("tarka-test-dedup-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let query = dir.join("rows.rq");
+    // each row makes a triple of its own, and one that every row makes
+    std::fs::write(
+        &query,
+        "PREFIX ex: <http://example.com/>
+         CONSTRUCT { ?s a ex:Row . ex:dataset a ex:Dataset . } WHERE { BIND(tarql:expandPrefixedName(?id) AS ?s) }",
+    )
+    .unwrap();
+    let csv: String = std::iter::once("id\n".to_owned()).chain((0..8).map(|i| format!("ex:r{i}\n"))).collect();
+    let run = |extra: &[&str]| -> String { ok(&[&["run", "-q", path(&query), "--ntriples"][..], extra].concat(), Some(csv.as_bytes())) };
+    let lines = |out: &str| out.lines().filter(|l| !l.is_empty()).count();
+    let dataset = |out: &str| out.lines().filter(|l| l.starts_with("<http://example.com/dataset>")).count();
+
+    // every row, the shared triple once per row
+    let all = run(&[]);
+    assert_eq!((lines(&all), dataset(&all)), (16, 8), "{all}");
+    // --test: the first 5 rows, or the first N
+    let five = run(&["--test"]);
+    assert_eq!(lines(&five), 10, "{five}");
+    assert!(five.contains("<http://example.com/r4>") && !five.contains("<http://example.com/r5>"), "{five}");
+    let two = run(&["--test", "2"]);
+    assert_eq!(lines(&two), 4, "{two}");
+    assert!(two.contains("<http://example.com/r1>") && !two.contains("<http://example.com/r2>"), "{two}");
+    // --dedup: the shared triple once, within the default window of 1000 distinct triples
+    let deduped = run(&["--dedup"]);
+    assert_eq!((lines(&deduped), dataset(&deduped)), (9, 1), "{deduped}");
+    // a window of 3 holds two rows' worth: the shared triple once per pair of rows
+    let window = run(&["--dedup", "3"]);
+    assert_eq!((lines(&window), dataset(&window)), (12, 4), "{window}");
+    // together: the first 5 rows, the shared triple once
+    let both = run(&["--test", "--dedup"]);
+    assert_eq!((lines(&both), dataset(&both)), (6, 1), "{both}");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn splits_tests_and_turtle() {
     let q = fixture("oxigen/splitfuncs.rq");

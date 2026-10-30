@@ -4,6 +4,7 @@
 mod gsp;
 
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, Read, Write};
@@ -112,8 +113,8 @@ struct CsvArgs {
     /// Bind empty cells as empty strings instead of leaving them unbound
     #[arg(long, alias = "bind_empty_strings")]
     bind_empty_strings: bool,
-    /// Read only the first N rows
-    #[arg(long, num_args = 0..=1, default_missing_value = "5")]
+    /// Read only the first N rows, to try a mapping on a small sample (5 when N is not given)
+    #[arg(long, value_name = "N", num_args = 0..=1, default_missing_value = "5")]
     test: Option<u64>,
 }
 
@@ -134,8 +135,9 @@ struct OutputArgs {
     /// Compress the output file with gzip
     #[arg(short, long)]
     gzip: bool,
-    /// Remove duplicates within a window of N triples (default: within each row)
-    #[arg(long, num_args = 0..=1, default_missing_value = "1000")]
+    /// Remove duplicate triples across rows, within a window of N distinct triples (1000 when N
+    /// is not given). Without --dedup, duplicates are removed within each row only
+    #[arg(long, value_name = "N", num_args = 0..=1, default_missing_value = "1000")]
     dedup: Option<usize>,
 }
 
@@ -254,13 +256,43 @@ impl fmt::Display for NotConforming {
 impl std::error::Error for NotConforming {}
 
 fn main() -> ExitCode {
-    match Cli::parse().command.run() {
+    match Cli::parse_from(optional_values_last(std::env::args_os().collect())).command.run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("tarka: {e:#}");
             if e.downcast_ref::<NotConforming>().is_some() { ExitCode::from(3) } else { ExitCode::FAILURE }
         }
     }
+}
+
+/// Moves an option whose value may be left out (`--dedup`, `--test`) to the end of the
+/// command line when the word after it is not its value, so that options and file names can
+/// come in any order: clap would read the file name in `expand --dedup instances.stottr` as
+/// the number, where at the end the option takes its default. (Each such option takes a
+/// count, so a word of digits is its value.)
+fn optional_values_last(args: Vec<OsString>) -> Vec<OsString> {
+    use clap::CommandFactory;
+    let cli = Cli::command();
+    let Some(sub) = args.get(1).and_then(|a| a.to_str()).and_then(|s| cli.find_subcommand(s)) else { return args };
+    // after `--` every word is a file name
+    if args.iter().any(|a| a == "--") {
+        return args;
+    }
+    let optional: Vec<&str> = sub
+        .get_arguments()
+        .filter(|a| a.get_num_args().is_some_and(|n| n.min_values() == 0 && n.max_values() == 1))
+        .filter_map(|a| a.get_long())
+        .collect();
+    let count = |w: &OsString| w.to_str().is_some_and(|w| !w.is_empty() && w.bytes().all(|b| b.is_ascii_digit()));
+    let (mut out, mut last) = (Vec::with_capacity(args.len()), Vec::new());
+    let mut words = args.into_iter().peekable();
+    while let Some(word) = words.next() {
+        let optional = word.to_str().and_then(|w| w.strip_prefix("--")).is_some_and(|name| optional.contains(&name));
+        let before_a_word = words.peek().is_some_and(|next| !next.to_string_lossy().starts_with('-') && !count(next));
+        if optional && before_a_word { last.push(word) } else { out.push(word) }
+    }
+    out.extend(last);
+    out
 }
 
 impl Command {
