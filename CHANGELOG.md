@@ -6,6 +6,11 @@
   Python. It built the Python module too, whose dependencies then linked python3.dll into the
   command; the workspace's default members now leave the module out. The released binaries
   were never affected: they are built with `-p tarka-cli`.
+- Options and file names can come in any order. A bare `--dedup` just before a file name
+  (`tarka expand -l lib --dedup instances.stottr`) took the file name as its number and failed;
+  now it takes its default, as anywhere else.
+- `--test` and `--dedup` say what they do without a number in `--help`: the first 5 rows, and
+  duplicates removed across rows within a window of 1000 distinct triples.
 
 ## 0.2.1 (2026-10-29)
 

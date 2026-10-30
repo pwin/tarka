@@ -82,6 +82,12 @@ unbound. `?ROWNUM` is the row number, from 0. `tarql:expandPrefixedName` and
 (`https://semanticarts.com/tarql/`, predeclared as `tarql:`) or TARQL's. A `FROM <file.csv>`
 names the input when there is no `-i`.
 
+`--test` maps only the first 5 rows (`--test N`: the first N), to try a mapping on a sample
+before the whole file. Duplicate triples are removed within each row; `--dedup` removes them
+across rows too, within a window of 1000 distinct triples (`--dedup N`: N), which Turtle output
+sorts so that a subject's triples come out together. Both work for OTTR templates alike, and
+`--dedup` for `expand` and `bottr`. Options and file names can come in any order.
+
 ## OTTR
 
 ```stottr
