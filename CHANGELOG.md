@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 (2026-10-30)
 
 - `cargo build --release` in the repository builds a `tarka` command that starts without
   Python. It built the Python module too, whose dependencies then linked python3.dll into the
