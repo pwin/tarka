@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `cargo build --release` in the repository builds a `tarka` command that starts without
+  Python. It built the Python module too, whose dependencies then linked python3.dll into the
+  command; the workspace's default members now leave the module out. The released binaries
+  were never affected: they are built with `-p tarka-cli`.
+
 ## 0.2.1 (2026-10-29)
 
 - `tarka lint` reports a parameter that may be blank given to a non-blank (`!`) parameter, as
