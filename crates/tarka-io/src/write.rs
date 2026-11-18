@@ -2,16 +2,18 @@
 //!
 //! Triples are collected in a window and written when the window is full: each
 //! row's triples by default (`window = 0`), or the last `window` distinct triples.
-//! Duplicates inside a window are written once. For Turtle the window is sorted, so
-//! triples about one subject come out together.
+//! Duplicates inside a window are written once, where they first came. N-Triples and
+//! N-Quads keep the order the triples were made in, so the same run writes the same
+//! bytes every time; for Turtle the window is sorted, so triples about one subject
+//! come out together.
 
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::path::Path;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use indexmap::IndexSet;
 use oxrdf::{GraphName, NamedNode, Quad, Triple};
 use oxrdfio::{RdfFormat, RdfSerializer, WriterQuadSerializer};
 use tarka_core::PrefixMap;
@@ -62,7 +64,8 @@ pub struct RdfWriter<W: Write> {
     /// The underlying writer, once finished.
     finished: Option<W>,
     options: OutputOptions,
-    window: HashSet<Triple>,
+    /// Insertion-ordered: a `HashSet` would drain in an order that changes from run to run.
+    window: IndexSet<Triple>,
     written: u64,
 }
 
@@ -101,7 +104,7 @@ impl<W: Write> RdfWriter<W> {
         if options.format == OutputFormat::NQuads && options.graph.is_none() {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "N-Quads output needs a graph name"));
         }
-        Ok(Self { serializer: Some(serializer.for_writer(out)), finished: None, options, window: HashSet::new(), written: 0 })
+        Ok(Self { serializer: Some(serializer.for_writer(out)), finished: None, options, window: IndexSet::new(), written: 0 })
     }
 
     /// The number of triples written so far.
@@ -113,7 +116,7 @@ impl<W: Write> RdfWriter<W> {
         if self.window.is_empty() {
             return Ok(());
         }
-        let mut triples: Vec<Triple> = self.window.drain().collect();
+        let mut triples: Vec<Triple> = self.window.drain(..).collect();
         if self.options.format == OutputFormat::Turtle {
             triples.sort_by_cached_key(|t| (t.subject.to_string(), t.predicate.to_string(), t.object.to_string()));
         }
@@ -188,6 +191,22 @@ mod tests {
         let rows = vec![vec![t("a", "1"), t("a", "1")], vec![t("a", "1")]];
         assert_eq!(write(OutputFormat::NTriples, 0, rows.clone()).lines().count(), 2);
         assert_eq!(write(OutputFormat::NTriples, 1000, rows).lines().count(), 1);
+    }
+
+    #[test]
+    fn ntriples_and_nquads_keep_the_order_triples_were_made_in() {
+        // 200 triples in descending order, each given twice: a hash set would scatter them
+        let made: Vec<Triple> = (0..200).rev().map(|i| t(&format!("s{i:03}"), "x")).collect();
+        let rows = vec![made.iter().chain(&made).cloned().collect::<Vec<_>>()];
+        let want: Vec<String> = made.iter().map(|t| format!("{t} .")).collect();
+        for window in [0, 1000] {
+            let out = write(OutputFormat::NTriples, window, rows.clone());
+            assert_eq!(out.lines().collect::<Vec<_>>(), want, "window {window}");
+            let out = write(OutputFormat::NQuads, window, rows.clone());
+            let subjects: Vec<&str> = out.lines().map(|l| l.split(' ').next().unwrap()).collect();
+            assert_eq!(subjects, made.iter().map(|t| t.subject.to_string()).collect::<Vec<_>>(), "window {window}");
+            assert_eq!(out.lines().count(), subjects.len());
+        }
     }
 
     #[test]

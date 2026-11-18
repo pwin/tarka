@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- N-Triples and N-Quads output comes out in the same order every time: each row's triples in
+  the order the mapping makes them, a duplicate where it first came. The window that removes
+  duplicates was a hash set, which wrote in an order that changed from run to run, so two runs
+  over the same data gave the same triples in different files. Turtle was already sorted.
+
 ## 0.2.2 (2026-10-30)
 
 - `cargo build --release` in the repository builds a `tarka` command that starts without

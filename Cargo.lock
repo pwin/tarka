@@ -3523,6 +3523,7 @@ version = "0.2.2"
 dependencies = [
  "csv",
  "flate2",
+ "indexmap",
  "oxrdf",
  "oxrdfio",
  "tarka-core",
