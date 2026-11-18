@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- The Python tests read and compare RDF with HOLOS (`holosdb`) instead of rdflib, blank nodes
+  matched by a canonical labelling of their own (`crates/tarka-python/tests/graphs.py`). The
+  `test` extra installs `holosdb`, which needs Python 3.11 or later; the module itself still
+  supports 3.10. `comparisons/ottr` counts and compares with `holosdb` too, without rdflib or
+  pyoxigraph, and counts every tool's distinct triples alike.
+
 ## 0.2.2 (2026-10-30)
 
 - `cargo build --release` in the repository builds a `tarka` command that starts without

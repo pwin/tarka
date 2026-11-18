@@ -383,7 +383,7 @@ cargo test --workspace --exclude tarka-python
 OXI_GEN=path/to/oxi_gen LUTRA_JAR=path/to/lutra.jar cargo test --workspace --exclude tarka-python   # also compare with them live
 HOLOS_SERVER=path/to/holos-server cargo test -p tarka-cli --test holos                                # and load into HOLOS
 
-python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
+python -m venv .venv && .venv/bin/pip install maturin polars pytest holosdb shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests
 ```
 
@@ -393,6 +393,11 @@ retail suite writes one transformation of three complex CSV files both as TARQL 
 OTTR library, and both must give oxi-gen's output exactly. The same mappings run over data frames
 must give the same RDF as over CSV, and every mapping's output must conform to the shapes made
 from it.
+
+The Python tests read RDF with [HOLOS](https://github.com/pwin/triplestore) (`holosdb`, Python
+3.11 or later) and validate with [SHACL_Engine](https://github.com/pwin/SHACL_Engine) (`shacl`).
+Graphs are compared with blank nodes matched by structure and literals as written
+(`crates/tarka-python/tests/graphs.py`).
 
 The fixtures in `tests/fixtures/oxigen` come from oxi-gen and stay under its Apache-2.0 licence
 (see `tests/fixtures/oxigen/LICENSE`).

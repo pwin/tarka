@@ -5,35 +5,28 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-import rdflib
-from rdflib.compare import graph_diff, isomorphic, to_isomorphic
+from graphs import difference, parse, read
 
 import tarka_rdf
-
-# compare lexical forms as written: "01"^^xsd:integer is not "1"^^xsd:integer
-rdflib.NORMALIZE_LITERALS = False
 
 FIXTURES = Path(__file__).resolve().parents[3] / "tests" / "fixtures"
 XSD = "http://www.w3.org/2001/XMLSchema#"
 
 
-def parse(data, fmt):
-    return rdflib.Graph().parse(data=data, format=fmt)
-
-
 def expected(rel):
-    return rdflib.Graph().parse(FIXTURES / rel, format="nt")
+    return read(FIXTURES / rel, "ntriples")
 
 
 def frame_graph(triples):
     """The graph of a frame of N-Triples terms."""
-    return parse("".join(f"{s} {p} {o} .\n" for s, p, o in triples.iter_rows()), "nt")
+    return parse("".join(f"{s} {p} {o} .\n" for s, p, o in triples.iter_rows()), "ntriples")
 
 
 def assert_same(want, got, what):
-    if not isomorphic(want, got):
-        _, only_want, only_got = graph_diff(to_isomorphic(want), to_isomorphic(got))
-        lines = lambda g: "\n".join(f"  {s.n3()} {p.n3()} {o.n3()}" for s, p, o in sorted(g))
+    """The graphs are isomorphic, lexical forms compared as written."""
+    only_want, only_got = difference(want, got)
+    if only_want or only_got:
+        lines = lambda triples: "\n".join(f"  {s} {p} {o}" for s, p, o in triples)
         pytest.fail(f"{what}: graphs differ\nonly expected:\n{lines(only_want)}\nonly actual:\n{lines(only_got)}")
 
 
@@ -79,7 +72,7 @@ def test_tarql_and_ottr_mappings_agree_on_csv():
         native_tarql = tarka_rdf.Mapping.tarql_file(FIXTURES / "retail" / "tarql" / f"{dataset}.rq")
         native_ottr = tarka_rdf.Mapping.ottr([FIXTURES / "retail" / "ottr"], [root])
         for m in (native_tarql, native_ottr):
-            assert_same(want, parse(m.run_csv(csv, format="ntriples"), "nt"), f"{dataset} with {m!r}")
+            assert_same(want, parse(m.run_csv(csv, format="ntriples"), "ntriples"), f"{dataset} with {m!r}")
 
 
 def test_typed_columns(tmp_path):
@@ -103,18 +96,18 @@ def test_typed_columns(tmp_path):
         }
     ).with_columns(pl.col("at").dt.replace_time_zone("UTC"))
     m = tarka_rdf.Mapping.ottr([tmp_path], ["http://example.com/Row"])
-    got = {(str(s), str(p), o) for s, p, o in frame_graph(m.triplify(df))}
-    ex = "http://example.com/"
-    lit = lambda v, t: rdflib.Literal(v, datatype=rdflib.URIRef(XSD + t))
+    got = frame_graph(m.triplify(df))
+    ex = lambda name: f"<http://example.com/{name}>"
+    lit = lambda v, t: f'"{v}"^^<{XSD}{t}>'
     assert got == {
-        (ex + "a", ex + "n", lit("7", "integer")),
-        (ex + "a", ex + "price", lit("9.5", "decimal")),
-        (ex + "b", ex + "price", lit("0.25", "decimal")),
-        (ex + "a", ex + "ok", lit("true", "boolean")),
-        (ex + "b", ex + "ok", lit("false", "boolean")),
-        (ex + "a", ex + "day", lit("2024-03-05", "date")),
-        (ex + "b", ex + "day", lit("2024-12-31", "date")),
-        (ex + "a", ex + "at", lit("2024-03-05T10:15:00Z", "dateTime")),
+        (ex("a"), ex("n"), lit("7", "integer")),
+        (ex("a"), ex("price"), lit("9.5", "decimal")),
+        (ex("b"), ex("price"), lit("0.25", "decimal")),
+        (ex("a"), ex("ok"), lit("true", "boolean")),
+        (ex("b"), ex("ok"), lit("false", "boolean")),
+        (ex("a"), ex("day"), lit("2024-03-05", "date")),
+        (ex("b"), ex("day"), lit("2024-12-31", "date")),
+        (ex("a"), ex("at"), lit("2024-03-05T10:15:00Z", "dateTime")),
     }
 
 
@@ -124,8 +117,8 @@ def test_write(tmp_path):
     want = expected("extra/expected/people.nt")
     out = tmp_path / "people.ttl"
     assert m.write(df, out) is None
-    assert_same(want, rdflib.Graph().parse(out, format="turtle"), "Turtle file")
-    assert_same(want, parse(m.write(df, format="ntriples"), "nt"), "N-Triples text")
+    assert_same(want, read(out, "turtle"), "Turtle file")
+    assert_same(want, parse(m.write(df, format="ntriples"), "ntriples"), "N-Triples text")
     quads = m.write(df, format="nquads", graph="http://example.com/g")
     assert quads and all(line.endswith("<http://example.com/g> .") for line in quads.splitlines())
 
@@ -141,8 +134,7 @@ def test_shapes():
     m = tarka_rdf.Mapping.tarql_file(FIXTURES / "extra" / "people.rq")
     shapes = m.shapes()
     g = parse(shapes, "turtle")
-    sh = rdflib.Namespace("http://www.w3.org/ns/shacl#")
-    assert (rdflib.URIRef("urn:tarka:shapes:PersonShape"), sh.targetClass, rdflib.URIRef("http://xmlns.com/foaf/0.1/Person")) in g
+    assert ("<urn:tarka:shapes:PersonShape>", "<http://www.w3.org/ns/shacl#targetClass>", "<http://xmlns.com/foaf/0.1/Person>") in g
     assert "@prefix shape: <http://example.com/s#> ." in m.shapes(base="http://example.com/s#")
     with pytest.raises(ValueError):
         m.shapes(base="not an IRI")
@@ -170,12 +162,12 @@ def test_validation_with_shacl_engine(tmp_path):
 def test_bottr(tmp_path):
     out = tmp_path / "people.ttl"
     assert tarka_rdf.bottr([FIXTURES / "people" / "people.stottr"], [FIXTURES / "bottr" / "people.bottr.ttl"], out) is None
-    assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "people.ttl"), rdflib.Graph().parse(out), "people.bottr.ttl")
+    assert_same(read(FIXTURES / "bottr" / "expected" / "people.ttl"), read(out), "people.bottr.ttl")
     templates, args = [FIXTURES / "bottr" / "templates.stottr"], [FIXTURES / "bottr" / "args.bottr.ttl"]
     with pytest.raises(ValueError, match="1 instance left out"):
         tarka_rdf.bottr(templates, args)
     text = tarka_rdf.bottr(templates, args, strict=False)
-    assert_same(rdflib.Graph().parse(FIXTURES / "bottr" / "expected" / "args.ttl"), parse(text, "turtle"), "args.bottr.ttl")
+    assert_same(read(FIXTURES / "bottr" / "expected" / "args.ttl"), parse(text, "turtle"), "args.bottr.ttl")
 
 
 def test_errors():
