@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- TARQL queries can use Jena ARQ's property functions, as queries written for TARQL proper
+  do: `?tag apf:strSplit (?tags ";")` binds `?tag` to each part, and `apf:splitIRI`,
+  `apf:concat`, `apf:str` and `apf:assign` work too. Before, such a pattern matched nothing,
+  and the query made nothing without a word. Jena's functions `afn:localname`,
+  `afn:namespace`, `afn:strjoin`, `afn:substr`, `afn:sha1sum`, `afn:min`, `afn:max`,
+  `afn:sqrt`, `afn:pi`, `afn:e` and `afn:now` are there as well. Each gives what TARQL 1.3
+  (Jena 4.8) gives, which `tests/fixtures/jena` records. The property functions that read the
+  data (`list:member`, `rdfs:member`, `apf:bag` …), and one anywhere but the top level of the
+  WHERE clause, are refused with a message.
+
 ## 0.2.2 (2026-10-30)
 
 - `cargo build --release` in the repository builds a `tarka` command that starts without

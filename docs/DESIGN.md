@@ -72,6 +72,29 @@ message, instead of failing on the first row.
 **Prefixes.** spargebra does not keep the prologue, which `tarql:expandPrefixedName` needs, so
 `tarka-tarql` scans it separately (skipping comments, strings and IRIs).
 
+**Jena's functions.** TARQL proper runs on Jena, and queries written for it use Jena ARQ's
+property functions: `?tag apf:strSplit (?tags ";")` binds `?tag` to each part of `?tags`. A
+property function is a triple pattern with a reserved predicate, evaluated where it stands in
+the group with what the patterns before it have bound; against a row's empty dataset it would
+match nothing, and a query that relied on it would make nothing, silently. SPARQL 1.1 has no way
+to make several solutions of one, so `tarka-tarql` (`pfunc`) unwinds the group's left-folded
+algebra into steps instead: spareval evaluates the SPARQL steps up to a property function, tarka
+applies the function to each solution, and the solutions it makes are placed first in the group
+of the next steps, as the rows are. The group's FILTER and the query's modifiers go with the
+last steps. The solutions carry the hidden row variable, so they still go back to their rows,
+and a blank node, which a VALUES table cannot hold, crosses a step as a stand-in IRI. A group
+without property functions is evaluated in one, as before.
+
+Each property function does what Jena 4.8's does, as TARQL 1.3 runs it, down to the edge cases:
+`apf:strSplit` is Java's `String.split` on a regular expression, each part trimmed (empty parts
+in the middle kept, those at the end dropped), and tests a bound subject for membership;
+`apf:splitIRI` splits before the longest XML name at the end of the IRI, as do `afn:localname`
+and `afn:namespace`. The ones that read the data (`list:member`, `rdfs:member`, `apf:bag` …),
+search a text index or give a blank node's label are refused when the query is compiled, as is a
+property function anywhere but the top of the group. Jena's scalar functions (`afn:strjoin`,
+`afn:substr`, `afn:sha1sum` …) are custom functions to spareval. `tests/fixtures/jena` holds
+queries and the RDF TARQL 1.3 made of them, which tarka must make too.
+
 ## 3. OTTR
 
 A template compiles by symbolic expansion down to `ottr:Triple`:

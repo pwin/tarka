@@ -1,0 +1,11 @@
+id,s
+middle,a;;b
+end,a;b;
+blank-end,"a;b; "
+start,;a
+spaces,"  x ; y  "
+blank," "
+separators,;;
+empty,
+one,a
+regex,"a ; b|c ;d"
