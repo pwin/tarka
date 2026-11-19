@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- bOTTR: a literal of a datatype OTTR does not have (`geo:wktLiteral` …), read from a cell with
+  `ottr:datatypeSep`, fits an `rdfs:Literal` parameter, as in Lutra. tarka left the instance out
+  ("does not fit ?wkt : rdfs:Literal"). The same literals in templates and instance files are
+  `rdfs:Literal`s to `tarka lint` too.
+- bOTTR: an `ottr:type` naming a type OTTR does not have is reported. Its values are written as
+  plain strings, as Lutra writes them (Lutra reports an error); tarka now says so, and says to
+  use `ottr:datatypeSep` for a datatype OTTR does not have, instead of saying nothing.
+
 ## 0.3.0 (2026-11-19)
 
 - TARQL queries can use Jena ARQ's property functions, as queries written for TARQL proper

@@ -16,3 +16,5 @@ ex:Q [ ottr:IRI ?id, ? ?v, ? ?c, ? ?n ] :: { ottr:Triple(?id, ex:v, ?v), ottr:Tr
 ex:Tags [ ottr:IRI ?id, ? List<LUB<rdfs:Resource>> ?tags ] :: { ottr:Triple(?id, ex:tags, ?tags) } .
 
 ex:P [ ottr:IRI ?id, ? ?plain ] :: { ottr:Triple(?id, ex:plain, ?plain) } .
+
+ex:Shape [ ottr:IRI ?id, rdfs:Literal ?wkt, ? rdfs:Literal ?other ] :: { ottr:Triple(?id, ex:wkt, ?wkt), ottr:Triple(?id, ex:other, ?other) } .

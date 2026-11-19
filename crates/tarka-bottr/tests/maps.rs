@@ -21,6 +21,7 @@ const CASES: &[(&str, &str, u64)] = &[
     ("bottr/sql.bottr.ttl", "bottr/templates.stottr", 0),
     ("bottr/lists.bottr.ttl", "bottr/templates.stottr", 0),
     ("bottr/h2.bottr.ttl", "bottr/templates.stottr", 4),
+    ("bottr/datatypes.bottr.ttl", "bottr/templates.stottr", 0),
 ];
 
 fn expected(map: &str) -> PathBuf {

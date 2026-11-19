@@ -1,0 +1,10 @@
+# Datatypes OTTR does not have. ottr:datatypeSep reads one from the cell, as a full IRI or
+# a prefixed name; the literal is an rdfs:Literal to the type checker, as in Lutra (which
+# warns that the datatype is unusual). ottr:type cannot name one: Lutra reports an error
+# and writes the values as plain strings, and so does tarka (with a warning).
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix ex:   <http://example.com/ns#> .
+@prefix geo:  <http://www.opengis.net/ont/geosparql#> .
+[] a ottr:InstanceMap ; ottr:template ex:Shape ; ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT id, wkt, other FROM CSVREAD('@@THIS_DIR@@/datatypes.csv')""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:datatypeSep "^^" ] [ ottr:type geo:wktLiteral ] ) .

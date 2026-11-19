@@ -414,9 +414,14 @@ pub fn term_type(t: &OTerm, params: &HashMap<&str, TypeRef>) -> Option<TypeRef> 
     })
 }
 
-/// The type of a literal: its datatype.
+/// The type of a literal: its datatype, or `rdfs:Literal` for a datatype OTTR does not have
+/// (`geo:wktLiteral` …), which Lutra warns of as an unusual datatype and lets through.
 pub fn literal_type(l: &oxrdf::Literal) -> TypeRef {
-    if l.language().is_some() { basic("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString") } else { basic(l.datatype().as_str()) }
+    if l.language().is_some() {
+        return basic("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString");
+    }
+    let datatype = l.datatype().as_str();
+    if crate::types::is_known(datatype) { basic(datatype) } else { basic(crate::types::LITERAL) }
 }
 
 #[cfg(test)]
