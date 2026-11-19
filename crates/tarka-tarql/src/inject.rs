@@ -52,8 +52,22 @@ fn first_in_group(pattern: GraphPattern, values: GraphPattern) -> GraphPattern {
     }
 }
 
+/// `pattern` with `group` for its WHERE group, below the same projection and solution
+/// modifiers.
+pub(crate) fn replace_group(pattern: &GraphPattern, group: GraphPattern) -> GraphPattern {
+    let below = |inner: &GraphPattern| Box::new(replace_group(inner, group.clone()));
+    match pattern {
+        GraphPattern::Project { inner, variables } => GraphPattern::Project { inner: below(inner), variables: variables.clone() },
+        GraphPattern::Slice { inner, start, length } => GraphPattern::Slice { inner: below(inner), start: *start, length: *length },
+        GraphPattern::OrderBy { inner, expression } => GraphPattern::OrderBy { inner: below(inner), expression: expression.clone() },
+        GraphPattern::Distinct { inner } => GraphPattern::Distinct { inner: below(inner) },
+        GraphPattern::Reduced { inner } => GraphPattern::Reduced { inner: below(inner) },
+        _ => group,
+    }
+}
+
 /// The WHERE group itself, below the projection and solution modifiers.
-fn group(pattern: &GraphPattern) -> &GraphPattern {
+pub(crate) fn group(pattern: &GraphPattern) -> &GraphPattern {
     match pattern {
         GraphPattern::Project { inner, .. }
         | GraphPattern::Slice { inner, .. }

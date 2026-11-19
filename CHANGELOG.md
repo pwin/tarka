@@ -2,13 +2,33 @@
 
 ## Unreleased
 
+- TARQL queries can use Jena ARQ's property functions, as queries written for TARQL proper
+  do: `?tag apf:strSplit (?tags ";")` binds `?tag` to each part, and `apf:splitIRI`,
+  `apf:concat`, `apf:str` and `apf:assign` work too. Before, such a pattern matched nothing,
+  and the query made nothing without a word. Jena's functions `afn:localname`,
+  `afn:namespace`, `afn:strjoin`, `afn:substr`, `afn:sha1sum`, `afn:min`, `afn:max`,
+  `afn:sqrt`, `afn:pi`, `afn:e` and `afn:now` are there as well. Each gives what TARQL 1.3
+  (Jena 4.8) gives, which `tests/fixtures/jena` records. The property functions that read the
+  data (`list:member`, `rdfs:member`, `apf:bag` …), and one anywhere but the top level of the
+  WHERE clause, are refused with a message.
+- The Python tests read and compare RDF with HOLOS (`holosdb`) instead of rdflib, blank nodes
+  matched by a canonical labelling of their own (`crates/tarka-python/tests/graphs.py`). The
+  `test` extra installs `holosdb`, which needs Python 3.11 or later; the module itself still
+  supports 3.10. `comparisons/ottr` counts and compares with `holosdb` too, without rdflib or
+  pyoxigraph, and counts every tool's distinct triples alike.
+- N-Triples and N-Quads output comes out in the same order every time: each row's triples in
+  the order the mapping makes them, a duplicate where it first came. The window that removes
+  duplicates was a hash set, which wrote in an order that changed from run to run, so two runs
+  over the same data gave the same triples in different files. Turtle was already sorted.
 - tarka is built on [HOLOS](https://github.com/pwin/triplestore): WHERE clauses and bOTTR's
   RDF sources are evaluated with HOLOS's engine (`holos-engine`), and the RDF terms, parsers and
   serialisers are the ones it re-exports. tarka no longer depends on the Oxigraph crates itself.
   - HOLOS's fixes come with it: a decimal product too long to hold exactly is rounded rather
     than left unbound, and a duration may come first in `+` with a date, time or dateTime.
   - So do its functions: `xsd:date()`, `xsd:time()` and `xsd:duration()` casts, as TARQL
-    (Jena) has them, and HOLOS's `geof:`, `fn:`, `afn:` and `spif:` libraries.
+    (Jena) has them, and HOLOS's `geof:`, `fn:` and `spif:` libraries. Its `afn:` functions are
+    replaced by tarka's, which give what Jena gives, in bOTTR's RDF sources too, where Lutra
+    has Jena's. `afn:sprintf`, which HOLOS has for `%s` and `%d` only, is refused, as before.
   - The Oxigraph crates now parse RDF 1.2 and SPARQL 1.2 in every build, as HOLOS builds them.
     tarka still refuses both, as before; its checks now run against parsers that accept them
     every time.

@@ -11,5 +11,9 @@ authors.workspace = true
 
 [dependencies]
 holos-engine.workspace = true
+# Jena's apf:strSplit splits on a regular expression, and afn:sha1sum hashes: the
+# versions spareval already uses for REGEX and SHA1
+regex = "1"
+sha1 = "0.11"
 thiserror.workspace = true
 tarka-core.workspace = true

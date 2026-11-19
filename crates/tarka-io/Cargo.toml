@@ -12,5 +12,6 @@ authors.workspace = true
 csv.workspace = true
 flate2.workspace = true
 holos-engine.workspace = true
+indexmap.workspace = true
 thiserror.workspace = true
 tarka-core.workspace = true

@@ -1,0 +1,8 @@
+# A column named as apf:strSplit's output is bound: the row is kept if its value is one
+# of the parts.
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX ex:  <http://example.com/>
+CONSTRUCT { ?row ex:part ?part } WHERE {
+  BIND(IRI(CONCAT("http://example.com/", ?id)) AS ?row)
+  ?part apf:strSplit (?parts ",")
+}

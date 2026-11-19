@@ -89,6 +89,28 @@ across rows too, within a window of 1000 distinct triples (`--dedup N`: N), whic
 sorts so that a subject's triples come out together. Both work for OTTR templates alike, and
 `--dedup` for `expand` and `bottr`. Options and file names can come in any order.
 
+Queries written for TARQL proper, which runs on Jena, can use Jena ARQ's property functions:
+
+```sparql
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX ex:  <http://example.com/ns#>
+CONSTRUCT { ?person ex:skill ?skill } WHERE {
+  BIND(tarql:expandPrefixedName(?id) AS ?person)
+  ?skill apf:strSplit (?skills ";")
+}
+```
+
+`apf:strSplit` binds `?skill` to each part of `?skills`, split on a regular expression and
+trimmed, as Jena does. `apf:splitIRI` (`?iri apf:splitIRI (?namespace ?localname)`),
+`apf:concat`, `apf:str` and `apf:assign` work too, and so do Jena's functions `afn:localname`,
+`afn:namespace`, `afn:strjoin`, `afn:substr`, `afn:sha1sum`, `afn:min`, `afn:max`, `afn:sqrt`,
+`afn:pi`, `afn:e` and `afn:now`, in the current namespaces or Jena's old ones. Each gives what
+TARQL 1.3 gives (`tests/fixtures/jena`). A property function is evaluated where it stands at the
+top level of the WHERE clause; one inside `OPTIONAL`, `UNION` or a nested group, and those that
+read the data (`list:member`, `rdfs:member`, `apf:bag` …), are refused rather than left to match
+nothing. oxi-gen has none of these; its `--split` splits a column on a delimiter given on the
+command line instead.
+
 ## OTTR
 
 ```stottr
@@ -384,7 +406,7 @@ cargo test --workspace --exclude tarka-python
 OXI_GEN=path/to/oxi_gen LUTRA_JAR=path/to/lutra.jar cargo test --workspace --exclude tarka-python   # also compare with them live
 HOLOS_SERVER=path/to/holos-server cargo test -p tarka-cli --test holos                                # and load into HOLOS
 
-python -m venv .venv && .venv/bin/pip install maturin polars pytest rdflib shacl
+python -m venv .venv && .venv/bin/pip install maturin polars pytest holosdb shacl
 (cd crates/tarka-python && ../../.venv/bin/maturin develop) && .venv/bin/pytest crates/tarka-python/tests
 ```
 
@@ -394,6 +416,11 @@ retail suite writes one transformation of three complex CSV files both as TARQL 
 OTTR library, and both must give oxi-gen's output exactly. The same mappings run over data frames
 must give the same RDF as over CSV, and every mapping's output must conform to the shapes made
 from it.
+
+The Python tests read RDF with [HOLOS](https://github.com/pwin/triplestore) (`holosdb`, Python
+3.11 or later) and validate with [SHACL_Engine](https://github.com/pwin/SHACL_Engine) (`shacl`).
+Graphs are compared with blank nodes matched by structure and literals as written
+(`crates/tarka-python/tests/graphs.py`).
 
 The fixtures in `tests/fixtures/oxigen` come from oxi-gen and stay under its Apache-2.0 licence
 (see `tests/fixtures/oxigen/LICENSE`).

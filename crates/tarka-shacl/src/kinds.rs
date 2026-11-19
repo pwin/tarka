@@ -9,6 +9,7 @@ use oxrdf::{NamedNode, Term};
 use spargebra::algebra::{Expression, Function, GraphPattern};
 use spargebra::term::GroundTerm;
 use tarka_core::{BNodeId, Block, CellSource, Conversion, Lifting, Plan, SparqlLifting, TermPat, VarId};
+use tarka_tarql::pfunc::Output;
 
 /// One kind of term a pattern can give.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -132,13 +133,15 @@ struct Inference<'a> {
     binds: HashMap<&'a str, Vec<&'a Expression>>,
     /// The terms a VALUES clause gives each variable (None for UNDEF).
     values: HashMap<&'a str, Vec<Option<&'a GroundTerm>>>,
+    /// What Jena's property functions (`apf:strSplit` …) bind variables to.
+    bound: HashMap<String, Kinds>,
     /// The row's columns: plain strings.
     columns: &'a [String],
 }
 
 impl<'a> Inference<'a> {
     fn new(lifting: &'a SparqlLifting) -> Self {
-        let mut this = Self { binds: HashMap::new(), values: HashMap::new(), columns: &lifting.variables };
+        let mut this = Self { binds: HashMap::new(), values: HashMap::new(), bound: HashMap::new(), columns: &lifting.variables };
         this.walk(&lifting.pattern);
         this
     }
@@ -166,7 +169,23 @@ impl<'a> Inference<'a> {
             | GraphPattern::Distinct { inner }
             | GraphPattern::Reduced { inner }
             | GraphPattern::Slice { inner, .. } => self.walk(inner),
-            // triple patterns, paths, aggregates and services bind nothing known here
+            GraphPattern::Bgp { patterns } => {
+                // a TARQL row has no data for a triple pattern to match; a property
+                // function binds what it makes
+                let Ok((functions, _)) = tarka_tarql::pfunc::split_bgp(patterns) else { return };
+                for f in &functions {
+                    for (v, output) in f.outputs() {
+                        let kinds = match output {
+                            Output::String => string(),
+                            Output::Iri => one(Kind::Iri),
+                            Output::Any => None,
+                        };
+                        let known = self.bound.entry(v.as_str().to_owned()).or_insert_with(|| Some(BTreeSet::new()));
+                        *known = join(known.take(), kinds);
+                    }
+                }
+            }
+            // paths, aggregates and services bind nothing known here
             _ => {}
         }
     }
@@ -191,6 +210,9 @@ impl<'a> Inference<'a> {
                 out = join(out, ground(t));
             }
             return out;
+        }
+        if let Some(kinds) = self.bound.get(name) {
+            return kinds.clone();
         }
         if name == "ROWNUM" {
             return literal(xsd::INTEGER.into());
@@ -290,11 +312,18 @@ impl<'a> Inference<'a> {
     }
 }
 
-/// A custom function: an XSD cast, or one of TARQL's.
+/// A custom function: an XSD cast, one of TARQL's, or one of Jena's (`afn:`).
 fn custom(iri: &NamedNode) -> Kinds {
     let name = iri.as_str();
     if name.starts_with(XSD) {
         return literal(evaluated_datatype(iri));
+    }
+    match tarka_tarql::AFN_NAMESPACES.iter().find_map(|ns| name.strip_prefix(ns)) {
+        Some("localname" | "namespace" | "strjoin" | "substr" | "substring" | "sha1sum") => return string(),
+        Some("pi" | "e" | "sqrt") => return literal(xsd::DOUBLE.into()),
+        Some("now") => return literal(xsd::DATE_TIME.into()),
+        // afn:min and afn:max give one of their arguments, whichever it is
+        _ => {}
     }
     let local = tarka_tarql::TARQL_NAMESPACES.iter().find_map(|ns| name.strip_prefix(ns));
     match local {
@@ -381,6 +410,30 @@ mod tests {
         assert_eq!(k["u"], lit(xsd::STRING), "a column is a plain string");
         assert_eq!(k["i"], lit(xsd::INTEGER), "spareval writes xsd:int values as xsd:integer");
         assert_eq!(k["row"], lit(xsd::INTEGER));
+    }
+
+    /// What Jena's property functions and functions give.
+    #[test]
+    fn jena_functions() {
+        let k = kinds_of(
+            "PREFIX apf: <http://jena.apache.org/ARQ/property#> PREFIX afn: <http://jena.apache.org/ARQ/function#>
+             CONSTRUCT { ?s ?p ?tag . ?s ?p ?ns . ?s ?p ?ln . ?s ?p ?local . ?s ?p ?pi . ?s ?p ?a }
+             WHERE {
+               BIND(IRI(?id) AS ?s)
+               BIND(IRI(?pred) AS ?p)
+               ?tag apf:strSplit (?tags \";\") .
+               ?s apf:splitIRI (?ns ?ln) .
+               ?a apf:assign ?s
+               BIND(afn:localname(?s) AS ?local)
+               BIND(afn:pi() AS ?pi)
+             }",
+        );
+        assert_eq!(k["tag"], string());
+        assert_eq!(k["ns"], one(Kind::Iri));
+        assert_eq!(k["ln"], string());
+        assert_eq!(k["local"], string());
+        assert_eq!(k["pi"], literal(xsd::DOUBLE.into()));
+        assert_eq!(k["a"], None, "apf:assign gives whatever it is given");
     }
 
     use oxrdf::NamedNodeRef;

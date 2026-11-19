@@ -4002,6 +4002,7 @@ dependencies = [
  "csv",
  "flate2",
  "holos-engine",
+ "indexmap",
  "tarka-core",
  "thiserror 2.0.21",
 ]
@@ -4060,6 +4061,8 @@ name = "tarka-tarql"
 version = "0.2.2"
 dependencies = [
  "holos-engine",
+ "regex",
+ "sha1",
  "tarka-core",
  "thiserror 2.0.21",
 ]

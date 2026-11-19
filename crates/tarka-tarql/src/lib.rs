@@ -8,8 +8,11 @@
 //! into the query instead, after which `BOUND(?column)` is false.)
 
 use holos_engine::{oxiri, oxrdf, spargebra};
+
+mod afn;
 pub mod eval;
 pub mod inject;
+pub mod pfunc;
 pub mod scan;
 pub mod sparql11;
 
@@ -21,7 +24,14 @@ use spargebra::{Query, SparqlParser, SparqlSyntaxError};
 use tarka_core::{BNodeId, Lifting, Pattern, Plan, PrefixMap, SparqlLifting, TermPat};
 use thiserror::Error;
 
+pub use afn::AFN_NAMESPACES;
 pub use eval::{EvalError, Solution, SparqlEvaluator, TARQL_NAMESPACES};
+
+/// The evaluator tarka runs SPARQL with: HOLOS's (`holos_engine::Engine::evaluator()`), with
+/// Jena's `afn:` functions as Jena has them in place of HOLOS's.
+pub fn evaluator() -> holos_engine::spareval::QueryEvaluator {
+    afn::register(holos_engine::Engine::evaluator())
+}
 
 #[derive(Debug, Error)]
 pub enum TarqlError {
@@ -31,6 +41,10 @@ pub enum TarqlError {
     NotConstruct,
     #[error("{0} is not supported (tarka works with RDF 1.1 and SPARQL 1.1)")]
     Unsupported(&'static str),
+    /// A Jena property function written wrongly, or a Jena function or property function tarka
+    /// cannot evaluate.
+    #[error("{0}")]
+    PropertyFunction(String),
 }
 
 fn parser() -> SparqlParser {
@@ -43,7 +57,8 @@ pub fn parse_tarql(text: &str, name: &str) -> Result<Plan, TarqlError> {
     let Query::Construct { template, dataset, pattern, base_iri } = parser().parse_query(text)? else {
         return Err(TarqlError::NotConstruct);
     };
-    sparql11::check(&template, &pattern)?;
+    sparql11::check_local(&template, &pattern)?;
+    pfunc::staged(&pattern)?;
     let mut plan = Plan::new(name, Lifting::Given);
     plan.prefixes = prefixes;
     let mut bnodes: HashMap<String, BNodeId> = HashMap::new();
@@ -91,7 +106,8 @@ pub fn sparql_lifting(
     let Query::Construct { pattern, base_iri, .. } = parser().parse_query(&text)? else {
         return Err(TarqlError::NotConstruct);
     };
-    sparql11::check(&[], &pattern)?;
+    sparql11::check_local(&[], &pattern)?;
+    pfunc::staged(&pattern)?;
     // the outputs are read from row columns too (a parameter that no BIND makes)
     let mut variables = scan::variables(&text);
     for (_, name) in &outputs {
@@ -205,6 +221,9 @@ mod tests {
     fn errors() {
         assert!(matches!(parse_tarql("SELECT * WHERE {}", "q"), Err(TarqlError::NotConstruct)));
         assert!(matches!(parse_tarql("CONSTRUCT { ?s ?p }", "q"), Err(TarqlError::Syntax(_))));
+        // HOLOS has an afn:sprintf that takes %s and %d only: tarka refuses it rather than format otherwise than Jena
+        let sprintf = "PREFIX afn: <http://jena.apache.org/ARQ/function#> CONSTRUCT { <http://s> <http://p> ?f } WHERE { BIND(afn:sprintf(\"%05d\", ?n) AS ?f) }";
+        assert!(matches!(parse_tarql(sprintf, "q"), Err(TarqlError::PropertyFunction(m)) if m.contains("afn:sprintf is not supported")));
         let plan = parse_tarql(
             "PREFIX ex: <http://example.com/> CONSTRUCT { <http://s> <http://p> ?d } WHERE { BIND(ex:nothing(?v) AS ?d) }",
             "q",

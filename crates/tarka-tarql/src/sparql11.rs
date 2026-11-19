@@ -7,6 +7,7 @@
 //! rejected, and every test run checks that against a parser that accepts them.
 
 use holos_engine::{oxrdf, spargebra};
+use oxrdf::NamedNode;
 use spargebra::algebra::{AggregateExpression, Expression, Function, GraphPattern, OrderExpression};
 use spargebra::term::{GroundTerm, TermPattern, TriplePattern};
 
@@ -16,11 +17,24 @@ const DIR_LANG_STRING: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLan
 
 /// Fails on anything in a CONSTRUCT template or WHERE clause beyond SPARQL 1.1.
 pub fn check(template: &[TriplePattern], pattern: &GraphPattern) -> Result<(), TarqlError> {
+    check_with(template, pattern, &|_| Ok(()))
+}
+
+/// [`check`], for a query tarka evaluates itself rather than sends to an endpoint: it also
+/// fails on a function tarka would not evaluate as Jena does ([`crate::afn::refused`]).
+pub fn check_local(template: &[TriplePattern], pattern: &GraphPattern) -> Result<(), TarqlError> {
+    check_with(template, pattern, &crate::afn::refused)
+}
+
+/// What a custom function's IRI is checked with.
+type Custom<'a> = &'a dyn Fn(&NamedNode) -> Result<(), TarqlError>;
+
+fn check_with(template: &[TriplePattern], pattern: &GraphPattern, c: Custom) -> Result<(), TarqlError> {
     for t in template {
         term(&t.subject)?;
         term(&t.object)?;
     }
-    graph_pattern(pattern)
+    graph_pattern(pattern, c)
 }
 
 fn literal(l: &oxrdf::Literal) -> Result<(), TarqlError> {
@@ -48,7 +62,7 @@ fn ground(t: &GroundTerm) -> Result<(), TarqlError> {
     }
 }
 
-fn graph_pattern(p: &GraphPattern) -> Result<(), TarqlError> {
+fn graph_pattern(p: &GraphPattern, c: Custom) -> Result<(), TarqlError> {
     match p {
         GraphPattern::Bgp { patterns } => patterns.iter().try_for_each(|t| {
             term(&t.subject)?;
@@ -59,51 +73,51 @@ fn graph_pattern(p: &GraphPattern) -> Result<(), TarqlError> {
             term(object)
         }
         GraphPattern::Join { left, right } | GraphPattern::Union { left, right } | GraphPattern::Minus { left, right } => {
-            graph_pattern(left)?;
-            graph_pattern(right)
+            graph_pattern(left, c)?;
+            graph_pattern(right, c)
         }
         GraphPattern::LeftJoin { left, right, expression } => {
-            graph_pattern(left)?;
-            graph_pattern(right)?;
-            expression.as_ref().map_or(Ok(()), expr)
+            graph_pattern(left, c)?;
+            graph_pattern(right, c)?;
+            expression.as_ref().map_or(Ok(()), |e| expr(e, c))
         }
         GraphPattern::Filter { expr: e, inner } => {
-            expr(e)?;
-            graph_pattern(inner)
+            expr(e, c)?;
+            graph_pattern(inner, c)
         }
         GraphPattern::Extend { inner, expression, .. } => {
-            expr(expression)?;
-            graph_pattern(inner)
+            expr(expression, c)?;
+            graph_pattern(inner, c)
         }
         GraphPattern::Values { bindings, .. } => bindings.iter().flatten().flatten().try_for_each(ground),
         GraphPattern::OrderBy { inner, expression } => {
             for o in expression {
                 match o {
-                    OrderExpression::Asc(e) | OrderExpression::Desc(e) => expr(e)?,
+                    OrderExpression::Asc(e) | OrderExpression::Desc(e) => expr(e, c)?,
                 }
             }
-            graph_pattern(inner)
+            graph_pattern(inner, c)
         }
         GraphPattern::Group { inner, aggregates, .. } => {
             for (_, a) in aggregates {
                 if let AggregateExpression::FunctionCall { expr: e, .. } = a {
-                    expr(e)?;
+                    expr(e, c)?;
                 }
             }
-            graph_pattern(inner)
+            graph_pattern(inner, c)
         }
         GraphPattern::Graph { inner, .. }
         | GraphPattern::Project { inner, .. }
         | GraphPattern::Distinct { inner }
         | GraphPattern::Reduced { inner }
         | GraphPattern::Slice { inner, .. }
-        | GraphPattern::Service { inner, .. } => graph_pattern(inner),
+        | GraphPattern::Service { inner, .. } => graph_pattern(inner, c),
         #[allow(unreachable_patterns)]
         _ => Err(TarqlError::Unsupported("a SPARQL 1.2 graph pattern")),
     }
 }
 
-fn expr(e: &Expression) -> Result<(), TarqlError> {
+fn expr(e: &Expression, c: Custom) -> Result<(), TarqlError> {
     match e {
         Expression::NamedNode(_) | Expression::Variable(_) | Expression::Bound(_) => Ok(()),
         Expression::Literal(l) => literal(l),
@@ -119,29 +133,29 @@ fn expr(e: &Expression) -> Result<(), TarqlError> {
         | Expression::Subtract(a, b)
         | Expression::Multiply(a, b)
         | Expression::Divide(a, b) => {
-            expr(a)?;
-            expr(b)
+            expr(a, c)?;
+            expr(b, c)
         }
         Expression::In(a, list) => {
-            expr(a)?;
-            list.iter().try_for_each(expr)
+            expr(a, c)?;
+            list.iter().try_for_each(|e| expr(e, c))
         }
-        Expression::UnaryPlus(a) | Expression::UnaryMinus(a) | Expression::Not(a) => expr(a),
-        Expression::Exists(p) => graph_pattern(p),
-        Expression::If(a, b, c) => {
-            expr(a)?;
-            expr(b)?;
-            expr(c)
+        Expression::UnaryPlus(a) | Expression::UnaryMinus(a) | Expression::Not(a) => expr(a, c),
+        Expression::Exists(p) => graph_pattern(p, c),
+        Expression::If(a, b, d) => {
+            expr(a, c)?;
+            expr(b, c)?;
+            expr(d, c)
         }
-        Expression::Coalesce(list) => list.iter().try_for_each(expr),
+        Expression::Coalesce(list) => list.iter().try_for_each(|e| expr(e, c)),
         Expression::FunctionCall(f, args) => {
-            function(f)?;
-            args.iter().try_for_each(expr)
+            function(f, c)?;
+            args.iter().try_for_each(|e| expr(e, c))
         }
     }
 }
 
-fn function(f: &Function) -> Result<(), TarqlError> {
+fn function(f: &Function, c: Custom) -> Result<(), TarqlError> {
     match f {
         Function::Str
         | Function::Lang
@@ -188,8 +202,8 @@ fn function(f: &Function) -> Result<(), TarqlError> {
         | Function::IsBlank
         | Function::IsLiteral
         | Function::IsNumeric
-        | Function::Regex
-        | Function::Custom(_) => Ok(()),
+        | Function::Regex => Ok(()),
+        Function::Custom(name) => c(name),
         #[allow(unreachable_patterns)]
         _ => Err(TarqlError::Unsupported("a SPARQL 1.2 function")),
     }

@@ -34,6 +34,8 @@ authors = ["Peter Winstanley"]
 holos-engine = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
 csv = "1.4"
 flate2 = "1"
+# insertion-ordered sets: the output window is written in the order its triples were made
+indexmap = "2"
 clap = { version = "4", features = ["derive"] }
 thiserror = "2"
 anyhow = "1"

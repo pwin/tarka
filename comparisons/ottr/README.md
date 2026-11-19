@@ -36,9 +36,11 @@ Measured on 23 October 2026 with Lutra 0.6.21 (its latest release, on Java 25), 
 ## The RDF each makes
 
 `bench.py` maps the 8 rows of tarka's retail fixture with each tool, and `compare.py` compares
-the graphs, blank nodes matched by structure. **tarka's graph is isomorphic to Lutra's**: 104
-triples, every blank node in place. maplib's has 120. Its triples without blank nodes are the
-same (22), and the rest differ in one way: OTTR drops an instance when a mandatory parameter's
+the graphs, blank nodes matched by structure and literals as written. **tarka's graph is
+isomorphic to Lutra's**: 104 triples, every blank node in place, every literal written the same.
+maplib's has 120. Its 22 triples without blank nodes are Lutra's, except that it writes the four
+order dates with `+00:00` and `.500` where Lutra and tarka write `Z` and `.5`: the same values,
+written differently. The rest differ in one way: OTTR drops an instance when a mandatory parameter's
 argument is `none`, its blank nodes with it, and maplib does not do that in nested templates.
 It makes the instance with what it has:
 
@@ -151,8 +153,8 @@ needs about 9 GB of memory.
 | File | What it does |
 |---|---|
 | `data.py` | The templates, the typed frames, and the same rows as CSV with a bOTTR map for Lutra |
-| `run.py` | One timed run of one tool, in its own process, printed as JSON. Lutra's file is counted twice: its statements, parsed with pyoxigraph, as the others' files are counted, and its distinct triples, loaded into [HOLOS](https://github.com/pwin/triplestore) (`holosdb`), which holds each triple once |
+| `run.py` | One timed run of one tool, in its own process, printed as JSON. `triples` is the distinct triples, for each tool alike: a file's loaded into [HOLOS](https://github.com/pwin/triplestore) (`holosdb`), which holds each triple once, tarka's frame and maplib's store. `statements` is the lines of an N-Triples file, repeats included; Lutra's Turtle is not counted that way |
 | `bench.py` | The 8-row comparison, then the timed runs, in turn, and a table of medians |
-| `compare.py` | Two RDF files as graphs: isomorphic or not, and the incomplete nodes |
+| `compare.py` | Two RDF files as graphs, read with `holosdb`: isomorphic or not, and the incomplete nodes |
 | `edge_cases.py` | Prefixed names, `mailto:`, cells that are not IRIs, and nulls, in each tool |
-| `results/` | Raw results, one JSON line per run: the morning's two tools, the afternoon's three (Lutra's distinct triples were counted afterwards: 2.6 million at 200,000 rows, as tarka's `triplify` gives) |
+| `results/` | Raw results, one JSON line per run: the morning's two tools, the afternoon's three. There, a file's `triples` is its statements, as `run.py` counted them then (Lutra's distinct triples were counted afterwards: 2.6 million at 200,000 rows, as tarka's `triplify` gives) |
