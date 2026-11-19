@@ -10,7 +10,7 @@ authors.workspace = true
 readme = "../../README.md"
 
 [dependencies]
-oxrdf.workspace = true
+holos-engine.workspace = true
 rayon.workspace = true
 thiserror.workspace = true
 tarka-core.workspace = true
@@ -19,5 +19,3 @@ tarka-ottr.workspace = true
 tarka-tarql.workspace = true
 
 [dev-dependencies]
-oxrdf.workspace = true
-oxrdfio.workspace = true

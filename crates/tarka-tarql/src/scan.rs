@@ -2,6 +2,7 @@
 //! name used. spargebra does not keep the prologue, and `tarql:expandPrefixedName`
 //! resolves against it at run time.
 
+use holos_engine::oxiri;
 use tarka_core::PrefixMap;
 
 #[derive(Debug, PartialEq, Eq)]

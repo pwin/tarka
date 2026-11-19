@@ -1,5 +1,7 @@
-//! Evaluating a SPARQL lifting over rows with spareval.
+//! Evaluating a SPARQL lifting over rows with HOLOS's evaluator (spareval, with HOLOS's
+//! function libraries: GeoSPARQL's `geof:`, and `fn:`, `afn:` and `spif:`).
 
+use holos_engine::{oxiri, oxrdf, spareval, spargebra};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -41,7 +43,7 @@ impl SparqlEvaluator {
     /// An evaluator for `lifting` over records with these `columns`.
     pub fn new(lifting: &SparqlLifting, prefixes: &PrefixMap, columns: &[String]) -> Self {
         let prefixes = Arc::new(prefixes.clone());
-        let mut evaluator = QueryEvaluator::new();
+        let mut evaluator = holos_engine::Engine::evaluator();
         for ns in TARQL_NAMESPACES {
             let p = Arc::clone(&prefixes);
             evaluator = evaluator.with_custom_function(NamedNode::new_unchecked(format!("{ns}expandPrefixedName")), move |args| {

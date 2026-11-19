@@ -15,6 +15,7 @@
 //!
 //! Subjects that are variables without a constant class get no shape.
 
+use holos_engine::oxrdf;
 use std::collections::{BTreeMap, BTreeSet};
 
 use oxrdf::vocab::{rdf, xsd};

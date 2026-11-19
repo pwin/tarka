@@ -2,6 +2,7 @@
 //! root, several roots per row, signatures defined elsewhere, and one's own templates
 //! built on a published library.
 
+use holos_engine::{oxrdf, oxrdfio};
 mod common;
 
 use common::*;

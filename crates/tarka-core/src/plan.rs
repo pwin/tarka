@@ -11,6 +11,7 @@
 //!   blank nodes each time it runs, and a [`Repeat`] runs its body once per element
 //!   of one or more list values (OTTR's `cross`, `zipMin` and `zipMax`).
 
+use holos_engine::{oxrdf, spargebra};
 use oxrdf::{Literal, NamedNode, Term, Variable};
 use spargebra::algebra::GraphPattern;
 

@@ -1,5 +1,6 @@
 //! The `tarka` command.
 
+use holos_engine::{oxrdf, oxrdfio};
 #[cfg(feature = "gsp")]
 mod gsp;
 

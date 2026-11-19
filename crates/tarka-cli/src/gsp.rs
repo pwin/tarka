@@ -5,6 +5,7 @@
 //! thread, reading from a pipe the run writes to, so nothing is held in memory. A run that
 //! fails aborts the request before its body ends, so the store never takes part of it.
 
+use holos_engine::oxrdf;
 use std::io::{self, BufWriter, PipeReader, PipeWriter, Read};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

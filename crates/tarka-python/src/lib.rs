@@ -1,6 +1,7 @@
 //! The `tarka_rdf` Python module (the `tarka-rdf` distribution: `tarka` on PyPI is
 //! another project).
 
+use holos_engine::oxrdf;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};

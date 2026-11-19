@@ -11,7 +11,6 @@ authors.workspace = true
 [dependencies]
 csv.workspace = true
 flate2.workspace = true
-oxrdf.workspace = true
-oxrdfio.workspace = true
+holos-engine.workspace = true
 thiserror.workspace = true
 tarka-core.workspace = true

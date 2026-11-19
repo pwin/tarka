@@ -9,6 +9,7 @@
 //! type) is left out, and reported with every such cell, as bOTTR leaves out an
 //! instance; the run goes on. An empty cell is OTTR's `none`, and is not reported.
 
+use holos_engine::oxrdf;
 use std::io;
 
 use oxrdf::{Literal, Triple};

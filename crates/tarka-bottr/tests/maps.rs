@@ -2,6 +2,7 @@
 //! Lutra), with the same instances left out. With `LUTRA_JAR` set, Lutra is run on them
 //! too.
 
+use holos_engine::oxrdf;
 #[path = "../../tarka/tests/common/mod.rs"]
 mod common;
 

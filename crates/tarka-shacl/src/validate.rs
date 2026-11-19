@@ -1,5 +1,6 @@
 //! Validation with SHACL_Engine.
 
+use holos_engine::oxrdf;
 use oxrdf::{Graph, Term, TermRef, Triple};
 use shacl::{GraphBuilder, TermId, TermStore, Vocab};
 use thiserror::Error;

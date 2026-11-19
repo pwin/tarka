@@ -5,6 +5,7 @@
 //! Duplicates inside a window are written once. For Turtle the window is sorted, so
 //! triples about one subject come out together.
 
+use holos_engine::{oxrdf, oxrdfio};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};

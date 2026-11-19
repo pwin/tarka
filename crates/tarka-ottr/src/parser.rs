@@ -1,5 +1,6 @@
 //! The stOTTR parser.
 
+use holos_engine::{oxiri, oxrdf};
 use oxrdf::vocab::xsd;
 use oxrdf::{Literal, NamedNode};
 use tarka_core::{Expander, PrefixMap, TypeRef};

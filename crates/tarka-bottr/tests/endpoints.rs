@@ -5,6 +5,7 @@
 
 #![cfg(feature = "endpoints")]
 
+use holos_engine::oxrdf;
 #[path = "../../tarka/tests/common/mod.rs"]
 mod common;
 

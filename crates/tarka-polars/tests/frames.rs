@@ -1,6 +1,7 @@
 //! The data frame backend gives the same RDF as the CSV backend, and maps Polars'
 //! own types (numbers, dates, lists).
 
+use holos_engine::oxrdf;
 #[path = "../../tarka/tests/common/mod.rs"]
 mod common;
 

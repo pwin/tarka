@@ -30,6 +30,7 @@
 //! record is (see [`tarka::engine`]).
 
 /// The Polars version tarka is built with.
+use holos_engine::oxrdf;
 pub use polars;
 
 use std::convert::Infallible;

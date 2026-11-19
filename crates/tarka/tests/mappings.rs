@@ -4,6 +4,7 @@
 //! deliberate difference: `extra/bound.rq`, where tarka gives TARQL's answer for
 //! `BOUND(?column)`. The references for OTTR are Lutra's.
 
+use holos_engine::oxrdf;
 mod common;
 
 use common::*;

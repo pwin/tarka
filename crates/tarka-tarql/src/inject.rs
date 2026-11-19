@@ -9,6 +9,7 @@
 //! and in its solution modifiers. The table goes below those, and the projection is
 //! widened to keep the table's variables (row columns used in the template).
 
+use holos_engine::spargebra;
 use spargebra::algebra::GraphPattern;
 use spargebra::term::Variable;
 

@@ -21,8 +21,9 @@ tarka bottr -l templates/ people.bottr.ttl -o people.ttl                    # bO
 * **TARQL, as written for oxi-gen.** `tarka run` takes oxi-gen's options (`-q -i -o --ntriples
   -d -t -p -H -n --split --dedup --test --bind-empty-strings --gzip`) and gives the same RDF,
   term for term, on oxi-gen's test fixtures and on this repository's own, apart from the
-  differences listed below. The WHERE clause is evaluated by spareval, the engine oxi-gen and
-  HOLOS use.
+  differences listed below. The WHERE clause is evaluated by
+  [HOLOS](https://github.com/pwin/triplestore)'s engine: spareval, which oxi-gen uses too, with
+  HOLOS's function libraries.
 * **OTTR templates, used as modules.** Load a library from any number of files and directories
   (`-l` repeats), use any template in it as the root (`-T`), and give several roots to instantiate
   for every row (`-T` repeats). A template's parameters are read from the CSV columns of the same
@@ -346,8 +347,8 @@ its reason (`row 3: column mbox: 'n/a' is not an IRI`); `stats.left_out` counts 
 * **`BOUND(?column)` is true when the cell has a value**, as in TARQL. oxi-gen substitutes cells
   into the query, after which `BOUND(?column)` is always false, and `FILTER(BOUND(?column))`
   aborts it.
-* **Errors are messages, not crashes.** A query that calls a function spareval does not have
-  (`xsd:date(…)`) is reported before any input is read; a malformed row stops the run with its
+* **Errors are messages, not crashes.** A query that calls a function the engine does not have
+  is reported before any input is read; a malformed row stops the run with its
   row number.
 * **A failed run leaves no part of a file.** `-o FILE` is written under another name beside it
   and moved into place once the run is complete (for `run`, `expand` and `bottr` alike), so a
@@ -364,7 +365,7 @@ of a mapping give the same terms.
 | Crate | What it does |
 |---|---|
 | `tarka-core` | the plan, literal forms, and the shape executor |
-| `tarka-tarql` | TARQL to plan; WHERE clauses evaluated with spareval |
+| `tarka-tarql` | TARQL to plan; WHERE clauses evaluated with HOLOS's engine |
 | `tarka-ottr` | stOTTR parser, template libraries, template to plan |
 | `tarka-io` | CSV input in oxi-gen's dialect; N-Triples, Turtle and N-Quads output |
 | `tarka` | the row engine, and the library API |

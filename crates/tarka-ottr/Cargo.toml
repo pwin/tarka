@@ -9,8 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-oxiri = "0.2"
-oxrdf.workspace = true
+holos-engine.workspace = true
 thiserror.workspace = true
 tarka-core.workspace = true
 tarka-tarql.workspace = true

@@ -1,5 +1,6 @@
 //! Instance maps and argument maps, read from a bOTTR file (Turtle).
 
+use holos_engine::{oxrdf, oxrdfio};
 use std::path::{Path, PathBuf};
 
 use oxrdf::vocab::rdf;

@@ -1,5 +1,6 @@
 //! Running the shape layer of a plan: one solution in, triples out.
 
+use holos_engine::oxrdf;
 use oxrdf::vocab::rdf;
 use oxrdf::{BlankNode, NamedNode, NamedOrBlankNode, Term, Triple};
 

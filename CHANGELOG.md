@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- tarka is built on [HOLOS](https://github.com/pwin/triplestore): WHERE clauses and bOTTR's
+  RDF sources are evaluated with HOLOS's engine (`holos-engine`), and the RDF terms, parsers and
+  serialisers are the ones it re-exports. tarka no longer depends on the Oxigraph crates itself.
+  - HOLOS's fixes come with it: a decimal product too long to hold exactly is rounded rather
+    than left unbound, and a duration may come first in `+` with a date, time or dateTime.
+  - So do its functions: `xsd:date()`, `xsd:time()` and `xsd:duration()` casts, as TARQL
+    (Jena) has them, and HOLOS's `geof:`, `fn:`, `afn:` and `spif:` libraries.
+  - The Oxigraph crates now parse RDF 1.2 and SPARQL 1.2 in every build, as HOLOS builds them.
+    tarka still refuses both, as before; its checks now run against parsers that accept them
+    every time.
+  - A literal with a base direction in a SPARQL endpoint's XML results is now refused, as in
+    JSON results. Before, the XML reader dropped the direction.
+
 ## 0.2.2 (2026-10-30)
 
 - `cargo build --release` in the repository builds a `tarka` command that starts without

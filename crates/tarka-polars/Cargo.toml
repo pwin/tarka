@@ -9,7 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-oxrdf.workspace = true
+holos-engine.workspace = true
 polars = { workspace = true }
 rayon.workspace = true
 thiserror.workspace = true
@@ -19,4 +19,3 @@ tarka-io.workspace = true
 
 [dev-dependencies]
 chrono = "0.4"
-oxrdfio.workspace = true

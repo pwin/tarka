@@ -1,5 +1,6 @@
 //! Runtime values: an RDF term, or a list (an OTTR list argument).
 
+use holos_engine::oxrdf;
 use oxrdf::Term;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

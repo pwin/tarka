@@ -19,15 +19,14 @@ default = ["polars", "shacl", "gsp"]
 # Parquet and Arrow IPC input, through Polars (a large dependency)
 polars = ["dep:tarka-polars"]
 # Validation of the output with SHACL_Engine (--validate, --shapes, --report)
-shacl = ["tarka-shacl/validate", "dep:oxrdfio"]
+shacl = ["tarka-shacl/validate"]
 # Loading into a store over the SPARQL Graph Store Protocol (--post)
 gsp = ["dep:ureq"]
 
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-oxrdf.workspace = true
-oxrdfio = { workspace = true, optional = true }
+holos-engine.workspace = true
 tarka.workspace = true
 tarka-polars = { workspace = true, optional = true }
 tarka-bottr.workspace = true
@@ -36,6 +35,5 @@ ureq = { workspace = true, optional = true }
 
 [dev-dependencies]
 flate2.workspace = true
-oxrdfio.workspace = true
 tarka-polars.workspace = true
 ureq.workspace = true

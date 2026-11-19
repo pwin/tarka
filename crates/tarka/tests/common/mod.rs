@@ -1,6 +1,7 @@
 //! Helpers shared by the integration tests.
 #![allow(dead_code)]
 
+use holos_engine::{oxrdf, oxrdfio};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 

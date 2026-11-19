@@ -1,6 +1,7 @@
 //! What kind of RDF term each of a plan's variables holds: from the OTTR types its
 //! columns are converted by, or inferred from the expressions a TARQL query binds.
 
+use holos_engine::{oxrdf, spargebra};
 use std::collections::{BTreeSet, HashMap};
 
 use oxrdf::vocab::{rdf, xsd};

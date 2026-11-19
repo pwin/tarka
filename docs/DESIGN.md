@@ -48,6 +48,15 @@ The CONSTRUCT template becomes the root block: one pattern per template triple, 
 node per template blank node, fresh for every solution. The WHERE clause becomes a `Sparql`
 lifting.
 
+**The evaluator** is HOLOS's (`holos_engine::Engine::evaluator()`): spareval, as HOLOS builds
+it, with HOLOS's function libraries (GeoSPARQL's `geof:`, and `fn:`, `afn:` and `spif:`) and
+TARQL's functions added. tarka names the Oxigraph crates through `holos-engine`, which
+re-exports them, and has no dependency of its own on them, so there is one copy of each, with
+HOLOS's features: RDF 1.2 and SPARQL 1.2 parsing (§8), and spareval's `sep-0002`, which gives
+`xsd:date()`, `xsd:time()` and `xsd:duration()` casts as Jena has them. HOLOS's fixes to spareval
+and oxsdatatypes come through `[patch.crates-io]` in tarka's workspace, which repeats HOLOS's:
+Cargo applies a patch only from the workspace being built.
+
 **Binding rows.** TARQL binds each row as a solution that the WHERE group starts from, as if
 `VALUES (?col …) { (…) }` came first in the group. spargebra has already turned the group into
 algebra, in which BINDs and FILTERs wrap the patterns they follow and joins fold to the left. So
@@ -212,22 +221,19 @@ The tests generate shapes for every fixture mapping and validate the mapping's o
 them, which checks the inference against what the engine really makes.
 
 **Validation** runs SHACL_Engine in process: tarka's triples and the shapes go into its term
-store directly. SHACL_Engine is built without its `rdf-12` feature, so the Oxigraph crates, for
-it and for tarka, read RDF 1.1 only. Cargo turns a feature on for every crate in a build,
-though, so a build that adds RDF 1.2 elsewhere (HOLOS's crates, SHACL_Engine's default
-features) would make spargebra parse SPARQL 1.2 for tarka too. tarka's RDF 1.1 scope is
-therefore also checked explicitly (`tarka_tarql::sparql11`): triple terms, SPARQL 1.2 functions
-and literals with a base direction are refused whichever way spargebra was built, and CI runs
-those tests with the RDF 1.2 features on as well. The Python module leaves validation to
-SHACL_Engine's own package and is built without it.
+store directly. tarka is built on HOLOS's crates (§2), which turn the Oxigraph crates' RDF 1.2
+features on for the whole build, and SHACL_Engine with its `rdf-12` feature to match. So the
+parsers read RDF 1.2 and SPARQL 1.2, and tarka's RDF 1.1 scope is checked explicitly
+(`tarka_tarql::sparql11`): triple terms, SPARQL 1.2 functions and literals with a base
+direction are refused, and every test run checks that against parsers that accept them. The
+Python module leaves validation to SHACL_Engine's own package and is built without it.
 
 ## 9. Loading into a store
 
-`--post` loads the output over the SPARQL 1.1 Graph Store Protocol rather than linking a store
-in. HOLOS's engine builds without RocksDB by default, but then keeps its store in memory; a
-store that persists is RocksDB, a C++ build. Every HOLOS crate also builds the Oxigraph crates
-with their RDF 1.2 features, which Cargo would turn on for tarka too (§8). And the protocol
-reaches HOLOS, Oxigraph, Fuseki and GraphDB alike.
+`--post` loads the output over the SPARQL 1.1 Graph Store Protocol rather than into a store
+linked in. tarka evaluates SPARQL with HOLOS's engine crate (§2), which builds without RocksDB
+by default, but then keeps its store in memory; a store that persists is RocksDB, a C++ build.
+And the protocol reaches HOLOS, Oxigraph, Fuseki and GraphDB alike.
 
 The run writes N-Triples into one end of an OS pipe; the request, on its own thread, sends the
 other end as a chunked body (ureq, with rustls). Nothing is buffered beyond the pipe, and the
@@ -293,13 +299,12 @@ Each instance is then type-checked against the template's parameters with `tarka
 and expanded like any OTTR instance (the template compiled once, with given values). H2's
 SQL is not embedded: tarka parses the part of it that reads a CSV file, and H2's CSV dialect,
 whose quirks the fixtures pin (trimming, NULL for empty fields, the column list split on the
-field separator). RDF sources are loaded into one dataset and queried with spareval; a
-SPARQL endpoint gets the query as an `application/sparql-query` POST, and its JSON or XML
-results (sparesults) are read like spareval's solutions. A term in them that is RDF 1.2 (a
+field separator). RDF sources are loaded into one dataset and queried with HOLOS's evaluator;
+a SPARQL endpoint gets the query as an `application/sparql-query` POST, and its JSON or XML
+results (sparesults) are read like the evaluator's solutions. A term in them that is RDF 1.2 (a
 triple term, or a literal with a base direction, both of which HOLOS can return) is an error,
-as in an RDF file source, with one gap: in XML results, sparesults built without RDF 1.2 skips
-a literal's `its:dir`, so the literal arrives as a language-tagged string without its
-direction. tarka asks for JSON first, and HOLOS sends it. The endpoint tests check the
+as in an RDF file source, in JSON and XML alike. tarka asks for JSON first, and HOLOS sends
+it. The endpoint tests check the
 request, and, with `HOLOS_SERVER` set, run the RDF file fixture's map against HOLOS serving the
 same data: the output must be the file source's, and Lutra's against the same endpoint.
 

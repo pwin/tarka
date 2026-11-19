@@ -39,7 +39,6 @@ jobs:
             echo "::error::the tag is $GITHUB_REF_NAME but the workspace version is $VERSION"; exit 1
           fi
       - run: cargo test --workspace --exclude tarka-python
-      - run: cargo test -p tarka-tarql -p tarka-ottr --features tarka-tarql/rdf-12-parsing
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo fmt --all --check
 

@@ -1,6 +1,7 @@
 //! The shapes made from a mapping describe what it makes: they are well formed, every
 //! fixture's output conforms to its own shapes, and they catch values that do not.
 
+use holos_engine::{oxrdf, oxrdfio};
 #[path = "../../tarka/tests/common/mod.rs"]
 mod common;
 

@@ -1,10 +1,11 @@
 //! RDF file sources: files loaded into one dataset, queried with a SPARQL SELECT.
 
+use holos_engine::{oxrdf, oxrdfio, spareval, spargebra};
 use std::path::{Path, PathBuf};
 
 use oxrdf::{Dataset, Term};
 use oxrdfio::{RdfFormat, RdfParser};
-use spareval::{QueryEvaluator, QueryResults};
+use spareval::QueryResults;
 use spargebra::{Query, SparqlParser};
 
 /// The rows a SELECT query gives over the files: the variable names, and one value per
@@ -20,7 +21,7 @@ pub fn rows(files: &[PathBuf], query: &str) -> Result<crate::Table<Term>, String
     };
     tarka_tarql::sparql11::check(&[], pattern).map_err(|e| e.to_string())?;
     let QueryResults::Solutions(solutions) =
-        QueryEvaluator::new().prepare(&parsed).execute(&dataset).map_err(|e| format!("the SPARQL query: {e}"))?
+        holos_engine::Engine::evaluator().prepare(&parsed).execute(&dataset).map_err(|e| format!("the SPARQL query: {e}"))?
     else {
         unreachable!("a SELECT query gives solutions")
     };

@@ -11,15 +11,10 @@ authors.workspace = true
 [features]
 default = ["endpoints"]
 # SPARQL endpoint sources, over HTTP
-endpoints = ["dep:sparesults", "dep:ureq"]
+endpoints = ["dep:ureq"]
 
 [dependencies]
-oxrdf.workspace = true
-oxrdfio.workspace = true
-oxsdatatypes.workspace = true
-sparesults = { workspace = true, optional = true }
-spareval.workspace = true
-spargebra.workspace = true
+holos-engine.workspace = true
 tarka-core.workspace = true
 tarka-io.workspace = true
 tarka-ottr.workspace = true

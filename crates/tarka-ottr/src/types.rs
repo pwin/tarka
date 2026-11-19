@@ -12,6 +12,7 @@
 //! * An argument fits a parameter when its type is a subtype of the parameter's, or,
 //!   for `LUB<T>`, when the parameter's type is a subtype of T (or T of it).
 
+use holos_engine::oxrdf;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 

@@ -1,5 +1,6 @@
 //! The OTTR template model.
 
+use holos_engine::oxrdf;
 use oxrdf::Literal;
 use tarka_core::{Expander, PrefixMap, TypeRef};
 

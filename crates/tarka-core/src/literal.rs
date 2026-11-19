@@ -16,6 +16,7 @@
 //! writes the same terms. One difference is deliberate: spareval also changes the
 //! datatype of `xsd:int`, `xsd:byte`, … to `xsd:integer`; tarka keeps the datatype.
 
+use holos_engine::{oxrdf, oxsdatatypes};
 use std::str::FromStr;
 
 use oxrdf::vocab::xsd;

@@ -6,6 +6,7 @@
 //! Each mapping's output is loaded into its own graph, read back over the Graph Store
 //! Protocol, and must be the reference output. A run that fails must load nothing.
 
+use holos_engine::{oxrdf, oxrdfio};
 #[path = "../../tarka/tests/common/mod.rs"]
 mod common;
 

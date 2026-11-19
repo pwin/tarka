@@ -9,7 +9,5 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-oxrdf.workspace = true
-oxsdatatypes.workspace = true
-spargebra.workspace = true
+holos-engine.workspace = true
 thiserror.workspace = true

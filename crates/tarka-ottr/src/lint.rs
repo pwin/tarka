@@ -16,6 +16,7 @@
 //! The arguments of `ottr:Triple` are not type-checked otherwise, as in Lutra: its
 //! parameters accept anything a pattern can give them.
 
+use holos_engine::oxrdf;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt;
 

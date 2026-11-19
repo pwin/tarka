@@ -17,6 +17,7 @@
 //! An RDF term whose own type fits the map's type is kept; otherwise its lexical form
 //! (or IRI) is read as text would be.
 
+use holos_engine::{oxrdf, oxsdatatypes};
 use std::collections::HashMap;
 use std::str::FromStr;
 

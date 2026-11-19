@@ -1,5 +1,6 @@
 //! Compiling a template to a plan.
 
+use holos_engine::oxrdf;
 use std::collections::HashMap;
 
 use oxrdf::{BlankNode, NamedNode, Term};
