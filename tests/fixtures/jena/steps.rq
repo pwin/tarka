@@ -1,0 +1,14 @@
+# Property functions where they stand in the group: a blank node made before them is
+# one per row, two splits give every pair, a BIND after sees the parts, and the FILTER
+# holds for the whole group. The old namespace is Jena's too.
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX old: <http://jena.hpl.hp.com/ARQ/property#>
+PREFIX ex:  <http://example.com/>
+CONSTRUCT { ?row ex:pair ?pair . ?pair ex:x ?x ; ex:y ?y ; ex:upper ?upper } WHERE {
+  BIND(IRI(CONCAT("http://example.com/", ?id)) AS ?row)
+  BIND(BNODE() AS ?pair)
+  ?x apf:strSplit (?xs ",") .
+  ?y old:strSplit (?ys ",")
+  BIND(UCASE(?x) AS ?upper)
+  FILTER(?x != "skip")
+}

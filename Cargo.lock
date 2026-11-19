@@ -3588,6 +3588,9 @@ version = "0.2.2"
 dependencies = [
  "oxiri",
  "oxrdf",
+ "oxsdatatypes",
+ "regex",
+ "sha1",
  "spareval",
  "spargebra",
  "tarka-core",

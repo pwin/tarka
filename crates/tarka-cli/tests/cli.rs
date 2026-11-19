@@ -310,6 +310,16 @@ fn errors_are_reported_cleanly() {
     assert!(!bad_query.status.success());
     let stderr = String::from_utf8_lossy(&bad_query.stderr);
     assert!(stderr.starts_with("tarka: "), "{stderr}");
+    // a Jena property function that reads the data has none in a row: refused, not silent
+    let dir = std::env::temp_dir().join(format!("tarka-cli-apf-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let list = dir.join("list.rq");
+    std::fs::write(&list, "PREFIX list: <http://jena.apache.org/ARQ/list#> CONSTRUCT { ?s ?p ?o } WHERE { ?l list:member ?o }").unwrap();
+    let refused = tarka(&["run", "-q", path(&list)], Some(b"a\n1\n"));
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8_lossy(&refused.stderr);
+    assert!(stderr.contains("list:member is not supported: it reads the data, and a TARQL row has none"), "{stderr}");
+    std::fs::remove_dir_all(&dir).ok();
     let ragged = tarka(&["run", "-q", path(&fixture("oxigen/successor_field.rq"))], Some(b"id,pref_label\nex:a\n"));
     assert!(!ragged.status.success());
     assert!(String::from_utf8_lossy(&ragged.stderr).contains("row 0"), "{}", String::from_utf8_lossy(&ragged.stderr));

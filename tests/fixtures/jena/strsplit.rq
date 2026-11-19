@@ -1,0 +1,8 @@
+# apf:strSplit as Jena splits: Java's String.split on a regular expression, each part
+# trimmed; empty parts in the middle are kept, empty parts at the end dropped.
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX ex:  <http://example.com/>
+CONSTRUCT { ?row ex:part ?part } WHERE {
+  BIND(IRI(CONCAT("http://example.com/", ?id)) AS ?row)
+  ?part apf:strSplit (?s ";")
+}

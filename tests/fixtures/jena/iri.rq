@@ -1,0 +1,12 @@
+# apf:splitIRI, afn:localname and afn:namespace split an IRI where Jena does: before
+# the longest XML name at its end.
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX afn: <http://jena.apache.org/ARQ/function#>
+PREFIX ex:  <http://example.com/>
+CONSTRUCT { ?row ex:namespace ?ns ; ex:localname ?ln ; ex:afnNamespace ?afnNs ; ex:afnLocalname ?afnLn } WHERE {
+  BIND(IRI(CONCAT("http://example.com/row/", ENCODE_FOR_URI(?iri))) AS ?row)
+  BIND(IRI(?iri) AS ?i)
+  BIND(afn:localname(?i) AS ?afnLn)
+  BIND(afn:namespace(?i) AS ?afnNs)
+  ?i apf:splitIRI (?ns ?ln)
+}

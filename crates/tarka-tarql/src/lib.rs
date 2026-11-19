@@ -7,8 +7,10 @@
 //! `BOUND(?column)` is true when the cell has a value. (oxi-gen substitutes cells
 //! into the query instead, after which `BOUND(?column)` is false.)
 
+mod afn;
 pub mod eval;
 pub mod inject;
+pub mod pfunc;
 pub mod scan;
 pub mod sparql11;
 
@@ -20,6 +22,7 @@ use spargebra::{Query, SparqlParser, SparqlSyntaxError};
 use tarka_core::{BNodeId, Lifting, Pattern, Plan, PrefixMap, SparqlLifting, TermPat};
 use thiserror::Error;
 
+pub use afn::AFN_NAMESPACES;
 pub use eval::{EvalError, Solution, SparqlEvaluator, TARQL_NAMESPACES};
 
 #[derive(Debug, Error)]
@@ -30,6 +33,9 @@ pub enum TarqlError {
     NotConstruct,
     #[error("{0} is not supported (tarka works with RDF 1.1 and SPARQL 1.1)")]
     Unsupported(&'static str),
+    /// A Jena property function written wrongly, or one tarka cannot evaluate.
+    #[error("{0}")]
+    PropertyFunction(String),
 }
 
 fn parser() -> SparqlParser {
@@ -43,6 +49,7 @@ pub fn parse_tarql(text: &str, name: &str) -> Result<Plan, TarqlError> {
         return Err(TarqlError::NotConstruct);
     };
     sparql11::check(&template, &pattern)?;
+    pfunc::staged(&pattern)?;
     let mut plan = Plan::new(name, Lifting::Given);
     plan.prefixes = prefixes;
     let mut bnodes: HashMap<String, BNodeId> = HashMap::new();
@@ -91,6 +98,7 @@ pub fn sparql_lifting(
         return Err(TarqlError::NotConstruct);
     };
     sparql11::check(&[], &pattern)?;
+    pfunc::staged(&pattern)?;
     // the outputs are read from row columns too (a parameter that no BIND makes)
     let mut variables = scan::variables(&text);
     for (_, name) in &outputs {

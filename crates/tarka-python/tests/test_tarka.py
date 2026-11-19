@@ -45,6 +45,25 @@ def test_tarql_over_a_frame():
     assert_same(expected("extra/expected/people.nt"), frame_graph(triples), "people.rq")
 
 
+def test_jena_functions():
+    """apf:strSplit and afn:localname, as TARQL proper (on Jena) has them."""
+    m = tarka_rdf.Mapping.tarql(
+        "PREFIX apf: <http://jena.apache.org/ARQ/property#> PREFIX afn: <http://jena.apache.org/ARQ/function#>\n"
+        "PREFIX ex: <http://example.com/>\n"
+        "CONSTRUCT { ?s ex:tag ?tag ; ex:local ?local } WHERE {\n"
+        '  BIND(IRI(CONCAT("http://example.com/", ?id)) AS ?s)\n'
+        "  BIND(afn:localname(?s) AS ?local)\n"
+        '  ?tag apf:strSplit (?tags ";")\n'
+        "}"
+    )
+    triples = m.triplify(pl.DataFrame({"id": ["a", "b"], "tags": ["x; y", "z"]}))
+    tags = sorted(o for _, p, o in triples.iter_rows() if p == "<http://example.com/tag>")
+    assert tags == ['"x"', '"y"', '"z"']
+    assert ("<http://example.com/a>", "<http://example.com/local>", '"a"') in triples.rows()
+    with pytest.raises(ValueError, match="list:member is not supported"):
+        tarka_rdf.Mapping.tarql("PREFIX list: <http://jena.apache.org/ARQ/list#> CONSTRUCT { ?s ?p ?o } WHERE { ?l list:member ?o }")
+
+
 def test_ottr_over_a_frame_with_text_or_list_cells():
     employee = expected("people/expected/employee.nt")
     library = [FIXTURES / "people" / "people.stottr"]

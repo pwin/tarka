@@ -88,6 +88,28 @@ across rows too, within a window of 1000 distinct triples (`--dedup N`: N), whic
 sorts so that a subject's triples come out together. Both work for OTTR templates alike, and
 `--dedup` for `expand` and `bottr`. Options and file names can come in any order.
 
+Queries written for TARQL proper, which runs on Jena, can use Jena ARQ's property functions:
+
+```sparql
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX ex:  <http://example.com/ns#>
+CONSTRUCT { ?person ex:skill ?skill } WHERE {
+  BIND(tarql:expandPrefixedName(?id) AS ?person)
+  ?skill apf:strSplit (?skills ";")
+}
+```
+
+`apf:strSplit` binds `?skill` to each part of `?skills`, split on a regular expression and
+trimmed, as Jena does. `apf:splitIRI` (`?iri apf:splitIRI (?namespace ?localname)`),
+`apf:concat`, `apf:str` and `apf:assign` work too, and so do Jena's functions `afn:localname`,
+`afn:namespace`, `afn:strjoin`, `afn:substr`, `afn:sha1sum`, `afn:min`, `afn:max`, `afn:sqrt`,
+`afn:pi`, `afn:e` and `afn:now`, in the current namespaces or Jena's old ones. Each gives what
+TARQL 1.3 gives (`tests/fixtures/jena`). A property function is evaluated where it stands at the
+top level of the WHERE clause; one inside `OPTIONAL`, `UNION` or a nested group, and those that
+read the data (`list:member`, `rdfs:member`, `apf:bag` …), are refused rather than left to match
+nothing. oxi-gen has none of these; its `--split` splits a column on a delimiter given on the
+command line instead.
+
 ## OTTR
 
 ```stottr
