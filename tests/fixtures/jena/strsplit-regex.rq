@@ -1,0 +1,7 @@
+# apf:strSplit's second argument is a regular expression.
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+PREFIX ex:  <http://example.com/>
+CONSTRUCT { ?row ex:part ?part } WHERE {
+  BIND(IRI(CONCAT("http://example.com/", ?id)) AS ?row)
+  ?part apf:strSplit (?s "\\s*[;|]\\s*")
+}

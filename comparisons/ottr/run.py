@@ -9,9 +9,10 @@ tarka and maplib map the frame in FRAME.parquet, and write N-Triples; the time a
 are this process's, with the frame loaded first. Lutra (java -jar $LUTRA_JAR, files only)
 reads the same rows from the CSV file beside the frame, through the bOTTR map beside it,
 and writes Turtle; the time is its process's from start to exit, and the memory its peak.
-The triples counted are the lines of an N-Triples file, the distinct triples of tarka's
-frame and maplib's store, and the statements in Lutra's file (parsed with pyoxigraph), with
-its distinct triples (loaded into HOLOS) as `distinct`.
+`triples` counts distinct triples, for every tool alike: a file's, loaded into HOLOS
+(holosdb), which holds each triple once, after the time and memory are taken; tarka's frame,
+whose triples are distinct; and maplib's store. `statements` counts the lines of an N-Triples
+file, with any triple a file repeats; Lutra's Turtle file is not counted that way.
 Lutra is stopped after LUTRA_TIMEOUT seconds (3600 by default). The file is removed
 afterwards unless `keep` is given.
 """
@@ -86,30 +87,28 @@ else:
         sys.exit(f"Lutra failed (exit {child.returncode}, {time.perf_counter() - start:.0f} s, {child_peak / 2**20:.0f} MB): {messages.strip()[-1500:]}")
 seconds = time.perf_counter() - start
 
-distinct = None
 if tool == "lutra":
-    import holosdb
-    import pyoxigraph
-
-    # the statements in the file, as the others' files are counted, and the distinct
-    # triples, loaded into a HOLOS store, which holds each triple once
-    count = sum(1 for _ in pyoxigraph.parse(path=out, format=pyoxigraph.RdfFormat.TURTLE))
-    store = holosdb.Store()
-    store.load(out)
-    distinct = len(store)
     peak, frame_mb = child_peak, None
 else:
     peak, frame_mb = peak_of(proc), round(before / 2**20)
-    if target == "file":
+statements = None
+if target == "file":
+    import holosdb
+
+    # the distinct triples, loaded into a HOLOS store, which holds each triple once
+    store = holosdb.Store()
+    store.load(out)
+    count = len(store)
+    if tool != "lutra":  # N-Triples, a statement a line
         with open(out, "rb") as f:
-            count = sum(1 for _ in f)
-    elif tool == "tarka":
-        count = triples.height
-    else:
-        count = m.query("SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }")["n"][0]
+            statements = sum(1 for _ in f)
+elif tool == "tarka":
+    count = triples.height
+else:
+    count = m.query("SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }")["n"][0]
 if target == "file" and not keep:
     os.remove(out)
 result = {"tool": tool, "target": target, "rows": df.height, "seconds": round(seconds, 3), "triples": int(count)}
-if distinct is not None:
-    result["distinct"] = distinct
+if statements is not None:
+    result["statements"] = statements
 print(json.dumps(result | {"peak_mb": round(peak / 2**20), "frame_mb": frame_mb}))
