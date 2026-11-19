@@ -1276,6 +1276,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "holos-core"
 version = "0.26.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "oxrdf",
  "oxsdatatypes",
@@ -1285,6 +1286,7 @@ dependencies = [
 [[package]]
 name = "holos-engine"
 version = "0.26.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "flate2",
  "geo",
@@ -1312,6 +1314,7 @@ dependencies = [
 [[package]]
 name = "holos-security"
 version = "0.26.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "holos-core",
  "holos-store",
@@ -1322,6 +1325,7 @@ dependencies = [
 [[package]]
 name = "holos-stats"
 version = "0.26.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "holos-core",
  "holos-store",
@@ -1333,6 +1337,7 @@ dependencies = [
 [[package]]
 name = "holos-store"
 version = "0.26.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "holos-core",
  "oxrdf",
@@ -2020,8 +2025,9 @@ dependencies = [
 [[package]]
 name = "oxsdatatypes"
 version = "0.2.4"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
- "thiserror 2.0.21",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -3720,6 +3726,7 @@ dependencies = [
 [[package]]
 name = "spareval"
 version = "0.2.9"
+source = "git+https://github.com/pwin/triplestore?rev=56ea5440502f43533bc89cb4c25fc822703d5cfc#56ea5440502f43533bc89cb4c25fc822703d5cfc"
 dependencies = [
  "hex",
  "json-event-parser",
@@ -3735,7 +3742,7 @@ dependencies = [
  "sparesults",
  "spargebra",
  "sparopt",
- "thiserror 2.0.21",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

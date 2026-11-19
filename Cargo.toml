@@ -30,8 +30,8 @@ authors = ["Peter Winstanley"]
 # serialisers, through holos-engine, which re-exports the Oxigraph crates it is built on
 # (oxrdf, oxrdfio, spargebra, spareval, sparesults, oxsdatatypes, oxiri) with HOLOS's RDF 1.2
 # and SPARQL 1.2 features on. tarka still accepts RDF 1.1 and SPARQL 1.1 only: its own checks
-# refuse the rest. Local for now: a git revision once holos-engine re-exports them upstream.
-holos-engine = { path = "C:/Users/Pedro/AppData/Local/Temp/claude/e8e1beb43c5c05df/5e4fbdbc-2bbc-4d12-81fb-d018e2d3f6f2/scratchpad/triplestore/crates/holos-engine" }
+# refuse the rest. HOLOS is git-only; the revision is pinned, as SHACL_Engine's is below.
+holos-engine = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
 csv = "1.4"
 flate2 = "1"
 clap = { version = "4", features = ["derive"] }
@@ -66,5 +66,5 @@ strip = true
 # a duration may come first in `+` with a date, time or dateTime (spareval). A [patch] applies
 # only from the workspace that builds, so HOLOS's own does not reach tarka: these repeat it.
 [patch.crates-io]
-oxsdatatypes = { path = "C:/Users/Pedro/AppData/Local/Temp/claude/e8e1beb43c5c05df/5e4fbdbc-2bbc-4d12-81fb-d018e2d3f6f2/scratchpad/triplestore/vendor/oxsdatatypes" }
-spareval = { path = "C:/Users/Pedro/AppData/Local/Temp/claude/e8e1beb43c5c05df/5e4fbdbc-2bbc-4d12-81fb-d018e2d3f6f2/scratchpad/triplestore/vendor/spareval" }
+oxsdatatypes = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
+spareval = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }

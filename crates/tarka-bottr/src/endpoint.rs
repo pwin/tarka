@@ -63,7 +63,8 @@ mod tests {
     /// built with HOLOS's SPARQL 1.2 features, reads `its:dir` in both.
     #[test]
     fn a_base_direction_is_refused_in_json_and_xml() {
-        let json = br#"{"head":{"vars":["x"]},"results":{"bindings":[{"x":{"type":"literal","value":"a","xml:lang":"ar","its:dir":"rtl"}}]}}"#;
+        let json =
+            br#"{"head":{"vars":["x"]},"results":{"bindings":[{"x":{"type":"literal","value":"a","xml:lang":"ar","its:dir":"rtl"}}]}}"#;
         let xml = br#"<?xml version="1.0"?><sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:its="http://www.w3.org/2005/11/its"><head><variable name="x"/></head><results><result><binding name="x"><literal xml:lang="ar" its:dir="rtl">a</literal></binding></result></results></sparql>"#;
         for (format, body) in [(QueryResultsFormat::Json, &json[..]), (QueryResultsFormat::Xml, &xml[..])] {
             let error = table("http://e", format, body).unwrap_err();
