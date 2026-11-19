@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-11-19)
 
 - TARQL queries can use Jena ARQ's property functions, as queries written for TARQL proper
   do: `?tag apf:strSplit (?tags ";")` binds `?tag` to each part, and `apf:splitIRI`,
