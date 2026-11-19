@@ -270,6 +270,14 @@ impl Doc<'_> {
             None => None,
             Some(t) => Some(self.type_of(&t)?),
         };
+        if let Some(unknown) = ty.as_ref().and_then(unknown_type) {
+            eprintln!(
+                "{}: ottr:type <{unknown}> is not a type OTTR has, so its values are written as plain strings, as Lutra \
+                 writes them (Lutra reports an error); to give them that datatype, write it in the cell and read it \
+                 with ottr:datatypeSep",
+                self.file
+            );
+        }
         let mut map = ArgumentMap {
             ty,
             language_tag: self.string(s, "languageTag")?,
@@ -386,4 +394,13 @@ fn percent_decode(s: &str) -> String {
         i += 1;
     }
     String::from_utf8_lossy(&out).into_owned()
+}
+
+/// The first basic type in `t` that OTTR's type hierarchy does not name.
+fn unknown_type(t: &TypeRef) -> Option<String> {
+    match t {
+        TypeRef::Basic(n) if !tarka_ottr::types::is_known(n.as_str()) => Some(n.as_str().to_owned()),
+        TypeRef::Basic(_) => None,
+        TypeRef::List(i) | TypeRef::NeList(i) | TypeRef::Lub(i) => unknown_type(i),
+    }
 }

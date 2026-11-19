@@ -8,6 +8,13 @@
   scaled integer (`999`), a date as its day number (`20155`), a datetime, duration or time as
   a count of microseconds or nanoseconds. Lists of strings, integers, floats and booleans were
   right already, as were typed columns that are not lists.
+- bOTTR: a literal of a datatype OTTR does not have (`geo:wktLiteral` …), read from a cell with
+  `ottr:datatypeSep`, fits an `rdfs:Literal` parameter, as in Lutra. tarka left the instance out
+  ("does not fit ?wkt : rdfs:Literal"). The same literals in templates and instance files are
+  `rdfs:Literal`s to `tarka lint` too.
+- bOTTR: an `ottr:type` naming a type OTTR does not have is reported. Its values are written as
+  plain strings, as Lutra writes them (Lutra reports an error); tarka now says so, and says to
+  use `ottr:datatypeSep` for a datatype OTTR does not have, instead of saying nothing.
 
 ## 0.3.0 (2026-11-19)
 
