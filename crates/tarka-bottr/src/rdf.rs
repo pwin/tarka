@@ -76,8 +76,9 @@ mod tests {
         )
         .unwrap();
         let afn = "PREFIX afn: <http://jena.apache.org/ARQ/function#>";
-        let local = rows(&[file.clone()], &format!("{afn} SELECT ?s (afn:localname(?s) AS ?l) WHERE {{ ?s ?p ?o }} ORDER BY ?s"));
-        let sprintf = rows(&[file.clone()], &format!("{afn} SELECT (afn:sprintf(\"%05d\", ?o) AS ?f) WHERE {{ ?s ?p ?o }}"));
+        let local =
+            rows(std::slice::from_ref(&file), &format!("{afn} SELECT ?s (afn:localname(?s) AS ?l) WHERE {{ ?s ?p ?o }} ORDER BY ?s"));
+        let sprintf = rows(std::slice::from_ref(&file), &format!("{afn} SELECT (afn:sprintf(\"%05d\", ?o) AS ?f) WHERE {{ ?s ?p ?o }}"));
         std::fs::remove_file(&file).ok();
         let locals: Vec<String> = local
             .unwrap()
