@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- A list column of typed values (Parquet, Arrow IPC or a Polars data frame) gives its items
+  as they are: a list of decimals `9.99`, of dates `2025-03-08`, of datetimes, durations and
+  times their XSD forms. Before, each item came through as Polars stores it: a decimal as its
+  scaled integer (`999`), a date as its day number (`20155`), a datetime, duration or time as
+  a count of microseconds or nanoseconds. Lists of strings, integers, floats and booleans were
+  right already, as were typed columns that are not lists.
+
 ## 0.3.0 (2026-11-19)
 
 - TARQL queries can use Jena ARQ's property functions, as queries written for TARQL proper
