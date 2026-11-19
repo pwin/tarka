@@ -31,7 +31,7 @@ authors = ["Peter Winstanley"]
 # (oxrdf, oxrdfio, spargebra, spareval, sparesults, oxsdatatypes, oxiri) with HOLOS's RDF 1.2
 # and SPARQL 1.2 features on. tarka still accepts RDF 1.1 and SPARQL 1.1 only: its own checks
 # refuse the rest. HOLOS is git-only; the revision is pinned, as SHACL_Engine's is below.
-holos-engine = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
+holos-engine = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
 csv = "1.4"
 flate2 = "1"
 # insertion-ordered sets: the output window is written in the order its triples were made
@@ -68,5 +68,5 @@ strip = true
 # a duration may come first in `+` with a date, time or dateTime (spareval). A [patch] applies
 # only from the workspace that builds, so HOLOS's own does not reach tarka: these repeat it.
 [patch.crates-io]
-oxsdatatypes = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
-spareval = { git = "https://github.com/pwin/triplestore", rev = "56ea5440502f43533bc89cb4c25fc822703d5cfc" }
+oxsdatatypes = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
+spareval = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
