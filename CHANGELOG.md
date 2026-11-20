@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 (2026-11-20)
 
 - OTTR over tables (`tarka run -l … -T …`, Parquet and Polars frames): a mandatory parameter
   without a default that has no column of its name stops the run before any row is read, with a

@@ -3947,7 +3947,7 @@ checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
 
 [[package]]
 name = "tarka"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "rayon",
@@ -3960,7 +3960,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-bottr"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "tarka",
@@ -3974,7 +3974,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -3989,7 +3989,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-core"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "thiserror 2.0.21",
@@ -3997,7 +3997,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-io"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "csv",
  "flate2",
@@ -4009,7 +4009,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-ottr"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "tarka-core",
@@ -4019,7 +4019,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-polars"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "chrono",
  "holos-engine",
@@ -4033,7 +4033,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-python"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "pyo3",
@@ -4046,7 +4046,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-shacl"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "shacl",
@@ -4058,7 +4058,7 @@ dependencies = [
 
 [[package]]
 name = "tarka-tarql"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "holos-engine",
  "regex",
