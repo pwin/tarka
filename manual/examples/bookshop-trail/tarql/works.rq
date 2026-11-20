@@ -1,0 +1,50 @@
+# works.csv: a title in the language of the work, optional columns, and a translation's
+# own class and links, made only when the row is one.
+PREFIX bt:   <https://example.org/bookshop-trail/>
+PREFIX bs:   <https://example.org/bookshop-trail/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:  <http://purl.org/dc/terms/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+CONSTRUCT {
+  ?work a bs:Work ;
+      rdfs:label          ?title_tagged ;
+      dct:title           ?title_tagged ;
+      bs:author           ?author_iri ;
+      bs:publishedBy      ?publisher_iri ;
+      bs:publicationYear  ?year_typed ;
+      bs:genre            ?genre_iri ;
+      bs:pages            ?page_count ;
+      bs:rrp              ?rrp_value ;
+      bs:originalLanguage ?language ;
+      bs:isbn             ?isbn ;
+      bs:inSeries         ?series_iri ;
+      bs:seriesPosition   ?position .
+  ?translation a bs:Translation ;
+      bs:translationOf    ?original_iri ;
+      bs:translatedBy     ?translator_iri .
+}
+WHERE {
+  BIND(IRI(CONCAT(STR(bt:), "book-", ?book))        AS ?work)
+  BIND(IRI(CONCAT(STR(bt:), "author-", ?author))    AS ?author_iri)
+  BIND(IRI(CONCAT(STR(bt:), "pub-", ?publisher))    AS ?publisher_iri)
+  BIND(IRI(CONCAT(STR(bt:), "genre-", ?genre))      AS ?genre_iri)
+
+  # the title's language tag comes from a column (a translation's title is in the language
+  # of the translation; ?language is the language the work was first written in)
+  BIND(STRLANG(?title, ?title_language)             AS ?title_tagged)
+  BIND(STRDT(?year, xsd:gYear)                      AS ?year_typed)
+  BIND(xsd:integer(?pages)                          AS ?page_count)
+  BIND(xsd:decimal(?rrp)                            AS ?rrp_value)
+
+  # Optional columns: an empty cell leaves its variable unbound, so these IRIs are not made
+  # and the triples that use them are left out
+  BIND(IRI(CONCAT(STR(bt:), "series-", ?series))         AS ?series_iri)
+  BIND(xsd:integer(?series_position)                     AS ?position)
+  BIND(IRI(CONCAT(STR(bt:), "book-", ?translation_of))   AS ?original_iri)
+  BIND(IRI(CONCAT(STR(bt:), "author-", ?translated_by))  AS ?translator_iri)
+
+  # A translation is the same node as the work, made a second subject only when the row is
+  # one: the class stays a constant, which a reader, and a static check, can see
+  BIND(IF(BOUND(?translation_of), ?work, ?unset)          AS ?translation)
+}

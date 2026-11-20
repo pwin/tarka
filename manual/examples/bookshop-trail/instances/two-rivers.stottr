@@ -1,0 +1,44 @@
+@prefix tt:  <https://example.org/bookshop-trail/template#> .
+@prefix bt:  <https://example.org/bookshop-trail/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+
+# Two Rivers Books, the trail's newest shop, written by hand as OTTR instances rather than
+# kept in a spreadsheet, and expanded with
+#
+#   tarka expand -l ottr/ instances/two-rivers.stottr -o out/two-rivers.ttl
+#
+# It is in Exeter, and invented, as every shop on the trail is. Arguments are written as
+# OTTR writes terms: an IRI, a literal with a language tag or a datatype, a list in brackets.
+
+tt:Bookshop(
+    bt:shop-two-rivers,
+    "Two Rivers Books"@en,
+    bt:place-exeter,
+    "2026"^^xsd:gYear,
+    "64.5"^^xsd:decimal,
+    "2"^^xsd:integer,
+    bt:genre-nature-writing,
+    true,
+    true,
+    "https://example.org/shops/two-rivers"^^xsd:anyURI,
+    "50.72381"^^xsd:decimal,
+    "-3.52695"^^xsd:decimal,
+    bt:geom-shop-two-rivers,
+    "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT(-3.52695 50.72381)"^^geo:wktLiteral,
+    (bt:book-hedgerow-alphabet, bt:book-drainage)
+) .
+
+# A short walk from West Quay Books, the other shop in Exeter.
+tt:Segment(
+    bt:seg-west-quay-two-rivers,
+    bt:shop-west-quay,
+    bt:shop-two-rivers,
+    "West Quay Books to Two Rivers Books"@en,
+    "0.9"^^xsd:decimal,
+    true,
+    bt:geom-seg-west-quay-two-rivers,
+    "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> LINESTRING(-3.53818 50.72200, -3.53120 50.72290, -3.52695 50.72381)"^^geo:wktLiteral
+) .
+
+tt:Connects(bt:shop-west-quay, bt:shop-two-rivers) .

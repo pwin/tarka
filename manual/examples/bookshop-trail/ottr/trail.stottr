@@ -1,0 +1,78 @@
+@prefix tt:    <https://example.org/bookshop-trail/template#> .
+@prefix bs:    <https://example.org/bookshop-trail/schema#> .
+@prefix ottr:  <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix sf:    <http://www.opengis.net/ont/sf#> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# The Bookshop Trail's own patterns, built on base.stottr's.
+
+# A bookshop: where it is, what it is like, and its point on the map. Every parameter
+# is mandatory except the website and the titles it stocks: a row without a mandatory
+# value is not a bookshop, and makes nothing. tt:Geometry's ?kind is given none, so it
+# takes its default, sf:Point.
+tt:Bookshop [
+    ! ottr:IRI ?shop,
+    rdf:langString ?name,
+    ! ottr:IRI ?town,
+    xsd:gYear ?founded,
+    xsd:decimal ?floorArea,
+    xsd:integer ?staff,
+    ! ottr:IRI ?specialism,
+    xsd:boolean ?secondHand,
+    xsd:boolean ?cafe,
+    ? xsd:anyURI ?website,
+    xsd:decimal ?lat,
+    xsd:decimal ?long,
+    ! ottr:IRI ?point,
+    rdfs:Literal ?wkt,
+    ? ! NEList<ottr:IRI> ?stocks
+] :: {
+    tt:Named(?shop, bs:Bookshop, ?name),
+    ottr:Triple(?shop, bs:locatedIn, ?town),
+    ottr:Triple(?shop, bs:founded, ?founded),
+    ottr:Triple(?shop, bs:floorArea, ?floorArea),
+    ottr:Triple(?shop, bs:staffCount, ?staff),
+    ottr:Triple(?shop, bs:specialises, ?specialism),
+    ottr:Triple(?shop, bs:sellsSecondHand, ?secondHand),
+    ottr:Triple(?shop, bs:hasCafe, ?cafe),
+    ottr:Triple(?shop, bs:website, ?website),
+    ottr:Triple(?shop, wgs84:lat, ?lat),
+    ottr:Triple(?shop, wgs84:long, ?long),
+    tt:Geometry(?shop, ?point, ?wkt, none),
+    cross | tt:Stocks(?shop, ++?stocks)
+} .
+
+# One title a shop stocks.
+tt:Stocks [ ! ottr:IRI ?shop, ! ottr:IRI ?book ] :: {
+    ottr:Triple(?shop, bs:stocks, ?book)
+} .
+
+# How many copies of a book a shop has, and at what price.
+tt:StockRecord [ ! ottr:IRI ?record, ! ottr:IRI ?shop, ! ottr:IRI ?book, xsd:integer ?copies, xsd:decimal ?price ] :: {
+    ottr:Triple(?record, rdf:type, bs:StockRecord),
+    ottr:Triple(?record, bs:atShop, ?shop),
+    ottr:Triple(?record, bs:ofWork, ?book),
+    ottr:Triple(?record, bs:copies, ?copies),
+    ottr:Triple(?record, bs:shelfPrice, ?price)
+} .
+
+# A stretch of the trail from one shop to another, drawn as a line.
+tt:Segment [
+    ! ottr:IRI ?segment, ! ottr:IRI ?from, ! ottr:IRI ?to, rdf:langString ?label,
+    xsd:decimal ?km, xsd:boolean ?waymarked, ! ottr:IRI ?line, rdfs:Literal ?wkt
+] :: {
+    tt:Named(?segment, bs:TrailSegment, ?label),
+    ottr:Triple(?segment, bs:segmentFrom, ?from),
+    ottr:Triple(?segment, bs:segmentTo, ?to),
+    ottr:Triple(?segment, bs:distanceKm, ?km),
+    ottr:Triple(?segment, bs:waymarked, ?waymarked),
+    tt:Geometry(?segment, ?line, ?wkt, sf:LineString)
+} .
+
+# The trail runs from one shop to the other.
+tt:Connects [ ! ottr:IRI ?from, ! ottr:IRI ?to ] :: {
+    ottr:Triple(?from, bs:connectsTo, ?to)
+} .

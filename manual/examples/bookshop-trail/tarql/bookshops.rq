@@ -1,0 +1,51 @@
+# bookshops.csv to the Bookshop Trail ontology: one bookshop, and its point geometry, per row.
+PREFIX bt:    <https://example.org/bookshop-trail/>
+PREFIX bs:    <https://example.org/bookshop-trail/schema#>
+PREFIX rdfs:  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:   <http://www.w3.org/2001/XMLSchema#>
+PREFIX geo:   <http://www.opengis.net/ont/geosparql#>
+PREFIX sf:    <http://www.opengis.net/ont/sf#>
+PREFIX wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+CONSTRUCT {
+  ?shop_iri a bs:Bookshop, geo:Feature ;
+      rdfs:label             ?label ;
+      bs:locatedIn           ?town_iri ;
+      bs:founded             ?founded_year ;
+      bs:floorArea           ?area ;
+      bs:staffCount          ?staff_count ;
+      bs:specialises         ?genre_iri ;
+      bs:sellsSecondHand     ?sells_second_hand ;
+      bs:hasCafe             ?has_cafe ;
+      bs:website             ?site ;
+      wgs84:lat              ?latitude ;
+      wgs84:long             ?longitude ;
+      geo:hasGeometry        ?point ;
+      geo:hasDefaultGeometry ?point .
+  ?point a sf:Point, geo:Geometry ;
+      geo:asWKT ?wkt .
+}
+WHERE {
+  # IRIs from the short names the spreadsheet uses
+  BIND(IRI(CONCAT(STR(bt:), "shop-", ?shop))        AS ?shop_iri)
+  BIND(IRI(CONCAT(STR(bt:), "place-", ?town))       AS ?town_iri)
+  BIND(IRI(CONCAT(STR(bt:), "genre-", ?specialism)) AS ?genre_iri)
+  BIND(IRI(CONCAT(STR(bt:), "geom-shop-", ?shop))   AS ?point)
+
+  # Typed values: a cell is a string until it is cast
+  BIND(STRLANG(?name, "en")             AS ?label)
+  BIND(STRDT(?founded, xsd:gYear)       AS ?founded_year)
+  BIND(xsd:decimal(?floor_area)         AS ?area)
+  BIND(xsd:integer(?staff)              AS ?staff_count)
+  BIND(xsd:decimal(?lat)                AS ?latitude)
+  BIND(xsd:decimal(?long)               AS ?longitude)
+  BIND(STRDT(?website, xsd:anyURI)      AS ?site)          # unbound when the cell is empty
+
+  # yes/no to true/false; anything else is left unbound, for the shapes to find
+  BIND(IF(?second_hand = "yes", true, IF(?second_hand = "no", false, ?unset)) AS ?sells_second_hand)
+  BIND(IF(?cafe = "yes", true, IF(?cafe = "no", false, ?unset))               AS ?has_cafe)
+
+  # The point, as GeoSPARQL writes one: longitude first
+  BIND(STRDT(CONCAT("<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT(", ?long, " ", ?lat, ")"),
+             geo:wktLiteral) AS ?wkt)
+}

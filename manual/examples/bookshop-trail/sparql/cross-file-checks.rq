@@ -1,0 +1,37 @@
+# Faults no single file, and no shape over one node, can show: the spreadsheets disagree
+# with each other, or point at things the reference data does not have. Each row is one
+# fault; no rows, no faults. Run over everything made, with the reference data loaded too.
+PREFIX bs:   <https://example.org/bookshop-trail/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?fault ?subject ?object WHERE {
+  {
+    # bookshops.csv says a shop stocks a title, but stock.csv has no record of it
+    ?subject bs:stocks ?object .
+    FILTER NOT EXISTS { ?record bs:atShop ?subject ; bs:ofWork ?object }
+    BIND("stocked, but no stock record" AS ?fault)
+  } UNION {
+    # stock.csv has a record the shop's own row does not list
+    ?record a bs:StockRecord ; bs:atShop ?subject ; bs:ofWork ?object .
+    FILTER NOT EXISTS { ?subject bs:stocks ?object }
+    BIND("a stock record the shop does not list" AS ?fault)
+  } UNION {
+    # events.csv names a shop bookshops.csv does not have
+    ?event bs:heldAt ?object .
+    FILTER NOT EXISTS { ?object a bs:Bookshop }
+    BIND(?event AS ?subject)
+    BIND("an event at an unknown shop" AS ?fault)
+  } UNION {
+    # a title stocked that works.csv does not describe
+    ?shop bs:stocks ?object .
+    FILTER NOT EXISTS { ?object a bs:Work }
+    BIND(?shop AS ?subject)
+    BIND("a title with no work" AS ?fault)
+  } UNION {
+    # a shop in a place the reference data does not know as a settlement
+    ?subject a bs:Bookshop ; bs:locatedIn ?object .
+    FILTER NOT EXISTS { ?object a bs:Settlement }
+    BIND("a shop in an unknown town" AS ?fault)
+  }
+}
+ORDER BY ?fault ?subject

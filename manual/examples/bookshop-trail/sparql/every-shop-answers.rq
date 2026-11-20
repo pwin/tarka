@@ -1,0 +1,9 @@
+# ASK: does any bookshop lack an answer the committee's spreadsheet asks for? A yes/no cell
+# that is neither ("Yes", "y", empty) leaves the mapping's IF unbound, and the triple is not
+# written: the shapes in s64 allow that, so the question has to be asked.
+PREFIX bs: <https://example.org/bookshop-trail/schema#>
+
+ASK {
+  ?shop a bs:Bookshop .
+  FILTER (NOT EXISTS { ?shop bs:sellsSecondHand ?any } || NOT EXISTS { ?shop bs:hasCafe ?any })
+}

@@ -1,0 +1,10 @@
+# How many of each of the trail's classes the transformation made: the first thing to look
+# at, and the first thing to compare between one run and the next.
+PREFIX bs: <https://example.org/bookshop-trail/schema#>
+
+SELECT ?class (COUNT(DISTINCT ?thing) AS ?things) WHERE {
+  ?thing a ?class .
+  FILTER(STRSTARTS(STR(?class), STR(bs:)))
+}
+GROUP BY ?class
+ORDER BY ?class

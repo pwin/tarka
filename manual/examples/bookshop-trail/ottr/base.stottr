@@ -1,0 +1,27 @@
+@prefix tt:   <https://example.org/bookshop-trail/template#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix geo:  <http://www.opengis.net/ont/geosparql#> .
+@prefix sf:   <http://www.opengis.net/ont/sf#> .
+
+# General patterns, with nothing of the Bookshop Trail in them.
+
+# A feature and its geometry, as GeoSPARQL writes them: the feature has the geometry as
+# its default, and the geometry carries the WKT. ?kind is sf:Point unless a caller says
+# otherwise (a trail segment's line is an sf:LineString).
+tt:Geometry [ ! ottr:IRI ?feature, ! ottr:IRI ?geometry, rdfs:Literal ?wkt, ! owl:Class ?kind = sf:Point ] :: {
+    ottr:Triple(?feature, rdf:type, geo:Feature),
+    ottr:Triple(?feature, geo:hasGeometry, ?geometry),
+    ottr:Triple(?feature, geo:hasDefaultGeometry, ?geometry),
+    ottr:Triple(?geometry, rdf:type, geo:Geometry),
+    ottr:Triple(?geometry, rdf:type, ?kind),
+    ottr:Triple(?geometry, geo:asWKT, ?wkt)
+} .
+
+# A thing with an English (or other tagged) name, as rdfs:label.
+tt:Named [ ! ottr:IRI ?thing, ! owl:Class ?class, rdf:langString ?name ] :: {
+    ottr:Triple(?thing, rdf:type, ?class),
+    ottr:Triple(?thing, rdfs:label, ?name)
+} .

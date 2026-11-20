@@ -1,0 +1,394 @@
+# ==========================================================================
+#  S64  The whole trail in one shapes graph
+# ==========================================================================
+#
+#  CHECKS
+#    A shapes graph for every class in the dataset, run on the faulty
+#    edition. Every numbered fault in data/faults.ttl appears in the
+#    report.
+#
+#  HOW IT WORKS
+#    This is the course's shapes in one file, organised the way a real
+#    shapes graph is: one node shape per class, every property shape named,
+#    a message on everything, and severities that say what kind of finding
+#    each is. The Core constraints come from modules 01 to 04, the SPARQL
+#    constraints from 05, the ISBN check digit from 06. Nothing in it
+#    compares xsd:gYear values with a Core component; the year comparisons
+#    are SPARQL with the STR cast. On the clean data the graph reports no
+#    violations and six warnings, all of them known features of the
+#    dataset: the two unreachable shops, the three authors in the cycle of
+#    influence, and the lecture given by an author who had died. On the
+#    faulty data it reports every fault from F01 to F31, and the checker
+#    that builds this course confirms each one is there. Read the report as
+#    an answer key: each row's focus node is a resource the faults file
+#    describes.
+#
+#  DIAGRAM
+#       one node shape per class            bt:BookshopShape, bt:SettlementShape, bt:WorkShape, ...
+#       named property shapes               bt:BookshopShape-founded, ...
+#       severities                          Violation for errors, Warning for known exceptions, Info for facts
+#       SPARQL where Core cannot            cycles, joins, year comparisons
+#       a constraint component              the ISBN check digit
+#
+#       clean data:   0 violations, 6 warnings
+#       faulty data:  every fault F01 to F31, by focus node
+#
+#  WHAT TO TAKE AWAY
+#    - A shapes graph is a document about the data model. Name the
+#      shapes, write the messages, and it reads as one.
+#    - Severity is how the graph records what is an error and what is a
+#      known feature. A report with warnings and no violations is a clean
+#      run.
+#    - Keep a faulty edition of the data beside the shapes and run both.
+#      A shape that finds nothing in the faulty data is not doing its
+#      job.
+#
+#  DATA      bookshop-trail-faulty.ttl
+#  LOAD IT   https://semantechs.co.uk/turtle-editor-viewer/?dot=https%3A%2F%2Fraw.githubusercontent.com%2Fpwin%2FSHACL_Course%2Fmain%2Fdata%2Fbookshop-trail-faulty.ttl&shapes=https%3A%2F%2Fraw.githubusercontent.com%2Fpwin%2FSHACL_Course%2Fmain%2Fshapes%2F11-putting-it-together%2Fs64-the-whole-trail-in-one-shapes-graph.ttl
+#  SPEC      SHACL 3.1 Shapes Graph
+#            https://www.w3.org/TR/shacl/#shapes-graph
+#            SHACL 3.6 Validation Report
+#            https://www.w3.org/TR/shacl/#validation-report
+#  REPORTS   does not conform -- 67 violations, 9 warnings, 0 info; 100 shapes
+# ==========================================================================
+
+@prefix bt:    <https://example.org/bookshop-trail/> .
+@prefix bs:    <https://example.org/bookshop-trail/schema#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix geo:   <http://www.opengis.net/ont/geosparql#> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+# Prefixes for the SPARQL inside this file. @prefix lines are Turtle syntax
+# and do not reach the query engine; sh:declare does.
+bt:prefixes
+    a  owl:Ontology ;
+    sh:declare [ sh:prefix "bt" ;   sh:namespace "https://example.org/bookshop-trail/"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "bs" ;   sh:namespace "https://example.org/bookshop-trail/schema#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "rdf" ;  sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "rdfs" ; sh:namespace "http://www.w3.org/2000/01/rdf-schema#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "xsd" ;  sh:namespace "http://www.w3.org/2001/XMLSchema#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "skos" ; sh:namespace "http://www.w3.org/2004/02/skos/core#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "dct" ;  sh:namespace "http://purl.org/dc/terms/"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "geo" ;  sh:namespace "http://www.opengis.net/ont/geosparql#"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "schema" ; sh:namespace "https://schema.org/"^^xsd:anyURI ] ;
+    sh:declare [ sh:prefix "sh" ;   sh:namespace "http://www.w3.org/ns/shacl#"^^xsd:anyURI ] .
+
+# ---------------------------------------------------------------- bookshops
+
+bt:BookshopShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Bookshop ;
+    sh:not          [ sh:class bs:Publisher ] ;
+    sh:message      "{$this} is typed as both a bookshop and a publisher." ;
+    sh:property     bt:BookshopShape-label, bt:BookshopShape-locatedIn, bt:BookshopShape-founded,
+                    bt:BookshopShape-staffCount, bt:BookshopShape-floorArea, bt:BookshopShape-hasCafe,
+                    bt:BookshopShape-website, bt:BookshopShape-specialises, bt:BookshopShape-country ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} opened in {$value}, before 1800." ;
+        sh:select    "SELECT $this ?value WHERE { $this bs:founded ?value . FILTER ( xsd:integer(STR(?value)) < 1800 ) }" ;
+    ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:severity  sh:Warning ;
+        sh:message   "{$this} cannot be reached on foot from The Inkwell. Two shops cannot, by design." ;
+        sh:select    "SELECT $this WHERE { FILTER NOT EXISTS { bt:shop-inkwell (bs:connectsTo|^bs:connectsTo)+ $this } }" ;
+    ] .
+
+bt:BookshopShape-label       a sh:PropertyShape ; sh:path rdfs:label ;
+    sh:minCount 1 ; sh:datatype rdf:langString ; sh:languageIn ( "en" "cy" "gd" ) ;
+    sh:message "A shop has a name with a language tag." .
+bt:BookshopShape-locatedIn   a sh:PropertyShape ; sh:path bs:locatedIn ;
+    sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ; sh:class bs:Settlement ;
+    sh:message "A shop is in exactly one settlement." .
+bt:BookshopShape-founded     a sh:PropertyShape ; sh:path bs:founded ;
+    sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:gYear ;
+    sh:message "A shop records the one year it opened, as an xsd:gYear." .
+bt:BookshopShape-staffCount  a sh:PropertyShape ; sh:path bs:staffCount ;
+    sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 1 ;
+    sh:message "Staff count is a positive integer: {$value}." .
+bt:BookshopShape-floorArea   a sh:PropertyShape ; sh:path bs:floorArea ;
+    sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ;
+    sh:message "Floor area is a positive number of square metres: {$value}." .
+bt:BookshopShape-hasCafe     a sh:PropertyShape ; sh:path bs:hasCafe ;
+    sh:maxCount 1 ; sh:datatype xsd:boolean .
+bt:BookshopShape-website     a sh:PropertyShape ; sh:path bs:website ;
+    sh:maxCount 1 ; sh:datatype xsd:anyURI ; sh:pattern "^https?://" ;
+    sh:message "At most one website, with a scheme: {$value}." .
+bt:BookshopShape-specialises a sh:PropertyShape ; sh:path bs:specialises ;
+    sh:maxCount 1 ; sh:class skos:Concept ;
+    sh:message "A specialism is a concept from the genre scheme, not {$value}." .
+bt:BookshopShape-country     a sh:PropertyShape ;
+    sh:path ( bs:locatedIn [ sh:oneOrMorePath bs:within ] ) ;
+    sh:qualifiedValueShape [ sh:class bs:Country ] ; sh:qualifiedMinCount 1 ; sh:qualifiedMaxCount 1 ;
+    sh:message "{$this} is in some number of countries other than one." .
+
+bt:BookshopClosed
+    a                     sh:NodeShape ;
+    sh:targetClass        bs:Bookshop ;
+    sh:closed             true ;
+    sh:ignoredProperties  ( rdf:type sh:shape ) ;
+    sh:message            "{$this} has a property the model does not know: {$path}." ;
+    sh:property [ sh:path rdfs:label ] ; sh:property [ sh:path bs:locatedIn ] ;
+    sh:property [ sh:path bs:founded ] ; sh:property [ sh:path bs:floorArea ] ;
+    sh:property [ sh:path bs:staffCount ] ; sh:property [ sh:path bs:specialises ] ;
+    sh:property [ sh:path bs:sellsSecondHand ] ; sh:property [ sh:path bs:hasCafe ] ;
+    sh:property [ sh:path bs:website ] ; sh:property [ sh:path bs:connectsTo ] ;
+    sh:property [ sh:path bs:stocks ] ; sh:property [ sh:path wgs84:lat ] ;
+    sh:property [ sh:path wgs84:long ] ; sh:property [ sh:path geo:hasGeometry ] ;
+    sh:property [ sh:path geo:hasDefaultGeometry ] ; sh:property [ sh:path skos:note ] .
+
+# ---------------------------------------------------------------- places
+
+bt:PlaceShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Place ;
+    sh:property     bt:PlaceShape-label, bt:PlaceShape-lat, bt:PlaceShape-long, bt:PlaceShape-reachesGB ;
+    sh:xone (
+        [ sh:class bs:Country ] [ sh:class bs:Region ] [ sh:class bs:CouncilArea ] [ sh:class bs:Settlement ]
+        [ sh:property [ sh:path skos:notation ; sh:hasValue "GB" ] ]
+    ) ;
+    sh:message  "{$this} is not exactly one kind of place." ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} contains itself." ;
+        sh:select    "SELECT $this WHERE { $this bs:within+ $this }" ;
+    ] .
+
+bt:PlaceShape-label      a sh:PropertyShape ; sh:path rdfs:label ;
+    sh:minCount 1 ; sh:languageIn ( "en" "cy" "gd" ) ; sh:uniqueLang true ;
+    sh:message "Place names are in English, Welsh or Gaelic, one per language." .
+bt:PlaceShape-lat        a sh:PropertyShape ; sh:path wgs84:lat ;
+    sh:maxCount 1 ; sh:minInclusive -90 ; sh:maxInclusive 90 ;
+    sh:message "Latitude {$value} is off the globe." .
+bt:PlaceShape-long       a sh:PropertyShape ; sh:path wgs84:long ;
+    sh:maxCount 1 ; sh:minInclusive -180 ; sh:maxInclusive 180 .
+bt:PlaceShape-reachesGB  a sh:PropertyShape ; sh:path [ sh:zeroOrMorePath bs:within ] ;
+    sh:hasValue bt:place-gb ;
+    sh:message "{$this} is not inside Great Britain at any depth." .
+
+bt:SettlementShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Settlement ;
+    sh:property     bt:SettlementShape-within, bt:SettlementShape-population, bt:SettlementShape-geometry .
+
+bt:SettlementShape-within      a sh:PropertyShape ; sh:path bs:within ;
+    sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:CouncilArea ;
+    sh:message "A settlement sits directly inside one council area; {$value} is not one." .
+bt:SettlementShape-population  a sh:PropertyShape ; sh:path bs:population ;
+    sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 0 .
+bt:SettlementShape-geometry    a sh:PropertyShape ; sh:path geo:hasDefaultGeometry ;
+    sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "{$this} has no default geometry." .
+
+bt:CouncilAreaShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:CouncilArea ;
+    sh:property [
+        sh:path                 [ sh:inversePath bs:within ] ;
+        sh:qualifiedValueShape  [ sh:property [ sh:path bs:isBookTown ; sh:hasValue true ] ] ;
+        sh:qualifiedMaxCount    1 ;
+        sh:message              "{$this} contains more than one book town." ;
+    ] .
+
+# ---------------------------------------------------------------- works
+
+bt:ISBN13ConstraintComponent
+    a  sh:ConstraintComponent ;
+    sh:parameter [ sh:path bt:isbn13 ; sh:datatype xsd:boolean ] ;
+    sh:validator [
+        a  sh:SPARQLAskValidator ;
+        sh:prefixes  bt:prefixes ;
+        sh:message   "The check digit of {$value} is wrong." ;
+        sh:ask  """
+            ASK {
+              BIND ( STR($value) AS ?s )
+              BIND (   xsd:integer(SUBSTR(?s, 1, 1))  + 3 * xsd:integer(SUBSTR(?s, 2, 1))
+                     + xsd:integer(SUBSTR(?s, 3, 1))  + 3 * xsd:integer(SUBSTR(?s, 4, 1))
+                     + xsd:integer(SUBSTR(?s, 5, 1))  + 3 * xsd:integer(SUBSTR(?s, 6, 1))
+                     + xsd:integer(SUBSTR(?s, 7, 1))  + 3 * xsd:integer(SUBSTR(?s, 8, 1))
+                     + xsd:integer(SUBSTR(?s, 9, 1))  + 3 * xsd:integer(SUBSTR(?s, 10, 1))
+                     + xsd:integer(SUBSTR(?s, 11, 1)) + 3 * xsd:integer(SUBSTR(?s, 12, 1)) AS ?sum )
+              BIND ( 10 - (?sum - 10 * FLOOR(?sum / 10)) AS ?c )
+              BIND ( ?c - 10 * FLOOR(?c / 10) AS ?check )
+              FILTER ( !REGEX(?s, "^97[89][0-9]{10}$") || ?check = xsd:integer(SUBSTR(?s, 13, 1)) )
+            }
+        """ ;
+    ] .
+
+bt:WorkShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Work ;
+    sh:property     bt:WorkShape-label, bt:WorkShape-author, bt:WorkShape-publishedBy, bt:WorkShape-year,
+                    bt:WorkShape-pages, bt:WorkShape-rrp, bt:WorkShape-isbn, bt:WorkShape-genre ;
+    sh:or (
+        [ sh:property [ sh:path bs:isbn ; sh:minCount 1 ] ]
+        [ sh:property [ sh:path bs:publicationYear ; sh:pattern "^(1[0-8][0-9][0-9]|19[0-6][0-9])$" ] ]
+    ) ;
+    sh:message  "{$this} has no ISBN and was published after 1969." ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} was published in {$value}, before its author was born." ;
+        sh:select    """
+            SELECT $this ?value WHERE {
+              $this bs:publicationYear ?value ; bs:author/bs:born ?born .
+              FILTER ( xsd:integer(STR(?value)) < xsd:integer(STR(?born)) )
+            }
+        """ ;
+    ] .
+
+bt:WorkShape-label        a sh:PropertyShape ; sh:path rdfs:label ; sh:minCount 1 ; sh:equals dct:title ;
+    sh:message "A work's rdfs:label and dct:title agree." .
+bt:WorkShape-author       a sh:PropertyShape ; sh:path bs:author ; sh:minCount 1 ; sh:class bs:Author .
+bt:WorkShape-publishedBy  a sh:PropertyShape ; sh:path bs:publishedBy ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:node bt:PublisherShape ; sh:message "{$value} is not a well-formed publisher." .
+bt:WorkShape-year         a sh:PropertyShape ; sh:path bs:publicationYear ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:datatype xsd:gYear .
+bt:WorkShape-pages        a sh:PropertyShape ; sh:path bs:pages ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+    sh:minInclusive 1 ; sh:message "{$value} pages is not a book." .
+bt:WorkShape-rrp          a sh:PropertyShape ; sh:path bs:rrp ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
+    sh:minInclusive 0 ; sh:message "A negative price: {$value}." .
+bt:WorkShape-isbn         a sh:PropertyShape ; sh:path bs:isbn ; sh:maxCount 1 ;
+    sh:pattern "^97[89][0-9]{10}$" ; bt:isbn13 true ;
+    sh:message "An ISBN-13 is thirteen digits starting 978 or 979: {$value}." .
+bt:WorkShape-genre        a sh:PropertyShape ; sh:path ( bs:genre [ sh:zeroOrMorePath skos:broader ] ) ;
+    sh:hasValue bt:genre-literature ;
+    sh:message "{$this} is filed under a genre that is not in the scheme." .
+
+bt:TranslationShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Translation ;
+    sh:property [ sh:path bs:translationOf ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Work ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} was published in {$value}, before the work it translates." ;
+        sh:select    """
+            SELECT $this ?value WHERE {
+              $this bs:publicationYear ?value ; bs:translationOf/bs:publicationYear ?original .
+              FILTER ( xsd:integer(STR(?value)) < xsd:integer(STR(?original)) )
+            }
+        """ ;
+    ] .
+
+bt:GenreShape
+    a               sh:NodeShape ;
+    sh:targetClass  skos:Concept ;
+    sh:property [ sh:path skos:inScheme ; sh:hasValue bt:genre-scheme ; sh:message "{$this} is in no scheme." ] ;
+    sh:property [ sh:path [ sh:zeroOrMorePath skos:broader ] ; sh:hasValue bt:genre-literature ;
+                  sh:message "{$this} does not lead up to the top of the scheme." ] .
+
+# ---------------------------------------------------------------- people and publishers
+
+bt:PersonShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Person ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ] ;
+    sh:property [ sh:path bs:born ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:gYear ] ;
+    sh:property [ sh:path bs:died ; sh:maxCount 1 ; sh:datatype xsd:gYear ] ;
+    sh:property [ sh:path bs:basedIn ; sh:maxCount 1 ; sh:class bs:Settlement ;
+                  sh:message "{$this} is based in {$value}, which is not a settlement." ] ;
+    sh:property [ sh:path bs:writesIn ; sh:in ( "en" "cy" "gd" "ar" ) ;
+                  sh:message "{$value} is not one of the dataset's writing languages." ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} died in {$value}, before being born." ;
+        sh:select    """
+            SELECT $this ?value WHERE {
+              $this bs:born ?born ; bs:died ?value .
+              FILTER ( xsd:integer(STR(?value)) < xsd:integer(STR(?born)) )
+            }
+        """ ;
+    ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:severity  sh:Warning ;
+        sh:message   "{$this} is in a cycle of influence. Three authors are, by design (q34)." ;
+        sh:select    "SELECT $this WHERE { $this bs:influencedBy+ $this }" ;
+    ] .
+
+bt:PublisherShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Publisher ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ] ;
+    sh:property [ sh:path bs:locatedIn ; sh:maxCount 1 ; sh:class bs:Settlement ] ;
+    sh:property [ sh:path bs:imprintOf ; sh:maxCount 1 ; sh:class bs:Publisher ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:message   "{$this} is an imprint of itself." ;
+        sh:select    "SELECT $this WHERE { $this bs:imprintOf+ $this }" ;
+    ] .
+
+# ---------------------------------------------------------------- events
+
+bt:EventShape
+    a                    sh:NodeShape ;
+    sh:targetClass       bs:Event ;
+    sh:targetSubjectsOf  bs:heldAt ;
+    sh:class             bs:Event ;
+    sh:message           "{$this} is not typed as an event." ;
+    sh:property [ sh:path bs:heldAt ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Bookshop ;
+                  sh:message "Events are held at bookshops; {$value} is not one." ] ;
+    sh:property [ sh:path bs:eventDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:date ;
+                  sh:message "{$value} is not a well-formed date." ] ;
+    sh:property [ sh:path bs:eventKind ; sh:minCount 1 ;
+                  sh:in ( "Reading" "Signing" "Panel" "Workshop" "Launch" "Lecture" "Book Club" ) ;
+                  sh:message "{$value} is not a kind of event this trail runs." ] ;
+    sh:property [ sh:path bs:featuring ; sh:minCount 1 ; sh:class bs:Author ;
+                  sh:message "An event features at least one author." ] ;
+    sh:property [ sh:path bs:attendance ; sh:datatype xsd:integer ; sh:minInclusive 0 ] ;
+    sh:property [ sh:path bs:ticketPrice ; sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:minInclusive 0 ;
+                  sh:message "Ticket price {$value} is not a non-negative decimal." ] ;
+    sh:sparql [
+        sh:prefixes  bt:prefixes ;
+        sh:severity  sh:Warning ;
+        sh:message   "{$this} features {$value}, who had died by then. A memorial, or a mistake?" ;
+        sh:select    """
+            SELECT $this ?value WHERE {
+              $this bs:featuring ?value ; bs:eventDate ?date . ?value bs:died ?died .
+              FILTER ( xsd:integer(SUBSTR(STR(?date), 1, 4)) > xsd:integer(STR(?died)) )
+            }
+        """ ;
+    ] .
+
+# ---------------------------------------------------------------- trail and stock
+
+bt:TrailSegmentShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:TrailSegment ;
+    sh:property [ sh:path bs:segmentFrom ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Bookshop ;
+                  sh:disjoint bs:segmentTo ; sh:message "{$this} starts and ends at {$value}." ] ;
+    sh:property [ sh:path bs:segmentTo ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Bookshop ] ;
+    sh:property [ sh:path bs:distanceKm ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ;
+                  sh:minExclusive 0 ; sh:message "A segment of {$value} km goes nowhere." ] .
+
+bt:StockRecordShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:StockRecord ;
+    sh:property [ sh:path bs:atShop ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Bookshop ;
+                  sh:message "{$value} is not typed as a bookshop." ] ;
+    sh:property [ sh:path bs:ofWork ; sh:minCount 1 ; sh:maxCount 1 ; sh:class bs:Work ] ;
+    sh:property [ sh:path bs:copies ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 0 ;
+                  sh:message "{$value} copies." ] ;
+    sh:property [
+        sh:path bs:shelfPrice ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:minInclusive 0 ;
+        sh:sparql [
+            sh:prefixes  bt:prefixes ;
+            sh:message   "{$value} is more than twice the recommended price." ;
+            sh:select    "SELECT $this ?value WHERE { $this $PATH ?value ; bs:ofWork/bs:rrp ?rrp . FILTER ( ?value > 2 * ?rrp ) }" ;
+        ] ;
+    ] .
+
+bt:SourceShape
+    a               sh:NodeShape ;
+    sh:targetClass  bs:Source ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ] ;
+    sh:property [ sh:path bs:sourceKind ; sh:in ( "guidebook" "survey" "self-reported" "register" "newspaper" ) ;
+                  sh:message "{$value} is not a recognised kind of source." ] ;
+    sh:property [ sh:path bs:confidence ; sh:datatype xsd:decimal ; sh:minInclusive 0 ; sh:maxInclusive 1 ;
+                  sh:message "Confidence {$value} is not between 0 and 1." ] .

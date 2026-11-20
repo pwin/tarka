@@ -1,0 +1,94 @@
+# The Bookshop Trail's transformation as a GitHub Actions workflow: every stage of the manual,
+# each a gate. Copy it to .github/workflows/ in a repository laid out like this example.
+#
+# Stages, and what stops the run:
+#   1. lint the templates            tarka lint --deny-warnings       a lint error or warning
+#   2. sketch the mappings           Ontology Quality Suite           (reported, not gated)
+#   3. prepare the tables            Polars                           a failed script
+#   4. map, validating as it writes  tarka run/bottr --validate       a row left out (1), a shape broken (3)
+#   5. check the set of files        SPARQL, --expect-none            any row
+#   6. validate with the domain      s64 with the reference data      any violation
+#   7. assess the data               Ontology Quality Suite           (reported, not gated)
+#   8. load the store                the validated files, PUT         on main only
+
+name: bookshop-trail
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  transform:
+    runs-on: ubuntu-latest
+    env:
+      TARKA_VERSION: "0.3.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tarka and the checkers
+        run: |
+          curl -sSL "https://github.com/pwin/tarka/releases/download/v${TARKA_VERSION}/tarka-${TARKA_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar xz
+          echo "$PWD/tarka-${TARKA_VERSION}-x86_64-unknown-linux-gnu" >> "$GITHUB_PATH"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install tarka-rdf polars holosdb shacl ontology-quality-suite
+
+      # 1. A library with an error does not get to make data
+      - name: Lint the templates
+        run: tarka lint -l ottr/ --deny-warnings
+
+      # 2. The mappings against the ontology, before any data is read
+      - name: Sketch the mappings
+        run: |
+          ontology-quality-suite sketch --queries tarql/ \
+            --query-pattern "bookshops.rq,stocks.rq,stock.rq,events.rq,works.rq" \
+            --ontology reference/01-vocabulary.ttl --out-dir out/oqs/sketch --fail-on never
+
+      # 3. The tables OTTR wants, from the committee's spreadsheets
+      - name: Prepare the tables
+        run: python python/prepare.py
+
+      # 4. Map, checking each file against its mapping's shapes and the project's own as it is written
+      - name: Map
+        run: |
+          tarka run -q tarql/bookshops.rq -i data/bookshops.csv --validate --shapes shapes/trail-extra.ttl -o out/bookshops.ttl
+          tarka run -q tarql/stocks.rq -i data/bookshops.csv -o out/stocks.ttl
+          tarka run -q tarql/events.rq -i data/events.csv --shapes shapes/trail-extra.ttl -o out/events.ttl
+          tarka run -q tarql/works.rq -i data/works.csv -o out/works.ttl
+          tarka run -q tarql/stock.rq -i data/stock.csv --shapes shapes/trail-extra.ttl -o out/stock.ttl
+          tarka bottr -l ottr/ bottr/segments.bottr.ttl -o out/segments.ttl
+          tarka bottr -l ottr/ bottr/connections.bottr.ttl -o out/connections.ttl
+
+      # 5. Faults between files: each row is one
+      - name: Check the set of files
+        run: python tools/sparql.py sparql/cross-file-checks.rq out/*.ttl --expect-none
+
+      # 6. The trail's own rules, with the reference data they refer to
+      - name: Validate with the SHACL course's shapes
+        run: python python/validate.py out/bookshops.ttl out/stocks.ttl out/stock.ttl out/events.ttl out/works.ttl out/segments.ttl out/connections.ttl
+
+      # 7. A full assessment, kept with the run
+      - name: Assess the data
+        run: |
+          ontology-quality-suite data out/*.ttl reference/02-genres.ttl reference/03-places.ttl reference/05-people.ttl \
+            --ontology reference/01-vocabulary.ttl --own-namespace https://example.org/bookshop-trail/ \
+            --engine sparql --out-dir out/oqs/data --fail-on never
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trail-graph-and-reports
+          path: out/
+
+      # 8. Only what passed every gate reaches the store: the files that were validated, one graph
+      #    per source, each replaced (PUT), so a reload is idempotent
+      - name: Load the store
+        if: github.ref == 'refs/heads/main'
+        env:
+          STORE: ${{ secrets.TRAIL_GRAPH_STORE }}        # e.g. https://store.example.org/graph
+          AUTH: ${{ secrets.TRAIL_GRAPH_STORE_AUTH }}    # e.g. "Authorization: Bearer …"
+        run: |
+          for f in bookshops stocks stock events works segments connections; do
+            curl -sf -X PUT -H "Content-Type: text/turtle" -H "$AUTH" --data-binary "@out/$f.ttl" \
+              "$STORE?graph=https://example.org/bookshop-trail/graph/$f"
+          done

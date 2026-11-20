@@ -1,0 +1,15 @@
+# The first mapping: every row of bookshops.csv becomes a bookshop with a name and a town.
+PREFIX bt:   <https://example.org/bookshop-trail/>
+PREFIX bs:   <https://example.org/bookshop-trail/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+CONSTRUCT {
+  ?shop_iri a bs:Bookshop ;
+      rdfs:label   ?label ;
+      bs:locatedIn ?town_iri .
+}
+WHERE {
+  BIND(IRI(CONCAT(STR(bt:), "shop-", ?shop))  AS ?shop_iri)
+  BIND(IRI(CONCAT(STR(bt:), "place-", ?town)) AS ?town_iri)
+  BIND(STRLANG(?name, "en")                    AS ?label)
+}

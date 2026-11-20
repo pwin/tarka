@@ -1,0 +1,42 @@
+# The bookshops, from data/prepared/bookshops.csv, through tt:Bookshop. The argument maps do
+# what the table cannot: tag the names as English, read yes/no as booleans, type the numbers,
+# read the WKT's datatype from the cell, and split the titles into a list.
+#
+#   tarka bottr -l ottr/ bottr/bookshops.bottr.ttl -o out/bookshops-bottr.ttl
+
+@prefix ottr:  <http://ns.ottr.xyz/0.4/> .
+@prefix tt:    <https://example.org/bookshop-trail/template#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo:   <http://www.opengis.net/ont/geosparql#> .
+
+# The prefixes the table's cells use: "shop:inkwell" is <https://example.org/bookshop-trail/shop-inkwell>
+@prefix shop:  <https://example.org/bookshop-trail/shop-> .
+@prefix place: <https://example.org/bookshop-trail/place-> .
+@prefix genre: <https://example.org/bookshop-trail/genre-> .
+@prefix geom:  <https://example.org/bookshop-trail/geom-> .
+@prefix book:  <https://example.org/bookshop-trail/book-> .
+
+[] a ottr:InstanceMap ;
+   ottr:template tt:Bookshop ;
+   ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT shop, name, town, founded, floor_area, staff, specialism, second_hand, cafe,
+                        website, lat, long, point, wkt, stocks
+                 FROM CSVREAD('../data/prepared/bookshops.csv')""" ;
+   ottr:argumentMaps (
+     [ ottr:type ottr:IRI ]                                                              # shop
+     [ ottr:languageTag "en" ]                                                           # name
+     [ ottr:type ottr:IRI ]                                                              # town
+     [ ottr:type xsd:gYear ]                                                             # founded
+     [ ottr:type xsd:decimal ]                                                           # floor_area
+     [ ottr:type xsd:integer ]                                                           # staff
+     [ ottr:type ottr:IRI ]                                                              # specialism
+     [ ottr:type xsd:boolean ; ottr:booleanTrue ( "yes" ) ; ottr:booleanFalse ( "no" ) ]  # second_hand
+     [ ottr:type xsd:boolean ; ottr:booleanTrue ( "yes" ) ; ottr:booleanFalse ( "no" ) ]  # cafe
+     [ ottr:type xsd:anyURI ]                                                            # website: empty is none
+     [ ottr:type xsd:decimal ]                                                           # lat
+     [ ottr:type xsd:decimal ]                                                           # long
+     [ ottr:type ottr:IRI ]                                                              # point
+     [ ottr:datatypeSep "^^" ]                                                           # wkt: "…^^geo:wktLiteral"
+     [ ottr:type ( rdf:List ottr:IRI ) ; ottr:listSep ";" ]                              # stocks
+   ) .

@@ -1,0 +1,26 @@
+@prefix tt:   <https://example.org/bookshop-trail/template#> .
+@prefix oops: <https://example.org/bookshop-trail/mistakes#> .
+@prefix bs:   <https://example.org/bookshop-trail/schema#> .
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# A first draft of event templates, with the mistakes first drafts have. `tarka lint`
+# finds each of them:
+#
+#   tarka lint -l ottr/ -l ottr-mistakes/
+
+# ?property is used as a predicate, which ottr:Triple requires to be non-blank, but it is
+# not marked ! here.
+oops:Fact [ ottr:IRI ?subject, ottr:IRI ?property, ?value ] :: {
+    ottr:Triple(?subject, ?property, ?value)
+} .
+
+# The attendance is an integer, but tt:Stocks wants an IRI for its book; oops:Venue does
+# not exist; tt:Named takes three arguments, not two; ?kind is never used.
+oops:Event [ ! ottr:IRI ?event, ! ottr:IRI ?shop, xsd:integer ?attendance, xsd:string ?kind ] :: {
+    tt:Named(?event, bs:Event),
+    ottr:Triple(?event, bs:heldAt, ?shop),
+    tt:Stocks(?shop, ?attendance),
+    oops:Venue(?shop)
+} .

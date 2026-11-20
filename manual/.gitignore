@@ -1,0 +1,4 @@
+# What the examples make, and what the build makes: all of it is made again on demand
+examples/bookshop-trail/out
+build/
+tools/node_modules/

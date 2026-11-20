@@ -1,0 +1,19 @@
+# stock.csv: one stock record per row, named after its shop and its book.
+PREFIX bt:  <https://example.org/bookshop-trail/>
+PREFIX bs:  <https://example.org/bookshop-trail/schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+CONSTRUCT {
+  ?record a bs:StockRecord ;
+      bs:atShop     ?shop_iri ;
+      bs:ofWork     ?book_iri ;
+      bs:copies     ?copy_count ;
+      bs:shelfPrice ?shelf_price_value .
+}
+WHERE {
+  BIND(IRI(CONCAT(STR(bt:), "stock-", ?shop, "--", ?book)) AS ?record)
+  BIND(IRI(CONCAT(STR(bt:), "shop-", ?shop))               AS ?shop_iri)
+  BIND(IRI(CONCAT(STR(bt:), "book-", ?book))               AS ?book_iri)
+  BIND(xsd:integer(?copies)                                AS ?copy_count)
+  BIND(xsd:decimal(?shelf_price)                           AS ?shelf_price_value)
+}

@@ -1,0 +1,18 @@
+# bs:connectsTo, from the segments already made: an RDF file source runs a SPARQL SELECT
+# over RDF files, and each solution is an instance of tt:Connects. Run segments.bottr.ttl
+# first; this reads its output.
+#
+#   tarka bottr -l ottr/ bottr/connections.bottr.ttl -o out/connections.ttl
+
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tt:   <https://example.org/bookshop-trail/template#> .
+
+[] a ottr:InstanceMap ;
+   ottr:template tt:Connects ;
+   ottr:source [ a ottr:RDFFileSource ; ottr:sourceURL "../out/segments.ttl" ] ;
+   ottr:query """
+     PREFIX bs: <https://example.org/bookshop-trail/schema#>
+     SELECT ?from ?to WHERE {
+       ?segment a bs:TrailSegment ; bs:segmentFrom ?from ; bs:segmentTo ?to .
+     }""" ;
+   ottr:argumentMaps ( [ ottr:type ottr:IRI ] [ ottr:type ottr:IRI ] ) .

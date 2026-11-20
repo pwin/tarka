@@ -1,0 +1,25 @@
+@prefix tt:    <https://example.org/bookshop-trail/template#> .
+@prefix ottr:  <http://ns.ottr.xyz/0.4/> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# The prefixes a table's cells use for IRIs: a cell holding "shop:inkwell" is
+# <https://example.org/bookshop-trail/shop-inkwell>.
+@prefix shop:  <https://example.org/bookshop-trail/shop-> .
+@prefix book:  <https://example.org/bookshop-trail/book-> .
+@prefix stock: <https://example.org/bookshop-trail/stock-> .
+
+# Row templates: one row of a table, in, and the trail's patterns, out.
+
+# A shop's stock, as data/prepared/shop-stock.* has it: one row per shop and four
+# parallel lists. The IRI lists are non-blank (!), as the parameters they feed are. cross makes one tt:Stocks for each book; zipMin takes the lists in
+# step, and makes one stock record for each position in them.
+tt:ShopStock [
+    ! ottr:IRI ?shop,
+    ! NEList<ottr:IRI> ?records,
+    ! NEList<ottr:IRI> ?books,
+    NEList<xsd:integer> ?copies,
+    NEList<xsd:decimal> ?prices
+] :: {
+    cross  | tt:Stocks(?shop, ++?books),
+    zipMin | tt:StockRecord(++?records, ?shop, ++?books, ++?copies, ++?prices)
+} .

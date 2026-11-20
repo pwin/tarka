@@ -1,0 +1,21 @@
+{
+  "name": "tarka-manual-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build the web edition, the EPUB and the A4 PDF of the tarka Manual",
+  "license": "MIT",
+  "author": "Peter Winstanley",
+  "scripts": {
+    "diagrams": "node render-diagrams.mjs",
+    "site": "node build-site.mjs",
+    "epub": "node build-epub.mjs",
+    "pdf": "node build-pdf.mjs",
+    "all": "node render-diagrams.mjs && node build-site.mjs --skip-diagrams && node build-epub.mjs --skip-render && node build-pdf.mjs --skip-render",
+    "chromium": "puppeteer browsers install chrome-headless-shell"
+  },
+  "dependencies": {
+    "mermaid": "^11.12.0",
+    "puppeteer": "^24.0.0",
+    "puppeteer-core": "^24.0.0"
+  }
+}

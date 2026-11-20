@@ -1,0 +1,42 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix bs:   <https://example.org/bookshop-trail/schema#> .
+@prefix bt:   <https://example.org/bookshop-trail/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# What the transformation must give, beyond the SHACL course's shapes (s64): the events
+# and stock records the spreadsheets add. Each is about one node, so tarka can check them
+# as it writes (--shapes): none needs the reference data.
+
+bt:EventShape a sh:NodeShape ;
+    sh:targetClass bs:Event ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:datatype rdf:langString ] ,
+        [ sh:path bs:heldAt ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ,
+        [ sh:path bs:eventDate ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:date ;
+          sh:minInclusive "2025-01-01"^^xsd:date ; sh:maxInclusive "2026-12-31"^^xsd:date ;
+          sh:message "An event date must be a real date in 2025 or 2026." ] ,
+        [ sh:path bs:attendance ; sh:maxCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 0 ] ,
+        [ sh:path bs:ticketPrice ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:decimal ; sh:minInclusive 0 ;
+          sh:message "A ticket price is a decimal, nought or more: is the pound sign the only thing in the cell besides the number?" ] .
+
+bt:StockRecordShape a sh:NodeShape ;
+    sh:targetClass bs:StockRecord ;
+    sh:property [ sh:path bs:atShop ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ,
+        [ sh:path bs:ofWork ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ,
+        [ sh:path bs:copies ; sh:minCount 1 ; sh:datatype xsd:integer ; sh:minInclusive 1 ;
+          sh:message "A stock record with no copies is not stock." ] ,
+        [ sh:path bs:shelfPrice ; sh:minCount 1 ; sh:datatype xsd:decimal ; sh:minExclusive 0 ] .
+
+# A bookshop says whether it sells second-hand books and has a cafe: the s64 shapes allow
+# a shop to say nothing, but the committee's spreadsheet has a column for each.
+bt:BookshopExtraShape a sh:NodeShape ;
+    sh:targetClass bs:Bookshop ;
+    sh:property [ sh:path bs:sellsSecondHand ; sh:minCount 1 ;
+                  sh:message "No yes or no for second-hand books: is the cell 'Yes', or empty?" ] ,
+        [ sh:path bs:hasCafe ; sh:minCount 1 ;
+          sh:message "No yes or no for a cafe: is the cell 'Yes', or empty?" ] ,
+        # sh:datatype xsd:gYear should reject "c.1972"^^xsd:gYear, but not every validator checks
+        # a gYear's lexical form (SHACL_Engine 0.3.8 and HOLOS 0.26.4 do not): say what a year is
+        [ sh:path bs:founded ; sh:pattern "^[0-9]{4}$" ;
+          sh:message "A founding year is four digits: 'about 1972' belongs in a note, not in the year." ] .

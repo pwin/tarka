@@ -1,0 +1,14 @@
+# The titles a bookshop stocks are one cell, "scree;the-tarn". Jena's apf:strSplit binds
+# ?book to each part in turn, as TARQL proper (on Jena) does.
+PREFIX bt:  <https://example.org/bookshop-trail/>
+PREFIX bs:  <https://example.org/bookshop-trail/schema#>
+PREFIX apf: <http://jena.apache.org/ARQ/property#>
+
+CONSTRUCT {
+  ?shop_iri bs:stocks ?book_iri .
+}
+WHERE {
+  BIND(IRI(CONCAT(STR(bt:), "shop-", ?shop)) AS ?shop_iri)
+  ?book apf:strSplit (?stocks ";")
+  BIND(IRI(CONCAT(STR(bt:), "book-", ?book)) AS ?book_iri)
+}

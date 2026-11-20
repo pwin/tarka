@@ -1,0 +1,27 @@
+# The trail's segments, from data/prepared/segments.csv, through tt:Segment.
+#
+#   tarka bottr -l ottr/ bottr/segments.bottr.ttl -o out/segments.ttl
+
+@prefix ottr: <http://ns.ottr.xyz/0.4/> .
+@prefix tt:   <https://example.org/bookshop-trail/template#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix geo:  <http://www.opengis.net/ont/geosparql#> .
+@prefix shop: <https://example.org/bookshop-trail/shop-> .
+@prefix seg:  <https://example.org/bookshop-trail/seg-> .
+@prefix geom: <https://example.org/bookshop-trail/geom-> .
+
+[] a ottr:InstanceMap ;
+   ottr:template tt:Segment ;
+   ottr:source [ a ottr:H2Source ] ;
+   ottr:query """SELECT segment, from_shop, to_shop, label, km, waymarked, line, wkt
+                 FROM CSVREAD('../data/prepared/segments.csv')""" ;
+   ottr:argumentMaps (
+     [ ottr:type ottr:IRI ]                                                              # segment
+     [ ottr:type ottr:IRI ]                                                              # from_shop
+     [ ottr:type ottr:IRI ]                                                              # to_shop
+     [ ottr:languageTag "en" ]                                                           # label
+     [ ottr:type xsd:decimal ]                                                           # km
+     [ ottr:type xsd:boolean ; ottr:booleanTrue ( "yes" ) ; ottr:booleanFalse ( "no" ) ]  # waymarked
+     [ ottr:type ottr:IRI ]                                                              # line
+     [ ottr:datatypeSep "^^" ]                                                           # wkt: "…^^geo:wktLiteral"
+   ) .

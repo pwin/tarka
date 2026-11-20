@@ -1,0 +1,17 @@
+/* The EPUB edition of the tarka Manual. Reader settings win: sizes are relative, colours
+   are few, and code wraps rather than running off a small screen. */
+body { font-family: Georgia, "Cambria", serif; line-height: 1.5; }
+h1, h2, h3 { font-family: "Segoe UI", Helvetica, Arial, sans-serif; color: #14243A; line-height: 1.25; }
+h1 { font-size: 1.6em; margin-top: 0; }
+h2 { font-size: 1.3em; margin-top: 1.6em; }
+h3 { font-size: 1.1em; }
+a { color: #1a5f7a; }
+code { font-family: Consolas, "DejaVu Sans Mono", monospace; font-size: 0.88em; }
+pre { white-space: pre-wrap; word-wrap: break-word; background: #f6f7f9; border-left: 3px solid #02B7D4;
+      padding: 0.6em 0.8em; font-size: 0.8em; line-height: 1.35; }
+pre code { font-size: 1em; }
+table { border-collapse: collapse; margin: 1em 0; font-size: 0.85em; }
+th, td { border: 1px solid #c9ced6; padding: 0.3em 0.5em; text-align: left; vertical-align: top; }
+th { background: #eef1f4; }
+blockquote { margin: 1em 0; padding: 0.4em 1em; border-left: 3px solid #FE8902; background: #FFF8EC; }
+img { max-width: 100%; height: auto; }

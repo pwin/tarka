@@ -1,0 +1,28 @@
+# events.csv: dates as the committee writes them (06/09/2025) and prices with a pound sign.
+PREFIX bt:   <https://example.org/bookshop-trail/>
+PREFIX bs:   <https://example.org/bookshop-trail/schema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+CONSTRUCT {
+  ?event_iri a bs:Event ;
+      rdfs:label     ?label ;
+      bs:heldAt      ?shop_iri ;
+      bs:eventKind   ?kind ;
+      bs:eventDate   ?day ;
+      bs:featuring   ?author_iri ;
+      bs:attendance  ?people ;
+      bs:ticketPrice ?ticket_price_value .
+}
+WHERE {
+  BIND(IRI(CONCAT(STR(bt:), "event-", ?event))      AS ?event_iri)
+  BIND(IRI(CONCAT(STR(bt:), "shop-", ?shop))        AS ?shop_iri)
+  BIND(IRI(CONCAT(STR(bt:), "author-", ?featuring)) AS ?author_iri)
+  BIND(STRLANG(?title, "en")                        AS ?label)
+
+  # dd/mm/yyyy to yyyy-mm-dd, then cast: a date that is not one leaves ?day unbound
+  BIND(xsd:date(CONCAT(SUBSTR(?date, 7, 4), "-", SUBSTR(?date, 4, 2), "-", SUBSTR(?date, 1, 2))) AS ?day)
+
+  BIND(xsd:integer(?attendance)                     AS ?people)
+  BIND(xsd:decimal(REPLACE(?ticket, "^£", ""))      AS ?ticket_price_value)
+}

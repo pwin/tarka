@@ -46,6 +46,12 @@ tarka bottr -l templates/ people.bottr.ttl -o people.ttl                    # bO
 
 tarka works with RDF 1.1 and SPARQL 1.1.
 
+**[The tarka Manual](manual/)** teaches all of it, from a first mapping to a pipeline that checks
+its own output, on the Bookshop Trail dataset of the Semantechs SPARQL, SHACL and Ontology
+courses, with SHACL, SPARQL and the Ontology Quality Suite to prove the RDF right. Every example
+in it runs (`manual/examples/bookshop-trail/check.py`). It is built as a web edition, an EPUB and
+an A4 PDF ([`manual/tools/`](manual/tools/)).
+
 ## Install
 
 Each release on GitHub carries the `tarka` command for Linux (x86_64), macOS (Apple Silicon)
