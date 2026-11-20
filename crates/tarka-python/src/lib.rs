@@ -52,13 +52,19 @@ impl Mapping {
 
     /// A mapping from OTTR templates: `library` is files or directories of stOTTR, and
     /// `templates` the root templates to instantiate for every row. `lists` gives the
-    /// separator of text cells for list-typed parameters (list columns need none).
+    /// separator of text cells for list-typed parameters (list columns need none), and
+    /// `languages` the language tag of a parameter's cells (needed for `rdf:langString`).
     #[staticmethod]
-    #[pyo3(signature = (library, templates, lists = None))]
-    fn ottr(library: Vec<PathBuf>, templates: Vec<String>, lists: Option<HashMap<String, String>>) -> PyResult<Self> {
+    #[pyo3(signature = (library, templates, lists = None, languages = None))]
+    fn ottr(
+        library: Vec<PathBuf>,
+        templates: Vec<String>,
+        lists: Option<HashMap<String, String>>,
+        languages: Option<HashMap<String, String>>,
+    ) -> PyResult<Self> {
         let lib = Library::load(&library).map_err(ottr_error)?;
         let roots: Vec<&str> = templates.iter().map(String::as_str).collect();
-        let options = CompileOptions { given: false, lists: lists.unwrap_or_default() };
+        let options = CompileOptions { given: false, lists: lists.unwrap_or_default(), languages: languages.unwrap_or_default() };
         Ok(Self { plan: tarka::ottr::compile_many(&lib, &roots, &options).map_err(ottr_error)? })
     }
 

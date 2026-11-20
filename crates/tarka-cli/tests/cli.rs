@@ -604,6 +604,49 @@ fn ottr_rows_that_cannot_be_made() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
+/// A mandatory parameter needs its column: without one, nothing is read and the run
+/// fails, naming the nearest column. A missing optional column is a warning. An
+/// rdf:langString parameter takes its column's language from --lang.
+#[test]
+fn ottr_columns_and_languages() {
+    let dir = std::env::temp_dir().join(format!("tarka-columns-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let library = dir.join("shops.stottr");
+    std::fs::write(
+        &library,
+        "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+         @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+         ex:Shop [ ottr:IRI ?id, rdf:langString ?name, xsd:decimal ?floorArea, ? xsd:string ?notes ] :: {
+           ottr:Triple(?id, ex:name, ?name), ottr:Triple(?id, ex:area, ?floorArea), ottr:Triple(?id, ex:notes, ?notes) } .",
+    )
+    .unwrap();
+    let csv = b"id,name,floor_area\nex:a,Dwy Afon,80.0\n";
+    let run = |extra: &[&str]| {
+        let mut args = vec!["run", "-l", path(&library), "-T", "ex:Shop", "--ntriples"];
+        args.extend_from_slice(extra);
+        tarka(&args, Some(csv))
+    };
+    let no_lang = run(&[]);
+    assert_eq!(no_lang.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&no_lang.stderr);
+    assert!(stderr.contains("?name is an rdf:langString") && stderr.contains("--lang name TAG"), "{stderr}");
+    let bad_tag = run(&["--lang", "name", "not a tag"]);
+    assert!(String::from_utf8_lossy(&bad_tag.stderr).contains("is not a language tag"), "{}", String::from_utf8_lossy(&bad_tag.stderr));
+    let no_column = run(&["--lang", "name", "cy"]);
+    assert_eq!(no_column.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&no_column.stderr);
+    assert!(stderr.contains("no column for the mandatory parameter floorArea (is it floor_area?)"), "{stderr}");
+    assert!(stderr.contains("optional parameter notes"), "{stderr}");
+    assert!(no_column.stdout.is_empty());
+    let renamed = b"id,name,floorArea\nex:a,Dwy Afon,80.0\n";
+    let out = tarka(&["run", "-l", path(&library), "-T", "ex:Shop", "--ntriples", "--lang", "name", "cy"], Some(renamed));
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("<http://example.com/name> \"Dwy Afon\"@cy ."), "{stdout}");
+    assert!(stdout.contains("<http://example.com/area> \"80"), "{stdout}");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn parquet_input() {
     use tarka_polars::polars::prelude::*;

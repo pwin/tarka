@@ -90,6 +90,9 @@ pub struct ColumnBinding {
     pub list: bool,
     /// The separator of a text cell's list items.
     pub list_separator: Option<String>,
+    /// The parameter is mandatory and has no default, so a run is refused when the
+    /// input has no column for it: every instance would be left out.
+    pub required: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

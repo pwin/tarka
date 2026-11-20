@@ -43,9 +43,9 @@ rayon = "1"
 # HTTP for the Graph Store Protocol; rustls, so there is no system TLS library to find
 ureq = { version = "3.4", default-features = false, features = ["rustls"] }
 polars = { version = "0.55", default-features = false, features = ["fmt", "parquet", "ipc", "lazy", "dtype-full", "timezones"] }
-# SHACL_Engine 0.3.4 (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
+# SHACL_Engine 0.3.9 (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
 # Its `rdf-12` feature on, as HOLOS turns on the Oxigraph crates' own; `parallel` off.
-shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "986c31ba4e071560d51fed36e99abd8cb3747a87", default-features = false, features = ["rdf-12"] }
+shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "75cdb434220305a19ba922776768de04fb8ed13d", default-features = false, features = ["rdf-12"] }
 
 tarka-core = { path = "crates/tarka-core", version = "0.3.0" }
 tarka-io = { path = "crates/tarka-io", version = "0.3.0" }

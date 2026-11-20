@@ -18,10 +18,16 @@ class Mapping:
     def tarql_file(path: _Path) -> Mapping:
         """A mapping from a TARQL query file."""
     @staticmethod
-    def ottr(library: list[_Path], templates: list[str], lists: dict[str, str] | None = None) -> Mapping:
+    def ottr(
+        library: list[_Path],
+        templates: list[str],
+        lists: dict[str, str] | None = None,
+        languages: dict[str, str] | None = None,
+    ) -> Mapping:
         """A mapping from OTTR templates: `library` is files or directories of stOTTR, and
         `templates` the root templates to instantiate for every row. `lists` gives the
-        separator of text cells for list-typed parameters (list columns need none)."""
+        separator of text cells for list-typed parameters (list columns need none), and
+        `languages` the language tag of a parameter's cells (needed for `rdf:langString`)."""
     @property
     def name(self) -> str:
         """The plan's name (the query or the root templates)."""

@@ -208,6 +208,28 @@ def test_errors():
         employee.triplify(text_frame("people/people.csv"))
 
 
+def test_columns_and_languages(tmp_path):
+    """A mandatory parameter needs a column of its name, and an rdf:langString parameter
+    a language for its column."""
+    library = tmp_path / "shop.stottr"
+    library.write_text(
+        "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .\n"
+        "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n"
+        "ex:Shop [ ottr:IRI ?id, rdf:langString ?name, ?floorArea ] :: {\n"
+        "  ottr:Triple(?id, ex:name, ?name), ottr:Triple(?id, ex:area, ?floorArea) } .\n"
+    )
+    with pytest.raises(ValueError, match=r'languages=\{"name": TAG\}'):
+        tarka_rdf.Mapping.ottr([library], ["ex:Shop"])
+    with pytest.raises(ValueError, match="'en GB', given as the language of \\?name, is not a language tag"):
+        tarka_rdf.Mapping.ottr([library], ["ex:Shop"], languages={"name": "en GB"})
+    m = tarka_rdf.Mapping.ottr([library], ["ex:Shop"], languages={"name": "cy"})
+    df = pl.DataFrame({"id": ["ex:a"], "name": ["Dwy Afon"], "floor_area": ["80"]})
+    with pytest.raises(ValueError, match=r"mandatory parameter floorArea \(is it floor_area\?\)"):
+        m.triplify(df)
+    nt = m.write(df.rename({"floor_area": "floorArea"}), format="ntriples")
+    assert '<http://example.com/name> "Dwy Afon"@cy .' in nt
+
+
 def test_rows_that_cannot_be_made(tmp_path):
     """An IRI cell is read as bOTTR reads it (mailto: needs no prefix), and a row with a cell
     its parameter cannot take is left out and listed in a ValueError, unless strict=False."""

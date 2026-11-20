@@ -173,6 +173,35 @@ fn typed_list_columns() {
     }
 }
 
+/// A mandatory parameter with no column of its name is refused before any row is
+/// lifted, naming the nearest column; an optional one is never given. A language given
+/// for a column tags its strings, list items included.
+#[test]
+fn missing_columns_and_languages() {
+    let lib = "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+         @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+         ex:Shop [ ottr:IRI ?id, rdf:langString ?name, ? ?floorArea, ? List<rdf:langString> ?aliases ] :: {
+           ottr:Triple(?id, ex:name, ?name), ottr:Triple(?id, ex:area, ?floorArea), cross | ottr:Triple(?id, ex:alias, ++?aliases) } .";
+    let mut library = tarka::ottr::Library::new();
+    library.add(tarka::ottr::parse_stottr(lib, "inline").unwrap());
+    let options = tarka::ottr::CompileOptions {
+        languages: [("name".to_owned(), "cy".to_owned()), ("aliases".to_owned(), "en".to_owned())].into(),
+        ..Default::default()
+    };
+    let plan = tarka::ottr::compile(&library, "http://example.com/Shop", &options).unwrap();
+    let aliases = Series::new("aliases".into(), [Some(Series::new("".into(), ["Two Rivers", "TRB"]))]).into_column();
+    let mut df = df!("id" => ["ex:a"], "name" => ["Dwy Afon"], "floor_area" => [80]).unwrap();
+    df.with_column(aliases).unwrap();
+    let text = run(&plan, &df).to_string();
+    assert!(text.contains(r#"<http://example.com/name> "Dwy Afon"@cy"#), "{text}");
+    assert!(text.contains(r#"<http://example.com/alias> "TRB"@en"#), "{text}");
+    assert!(!text.contains("example.com/area"), "?floorArea has no column: {text}");
+    let df = df!("shop_id" => ["ex:a"], "name" => ["Dwy Afon"]).unwrap();
+    let mut sink: Vec<Triple> = Vec::new();
+    let e = run_frame(&plan, &df, &FrameOptions::default(), &mut sink, &RunOptions::default(), &mut |_| {}).unwrap_err().to_string();
+    assert!(e.contains("mandatory parameter id") && e.contains("the columns: shop_id, name"), "{e}");
+}
+
 /// The column-by-column lifting gives the terms the cells would: every fast path and
 /// the edges around it (nulls, blanks, large and negative integers, floats as decimals),
 /// and leaves out, and reports, the same rows.

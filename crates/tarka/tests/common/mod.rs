@@ -79,7 +79,11 @@ pub fn tarql(query: &Path) -> Plan {
 
 pub fn ottr(library: &[PathBuf], roots: &[&str], lists: &[(&str, &str)]) -> Plan {
     let lib = Library::load(library).unwrap();
-    let options = CompileOptions { given: false, lists: lists.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect() };
+    let options = CompileOptions {
+        given: false,
+        lists: lists.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect(),
+        ..CompileOptions::default()
+    };
     tarka::ottr::compile_many(&lib, roots, &options).unwrap()
 }
 

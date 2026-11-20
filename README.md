@@ -28,7 +28,8 @@ tarka bottr -l templates/ people.bottr.ttl -o people.ttl                    # bO
   (`-l` repeats), use any template in it as the root (`-T`), and give several roots to instantiate
   for every row (`-T` repeats). A template's parameters are read from the CSV columns of the same
   names, converted by their types: IRIs from prefixed names or full IRIs, as bOTTR reads them,
-  `xsd:*` literals, lists split on a separator (`--list COLUMN SEPARATOR`). Mandatory
+  `xsd:*` literals, lists split on a separator (`--list COLUMN SEPARATOR`), strings in a
+  language (`--lang COLUMN TAG`). Mandatory
   parameters, defaults, blank nodes, `cross`, `zipMin` and `zipMax` follow OTTR; the output
   matches Lutra's. A row with a cell its parameter cannot take is left out and reported.
 * **Polars data frames.** Parquet and Arrow IPC files are read with Polars, and the Python module
@@ -130,8 +131,22 @@ and `manager`. The type of a parameter says how a cell is read:
 | `ottr:IRI`, `owl:Class`, `owl:NamedIndividual` … | an IRI: a prefixed name with a declared prefix (`ex:alice`), or else a full IRI (`https://…`, `mailto:…`, `urn:…`), as in bOTTR |
 | `xsd:date`, `xsd:decimal` … | a typed literal, in canonical form if the text is a valid value |
 | untyped, `xsd:string` | a plain string |
+| `rdf:langString` | a string in the language given with `--lang COLUMN TAG` (`--lang name cy`); without one, the template is refused, since a cell has no language tag |
 | `List<T>` | a list of `T`: a text cell is split on the separator given with `--list`; a list column needs none |
 | a parameter named `ROWNUM` | the row number |
+
+`--lang` also tags the strings of an untyped, `rdfs:Literal` or `ottr:string` parameter. A
+column whose rows are in different languages is a job for bOTTR, whose argument maps take
+`ottr:languageTag` or read the tag from the cell with `ottr:languageTagSep`.
+
+Each mandatory parameter without a default needs its column. When the input has none, tarka
+reads no rows and stops with status 1, naming the column nearest to the parameter's name, since
+every instance would otherwise be left out without a word. A missing column for an optional
+parameter is a warning:
+
+```text
+tarka: the input has no column for the mandatory parameter floorArea (is it floor_area?), so every instance would be left out (the columns: id, name, floor_area). A parameter reads the column of its own name
+```
 
 An empty cell is OTTR's `none`: a mandatory parameter's drops the instance, an optional one's
 the triples that use it. A cell the parameter cannot take (`n/a` for an IRI) is not: as in
@@ -259,7 +274,8 @@ m.run_csv("people.csv", "people.ttl")                  # CSV in oxi-gen's dialec
 tarka_rdf.expand(["templates/"], ["instances.stottr"], "people.ttl")
 ```
 
-`lists={"skills": ";"}` gives the separator of a text column that feeds an OTTR list parameter.
+`lists={"skills": ";"}` gives the separator of a text column that feeds an OTTR list parameter,
+and `languages={"name": "cy"}` the language of a column's strings.
 The mapping runs without the GIL, on every core.
 
 [`examples/python/retail.py`](examples/python/retail.py) runs the retail mapping as OTTR templates

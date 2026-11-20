@@ -182,4 +182,35 @@ mod validation {
         let components: Vec<&str> = v.findings.iter().map(|f| f.component.as_str()).collect();
         assert!(components.contains(&"<http://www.w3.org/ns/shacl#MinCountConstraintComponent>"), "{components:?}");
     }
+
+    /// The datatypes whose lexical forms SHACL_Engine checks since 0.3.9: a value that is
+    /// not one breaks sh:datatype, and one that is conforms.
+    #[test]
+    fn dates_and_durations_are_checked() {
+        let xsd = "http://www.w3.org/2001/XMLSchema#";
+        for (datatype, good, bad) in [
+            ("gYear", "1972", "c.1972"),
+            ("gYearMonth", "1972-05", "1972-5"),
+            ("gMonth", "--05", "May"),
+            ("gDay", "---08", "8th"),
+            ("gMonthDay", "--05-08", "05-08"),
+            ("dayTimeDuration", "PT90S", "P1Y"),
+            ("yearMonthDuration", "P1Y2M", "PT90S"),
+        ] {
+            let shapes = turtle(&format!(
+                "@prefix sh: <http://www.w3.org/ns/shacl#> . @prefix ex: <http://example.com/> .
+                 ex:S a sh:NodeShape ; sh:targetSubjectsOf ex:when ; sh:property [ sh:path ex:when ; sh:datatype <{xsd}{datatype}> ] ."
+            ));
+            let shapes: Vec<Triple> = shapes.iter().map(Into::into).collect();
+            let data = |value: &str| {
+                vec![Triple::new(
+                    oxrdf::NamedNode::new_unchecked("http://example.com/a"),
+                    oxrdf::NamedNode::new_unchecked("http://example.com/when"),
+                    oxrdf::Literal::new_typed_literal(value, oxrdf::NamedNode::new_unchecked(format!("{xsd}{datatype}"))),
+                )]
+            };
+            assert!(tarka_shacl::validate(&data(good), &shapes).unwrap().conforms, "{datatype} {good}");
+            assert!(!tarka_shacl::validate(&data(bad), &shapes).unwrap().conforms, "{datatype} {bad}");
+        }
+    }
 }

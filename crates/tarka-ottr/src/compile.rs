@@ -18,6 +18,7 @@ pub const TQ: &str = "http://example.org/ottr-tarql#";
 const XSD: &str = "http://www.w3.org/2001/XMLSchema#";
 const RDFS: &str = "http://www.w3.org/2000/01/rdf-schema#";
 const OWL: &str = "http://www.w3.org/2002/07/owl#";
+const LANG_STRING: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString";
 
 /// The OWL and RDF vocabulary types that are subtypes of `ottr:IRI`.
 pub fn is_iri_type(iri: &str) -> bool {
@@ -35,6 +36,9 @@ pub struct CompileOptions {
     pub given: bool,
     /// Separators of the cells of list-typed parameters, by parameter (column) name.
     pub lists: HashMap<String, String>,
+    /// Language tags of the cells of `rdf:langString` parameters, by parameter (column)
+    /// name: each cell becomes a literal with that tag.
+    pub languages: HashMap<String, String>,
 }
 
 /// Compiles the template `name` (an IRI or a prefixed name) to a plan.
@@ -63,6 +67,9 @@ pub fn compile_many(lib: &Library, names: &[&str], options: &CompileOptions) -> 
     if roots.is_empty() {
         return Err(OttrError::Unsupported("no root template".into()));
     }
+    if let Some(name) = options.languages.keys().find(|n| !roots.iter().any(|(_, t)| t.params.iter().any(|p| &p.name == *n))) {
+        return Err(OttrError::Unsupported(format!("a language is given for {name}, but no root template has a parameter ?{name}")));
+    }
     let mut plan = Plan::new(roots.iter().map(|(i, _)| i.as_str()).collect::<Vec<_>>().join(" "), Lifting::Given);
     plan.prefixes = lib.prefixes.clone();
     let has_tq = |t: &Template| t.annotations.iter().any(|a| a.template.starts_with(TQ));
@@ -83,15 +90,18 @@ pub fn compile_many(lib: &Library, names: &[&str], options: &CompileOptions) -> 
         for (_, root) in &roots {
             let mut vars = Vec::new();
             for p in &root.params {
-                let wanted = column_binding(VarId(0), p, options);
-                let same = |b: &&ColumnBinding| {
+                let wanted = column_binding(VarId(0), p, options)?;
+                let same = |b: &&mut ColumnBinding| {
                     b.source == wanted.source
                         && b.conversion == wanted.conversion
                         && b.list == wanted.list
                         && b.list_separator == wanted.list_separator
                 };
-                let var = match bindings.iter().find(same) {
-                    Some(b) => b.var,
+                let var = match bindings.iter_mut().find(same) {
+                    Some(b) => {
+                        b.required |= wanted.required;
+                        b.var
+                    }
                     None => {
                         let var = plan.fresh_var(&p.name);
                         bindings.push(ColumnBinding { var, ..wanted });
@@ -122,16 +132,44 @@ fn lifting(root: &Template, vars: &[VarId], options: &CompileOptions) -> Result<
     if !tq.is_empty() {
         return tq_lifting(root, vars, &tq);
     }
-    Ok(Lifting::Columns(root.params.iter().zip(vars).map(|(p, var)| column_binding(*var, p, options)).collect()))
+    Ok(Lifting::Columns(root.params.iter().zip(vars).map(|(p, var)| column_binding(*var, p, options)).collect::<Result<_, _>>()?))
 }
 
 /// Reading parameter `p` from the column of the same name. A list parameter needs a
 /// separator only for text cells, which the input decides, so that is checked as cells are read.
-fn column_binding(var: VarId, p: &Param, options: &CompileOptions) -> ColumnBinding {
+///
+/// A cell holds no language tag, so an `rdf:langString` parameter takes the tag given
+/// for its column in `options.languages`, and is refused without one: its values would
+/// otherwise be plain strings, which the type does not allow.
+fn column_binding(var: VarId, p: &Param, options: &CompileOptions) -> Result<ColumnBinding, OttrError> {
     let source = if p.name == "ROWNUM" { CellSource::RowNumber } else { CellSource::Column(p.name.clone()) };
     let list = p.ty.as_ref().is_some_and(|t| t.is_list());
     let list_separator = if list { options.lists.get(&p.name).cloned() } else { None };
-    ColumnBinding { var, source, conversion: conversion(p.ty.as_ref()), list, list_separator }
+    let basic = p.ty.as_ref().map(|t| t.basic().as_str());
+    let conversion = match options.languages.get(&p.name) {
+        Some(tag) => {
+            if let Some(ty) = basic.filter(|ty| !crate::types::subtype(&crate::types::basic(LANG_STRING), &crate::types::basic(ty))) {
+                return Err(OttrError::Unsupported(format!(
+                    "a language is given for ?{}, but its type, <{ty}>, does not take language-tagged strings",
+                    p.name
+                )));
+            }
+            if oxrdf::Literal::new_language_tagged_literal("", tag.as_str()).is_err() {
+                return Err(OttrError::Unsupported(format!("'{tag}', given as the language of ?{}, is not a language tag", p.name)));
+            }
+            Conversion::Lang(tag.clone())
+        }
+        None if basic == Some(LANG_STRING) => {
+            return Err(OttrError::Unsupported(format!(
+                "?{0} is an rdf:langString, and a cell has no language tag: give the column's language \
+                 (--lang {0} TAG, or languages={{\"{0}\": TAG}} in Python), or map the table with bOTTR and ottr:languageTag",
+                p.name
+            )));
+        }
+        None => conversion(p.ty.as_ref()),
+    };
+    let required = !p.optional && p.default.is_none() && source != CellSource::RowNumber;
+    Ok(ColumnBinding { var, source, conversion, list, list_separator, required })
 }
 
 /// How a cell becomes a value of type `ty`.
@@ -493,6 +531,82 @@ mod tests {
         let plan = compile(&lib(), "ex:Thing", &CompileOptions::default()).unwrap();
         let Lifting::Columns(b) = &plan.lifting else { panic!() };
         assert!(b[4].list && b[4].list_separator.is_none());
+    }
+
+    #[test]
+    fn required_columns() {
+        let plan = compile(&lib(), "ex:Thing", &CompileOptions::default()).unwrap();
+        let Lifting::Columns(b) = &plan.lifting else { panic!() };
+        assert_eq!(b.iter().map(|b| b.required).collect::<Vec<_>>(), [true, false, false, false, false]);
+        // ?label has a default, so a missing column gives the default
+        let plan = compile(&lib(), "ex:Labelled", &CompileOptions::default()).unwrap();
+        let Lifting::Columns(b) = &plan.lifting else { panic!() };
+        assert_eq!(b.iter().map(|b| b.required).collect::<Vec<_>>(), [true, false]);
+        // roots that read a column the same way share it, mandatory if either needs it
+        let mut l = lib();
+        l.add(
+            parse_stottr(
+                "@prefix ex: <http://ex/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> .
+                 ex:Opt [ ? ?label ] :: { ottr:Triple(ex:x, ex:label, ?label) } .
+                 ex:Must [ ?label ] :: { ottr:Triple(ex:y, ex:label, ?label) } .",
+                "o",
+            )
+            .unwrap(),
+        );
+        let label = |roots: &[&str]| {
+            let plan = compile_many(&l, roots, &CompileOptions::default()).unwrap();
+            let Lifting::Columns(b) = &plan.lifting else { panic!() };
+            let label: Vec<bool> = b.iter().filter(|b| b.source == CellSource::Column("label".into())).map(|b| b.required).collect();
+            label
+        };
+        assert_eq!(label(&["ex:Opt", "ex:Labelled"]), [false], "optional in ex:Opt, a default in ex:Labelled");
+        assert_eq!(label(&["ex:Opt", "ex:Must"]), [true], "ex:Must would make nothing without it");
+        assert_eq!(label(&["ex:Must", "ex:Opt"]), [true]);
+    }
+
+    #[test]
+    fn language_tags() {
+        let mut l = lib();
+        l.add(
+            parse_stottr(
+                r#"@prefix ex: <http://ex/> . @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+                @prefix ottr: <http://ns.ottr.xyz/0.4/> . @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+                ex:Title [ ottr:IRI ?id, rdf:langString ?title, ? rdfs:Literal ?note, ? ?other, ? xsd:integer ?n,
+                           ? List<rdf:langString> ?aliases ] :: {
+                    ottr:Triple(?id, ex:title, ?title), ottr:Triple(?id, ex:note, ?note), ottr:Triple(?id, ex:other, ?other),
+                    ottr:Triple(?id, ex:n, ?n), cross | ottr:Triple(?id, ex:alias, ++?aliases) } ."#,
+                "t",
+            )
+            .unwrap(),
+        );
+        let langs = |pairs: &[(&str, &str)]| CompileOptions {
+            languages: pairs.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect(),
+            ..Default::default()
+        };
+        // a cell has no tag, so an rdf:langString parameter needs one given
+        let e = compile(&l, "ex:Title", &CompileOptions::default()).unwrap_err().to_string();
+        assert!(e.contains("?title is an rdf:langString") && e.contains("--lang title") && e.contains("ottr:languageTag"), "{e}");
+        let e = compile(&l, "ex:Title", &langs(&[("title", "en")])).unwrap_err().to_string();
+        assert!(e.contains("?aliases is an rdf:langString"), "list items too: {e}");
+        // given: tagged literals, for langString and for the types above it
+        let plan = compile(&l, "ex:Title", &langs(&[("title", "en"), ("note", "cy"), ("other", "en-GB"), ("aliases", "fr")])).unwrap();
+        let Lifting::Columns(b) = &plan.lifting else { panic!() };
+        let conv: Vec<_> = b.iter().map(|b| b.conversion.clone()).collect();
+        assert_eq!(conv[1], Conversion::Lang("en".into()));
+        assert_eq!(conv[2], Conversion::Lang("cy".into()));
+        assert_eq!(conv[3], Conversion::Lang("en-GB".into()));
+        assert_eq!(conv[5], Conversion::Lang("fr".into()));
+        assert!(b[5].list);
+        // refused: a type that takes no tagged strings, a tag that is not one, a name no root has
+        let all = [("title", "en"), ("aliases", "fr")];
+        let e = compile(&l, "ex:Title", &langs(&[all[0], all[1], ("n", "en")])).unwrap_err().to_string();
+        assert!(e.contains("?n") && e.contains("XMLSchema#integer"), "{e}");
+        let e = compile(&l, "ex:Title", &langs(&[all[0], all[1], ("id", "en")])).unwrap_err().to_string();
+        assert!(e.contains("?id"), "an IRI takes no tag: {e}");
+        let e = compile(&l, "ex:Title", &langs(&[("title", "not a tag"), all[1]])).unwrap_err().to_string();
+        assert!(e.contains("'not a tag'"), "{e}");
+        let e = compile(&l, "ex:Title", &langs(&[all[0], all[1], ("titel", "en")])).unwrap_err().to_string();
+        assert!(e.contains("titel"), "{e}");
     }
 
     #[test]

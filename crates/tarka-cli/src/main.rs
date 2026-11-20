@@ -58,6 +58,9 @@ struct MappingArgs {
     /// The cells of a list-typed parameter are split on SEPARATOR
     #[arg(long, num_args = 2, value_names = ["COLUMN", "SEPARATOR"], action = clap::ArgAction::Append)]
     list: Vec<String>,
+    /// The cells of a parameter are strings in language TAG (needed for rdf:langString)
+    #[arg(long, num_args = 2, value_names = ["COLUMN", "TAG"], requires = "template", action = clap::ArgAction::Append)]
+    lang: Vec<String>,
 }
 
 #[derive(Args)]
@@ -614,8 +617,9 @@ fn mapping(args: &MappingArgs) -> Result<Plan> {
     }
     let lib = Library::load(&args.library)?;
     let lists: HashMap<String, String> = args.list.chunks(2).map(|c| (c[0].clone(), c[1].clone())).collect();
+    let languages: HashMap<String, String> = args.lang.chunks(2).map(|c| (c[0].clone(), c[1].clone())).collect();
     let roots: Vec<&str> = args.template.iter().map(String::as_str).collect();
-    Ok(tarka::ottr::compile_many(&lib, &roots, &CompileOptions { given: false, lists })?)
+    Ok(tarka::ottr::compile_many(&lib, &roots, &CompileOptions { given: false, lists, languages })?)
 }
 
 fn expand(args: ExpandArgs) -> Result<()> {

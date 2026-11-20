@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- OTTR over tables (`tarka run -l … -T …`, Parquet and Polars frames): a mandatory parameter
+  without a default that has no column of its name stops the run before any row is read, with a
+  message that names the nearest column (`floor_area` for `?floorArea`). Before, the run went
+  on and left out every instance without a word, or every triple of that root. A missing
+  column for an optional parameter is a warning.
+- An `rdf:langString` parameter read from a column takes its language from the new
+  `--lang COLUMN TAG` (`languages={"name": "cy"}` in Python), list items included. Without one,
+  the template is refused with a message pointing to `--lang` and to bOTTR's
+  `ottr:languageTag`. Before, its cells became plain strings, which the type does not allow.
+  `--lang` tags the strings of an untyped, `rdfs:Literal` or `ottr:string` parameter too, and
+  is refused for any other type and for a tag that is not one.
+- SHACL_Engine 0.3.9: `--validate` and `--shapes` check the lexical forms of `xsd:gYear`,
+  `xsd:gYearMonth`, `xsd:gMonth`, `xsd:gDay`, `xsd:gMonthDay`, `xsd:dayTimeDuration` and
+  `xsd:yearMonthDuration`, so `"c.1972"^^xsd:gYear` breaks `sh:datatype xsd:gYear`.
 - A list column of typed values (Parquet, Arrow IPC or a Polars data frame) gives its items
   as they are: a list of decimals `9.99`, of dates `2025-03-08`, of datetimes, durations and
   times their XSD forms. Before, each item came through as Polars stores it: a decimal as its

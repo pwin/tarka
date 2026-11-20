@@ -110,6 +110,8 @@ pub fn run_frame(
     left_out: &mut dyn FnMut(String),
 ) -> Result<RunStats, FrameError> {
     if let Lifting::Columns(bindings) = &plan.lifting {
+        let names: Vec<String> = df.get_column_names().iter().map(|c| c.to_string()).collect();
+        tarka::engine::check_columns(bindings, &names)?;
         let columns: Vec<Vec<Lifted>> =
             bindings.par_iter().map(|b| lift_column(plan, b, df, options)).collect::<Result<_, FrameError>>()?;
         let vars: Vec<usize> = bindings.iter().map(|b| b.var.0).collect();
@@ -167,6 +169,7 @@ fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOp
         CellSource::RowNumber => return Ok((0..height).map(|i| Ok(Some(Value::Term(Literal::from(i as i64).into())))).collect()),
         CellSource::Column(c) => c,
     };
+    // an optional parameter's column that is not there is always empty (see check_columns)
     let Ok(column) = df.column(name) else { return Ok(vec![Ok(None); height]) };
     let s = column.as_materialized_series();
     let blank = |t: &str| !options.bind_empty_strings && t.trim().is_empty();
