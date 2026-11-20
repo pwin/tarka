@@ -7,7 +7,9 @@
  * Output defaults to build/site/. The pages are self-contained static files with no
  * third-party requests (one inline line collapses the contents on phones), so the directory
  * can be copied as it is into the website repository. Diagrams are the PNGs the print edition
- * uses, shown at their natural CSS size. Needs pandoc ($PANDOC) and Chromium (for diagrams).
+ * uses, shown at their natural CSS size. The example files are published under examples/,
+ * and viewer.js shows one, highlighted, when its link is clicked. Needs pandoc ($PANDOC),
+ * git (for the list of example files) and Chromium (for diagrams).
  */
 import fs from 'fs';
 import path from 'path';
@@ -41,10 +43,18 @@ function substituteDiagrams(md, rel, byKey) {
   });
 }
 
-/** Chapter links become links between pages; links into the repository go to GitHub. */
+/** The example files' raw GitHub copies, which the EPUB and PDF link to. The web edition
+ * publishes its own copies (EXAMPLES below) and links to those, so that viewer.js can show
+ * them from the same site. */
+const RAW_EXAMPLES = 'https://raw.githubusercontent.com/pwin/tarka/main/manual/examples/';
+
+/** Chapter links become links between pages; links into the repository go to GitHub; links
+ * to the example files go to the copies published with the pages. */
 function rewriteLinks(html) {
+  html = html.split(`href="${RAW_EXAMPLES}`).join('href="examples/');
   return html.replace(/href="((?!https?:|mailto:|#)[^"]+)"/g, (whole, target) => {
     const [file, hash] = target.split('#');
+    if (file.startsWith('examples/')) return whole;
     const clean = file.replace(/^(\.\.?\/)+/, '');
     const base = path.basename(clean);
     if (PAGE_OF.has(base)) return `href="${PAGE_OF.get(base)}${hash ? '#' + hash : ''}"`;
@@ -99,6 +109,7 @@ function page(ch, i, body) {
 <meta name="description" content="${esc(DESCRIPTION)}">
 <link rel="icon" href="semantechs-logo-320.png">
 <link rel="stylesheet" href="manual.css">
+<script src="viewer.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -149,4 +160,14 @@ console.log('[3/3] copying assets');
 for (const m of manifest) fs.copyFileSync(path.join(DIAGRAMS, m.png), path.join(OUT, 'diagrams', m.png));
 fs.copyFileSync(path.join(MANUAL, 'assets', 'semantechs-logo-320.png'), path.join(OUT, 'semantechs-logo-320.png'));
 fs.copyFileSync(path.join(MANUAL, 'tools', 'site.css'), path.join(OUT, 'manual.css'));
-console.log(`      ${CHAPTERS.length} pages, ${manifest.length} diagrams -> ${OUT}`);
+fs.copyFileSync(path.join(MANUAL, 'tools', 'viewer.js'), path.join(OUT, 'viewer.js'));
+// The example files git tracks (not out/, which may be a junction to another drive), as
+// they are in the working tree.
+const EXAMPLES = execFileSync('git', ['ls-files', '-z', '--', 'examples'], { cwd: MANUAL, encoding: 'utf8' })
+  .split('\0').filter(Boolean);
+for (const rel of EXAMPLES) {
+  const to = path.join(OUT, rel);
+  fs.mkdirSync(path.dirname(to), { recursive: true });
+  fs.copyFileSync(path.join(MANUAL, rel), to);
+}
+console.log(`      ${CHAPTERS.length} pages, ${manifest.length} diagrams, ${EXAMPLES.length} example files -> ${OUT}`);

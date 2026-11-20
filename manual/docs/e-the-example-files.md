@@ -1,7 +1,9 @@
 # Appendix E. The example files
 
-Everything in `manual/examples/bookshop-trail/`, and the chapter that uses it. Each file name links
-to the file as it is on tarka's main branch: it opens in the browser, and the browser saves it. To
+Everything in `manual/examples/bookshop-trail/`, and the chapter that uses it. In the web edition,
+a file name opens the file in a viewer, highlighted (a spreadsheet as a table), with buttons to copy
+it, download it, and open it in the Turtle Editor Viewer where that is useful. In the EPUB and the
+PDF, it links to the file as it is on tarka's main branch, which opens in the browser and saves. To
 have them all, [browse the folder on GitHub](https://github.com/pwin/tarka/tree/main/manual/examples/bookshop-trail), or [download tarka as a ZIP](https://github.com/pwin/tarka/archive/refs/heads/main.zip) and look
 in `manual/examples/bookshop-trail/`.
 

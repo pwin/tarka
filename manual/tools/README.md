@@ -46,11 +46,12 @@ puppeteer cache for Chromium).
 | `book.mjs` | the chapters, in order and by part, the title, and the links every edition uses |
 | `render-diagrams.mjs` | every ```` ```mermaid ```` block to a PNG at 3× scale, through headless Chromium |
 | `assemble.mjs` | the chapters as one book: navigation stripped, links flattened, diagrams substituted |
-| `build-site.mjs` | the web edition |
+| `build-site.mjs` | the web edition, with the example files published under `examples/` and Appendix E's links pointed at them |
 | `build-epub.mjs`, `epub.css` | the EPUB |
 | `build-pdf.mjs` | the PDF: pandoc to typst, typst to PDF, with an index of commands, options and functions |
 | `typst-template.typ`, `template.typst` | the typst templates (from the SemOps Manual) |
 | `site.css` | the web edition's stylesheet (from the SemOps Manual) |
+| `viewer.js` | the web edition's viewer for the example files (after the Semantechs articles' `code.js`): a file opens in a dialog, highlighted (SPARQL, Turtle, stOTTR, Python, YAML, Markdown), a CSV file as a table, with buttons to open it in the Turtle Editor Viewer, copy it or download it |
 
 Diagrams follow the SemOps Manual's conventions (its Appendix A): at most about 900 px wide,
 labels of at most 28 characters a line, explicit fills from the Semantechs palette.
