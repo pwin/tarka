@@ -1275,8 +1275,8 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "holos-core"
-version = "0.26.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+version = "0.27.0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "oxrdf",
  "oxsdatatypes",
@@ -1285,8 +1285,8 @@ dependencies = [
 
 [[package]]
 name = "holos-engine"
-version = "0.26.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+version = "0.27.0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "flate2",
  "geo",
@@ -1313,8 +1313,8 @@ dependencies = [
 
 [[package]]
 name = "holos-security"
-version = "0.26.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+version = "0.27.0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "holos-core",
  "holos-store",
@@ -1324,8 +1324,8 @@ dependencies = [
 
 [[package]]
 name = "holos-stats"
-version = "0.26.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+version = "0.27.0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "holos-core",
  "holos-store",
@@ -1336,8 +1336,8 @@ dependencies = [
 
 [[package]]
 name = "holos-store"
-version = "0.26.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+version = "0.27.0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "holos-core",
  "oxrdf",
@@ -2025,9 +2025,9 @@ dependencies = [
 [[package]]
 name = "oxsdatatypes"
 version = "0.2.4"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
- "thiserror 1.0.69",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -3588,7 +3588,7 @@ dependencies = [
 [[package]]
 name = "shacl"
 version = "0.3.9"
-source = "git+https://github.com/pwin/SHACL_Engine?rev=75cdb434220305a19ba922776768de04fb8ed13d#75cdb434220305a19ba922776768de04fb8ed13d"
+source = "git+https://github.com/pwin/SHACL_Engine?tag=v0.3.9#75cdb434220305a19ba922776768de04fb8ed13d"
 dependencies = [
  "flate2",
  "foldhash 0.2.0",
@@ -3726,7 +3726,7 @@ dependencies = [
 [[package]]
 name = "spareval"
 version = "0.2.9"
-source = "git+https://github.com/pwin/triplestore?rev=51181fd9eaff5d900b1f98ed486c47467cef1cf0#51181fd9eaff5d900b1f98ed486c47467cef1cf0"
+source = "git+https://github.com/pwin/triplestore?tag=v0.27.0#1034260144088cac1b96678f37679a44b1f50f9d"
 dependencies = [
  "hex",
  "json-event-parser",
@@ -3742,7 +3742,7 @@ dependencies = [
  "sparesults",
  "spargebra",
  "sparopt",
- "thiserror 1.0.69",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

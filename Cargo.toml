@@ -30,8 +30,9 @@ authors = ["Peter Winstanley"]
 # serialisers, through holos-engine, which re-exports the Oxigraph crates it is built on
 # (oxrdf, oxrdfio, spargebra, spareval, sparesults, oxsdatatypes, oxiri) with HOLOS's RDF 1.2
 # and SPARQL 1.2 features on. tarka still accepts RDF 1.1 and SPARQL 1.1 only: its own checks
-# refuse the rest. HOLOS is git-only; the revision is pinned, as SHACL_Engine's is below.
-holos-engine = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
+# refuse the rest. HOLOS is not on crates.io: its release is pinned by tag (0.27.0), as
+# SHACL_Engine's is below.
+holos-engine = { git = "https://github.com/pwin/triplestore", tag = "v0.27.0" }
 csv = "1.4"
 flate2 = "1"
 # insertion-ordered sets: the output window is written in the order its triples were made
@@ -45,7 +46,7 @@ ureq = { version = "3.4", default-features = false, features = ["rustls"] }
 polars = { version = "0.55", default-features = false, features = ["fmt", "parquet", "ipc", "lazy", "dtype-full", "timezones"] }
 # SHACL_Engine 0.3.9 (github.com/pwin/SHACL_Engine); the crates.io crate called shacl is another project.
 # Its `rdf-12` feature on, as HOLOS turns on the Oxigraph crates' own; `parallel` off.
-shacl = { git = "https://github.com/pwin/SHACL_Engine", rev = "75cdb434220305a19ba922776768de04fb8ed13d", default-features = false, features = ["rdf-12"] }
+shacl = { git = "https://github.com/pwin/SHACL_Engine", tag = "v0.3.9", default-features = false, features = ["rdf-12"] }
 
 tarka-core = { path = "crates/tarka-core", version = "0.3.1" }
 tarka-io = { path = "crates/tarka-io", version = "0.3.1" }
@@ -68,5 +69,5 @@ strip = true
 # a duration may come first in `+` with a date, time or dateTime (spareval). A [patch] applies
 # only from the workspace that builds, so HOLOS's own does not reach tarka: these repeat it.
 [patch.crates-io]
-oxsdatatypes = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
-spareval = { git = "https://github.com/pwin/triplestore", rev = "51181fd9eaff5d900b1f98ed486c47467cef1cf0" }
+oxsdatatypes = { git = "https://github.com/pwin/triplestore", tag = "v0.27.0" }
+spareval = { git = "https://github.com/pwin/triplestore", tag = "v0.27.0" }
