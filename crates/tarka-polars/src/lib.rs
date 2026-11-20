@@ -191,15 +191,11 @@ fn lift_column(plan: &Plan, b: &ColumnBinding, df: &DataFrame, options: &FrameOp
             return Ok(s.bool()?.iter().map(|v| Ok(v.map(|v| Value::Term(Literal::from(v).into())))).collect());
         }
         (DataType::List(_), _, _) => {
-            let lists = s.list()?;
             let mut out = Vec::with_capacity(height);
-            for i in 0..lists.len() {
-                out.push(match lists.get_as_series(i) {
+            for items in list_texts(name, s)? {
+                out.push(match items {
                     None => Ok(None),
-                    Some(inner) => {
-                        let items = texts(name, &inner)?;
-                        lifted(tarka::engine::convert_items(items.iter().flatten().map(String::as_str), b, plan))?
-                    }
+                    Some(items) => lifted(tarka::engine::convert_items(items.iter().map(String::as_str), b, plan))?,
                 });
             }
             return Ok(out);
@@ -305,17 +301,24 @@ pub fn is_frame_file(path: &Path) -> bool {
 fn cells(name: &str, s: &Series, options: &FrameOptions) -> Result<Vec<Option<Cell>>, FrameError> {
     let text = |t: Option<String>| -> Option<Cell> { t.filter(|t| options.bind_empty_strings || !t.trim().is_empty()).map(Cell::Text) };
     if let DataType::List(_) = s.dtype() {
-        let lists = s.list()?;
-        let mut out = Vec::with_capacity(s.len());
-        for i in 0..lists.len() {
-            out.push(match lists.get_as_series(i) {
-                None => None,
-                Some(inner) => Some(Cell::List(texts(name, &inner)?.into_iter().flatten().collect())),
-            });
-        }
-        return Ok(out);
+        return Ok(list_texts(name, s)?.into_iter().map(|items| items.map(Cell::List)).collect());
     }
     Ok(texts(name, s)?.into_iter().map(text).collect())
+}
+
+/// The items of each list in a list column, as text (None for a null list). The lists are
+/// read with `amortized_iter`, which keeps the items' type: `get_as_series` gives them in
+/// their physical type, a date as its day number and a decimal as its scaled integer.
+fn list_texts(name: &str, s: &Series) -> Result<Vec<Option<Vec<String>>>, FrameError> {
+    let lists = s.list()?;
+    let mut out = Vec::with_capacity(lists.len());
+    for inner in lists.amortized_iter() {
+        out.push(match inner {
+            None => None,
+            Some(inner) => Some(texts(name, inner.as_ref())?.into_iter().flatten().collect()),
+        });
+    }
+    Ok(out)
 }
 
 /// The text of each value of a (non-list) column.

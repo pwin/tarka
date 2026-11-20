@@ -130,6 +130,49 @@ fn typed_columns() {
     }
 }
 
+/// A list column's items keep their type: a list of decimals gives "9.99", not the scaled
+/// integer Polars stores (999), and dates, datetimes, durations and times their XSD forms,
+/// not day or microsecond counts.
+#[test]
+fn typed_list_columns() {
+    use chrono::{NaiveDate, NaiveTime};
+    let lib = "@prefix ex: <http://example.com/> . @prefix ottr: <http://ns.ottr.xyz/0.4/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+         ex:Row [ ottr:IRI ?id, NEList<xsd:decimal> ?d, NEList<xsd:date> ?day, NEList<xsd:dateTime> ?at,
+                  NEList<xsd:duration> ?dur, NEList<xsd:time> ?clock, NEList<xsd:integer> ?n ] :: {
+           cross | ottr:Triple(?id, ex:d, ++?d), cross | ottr:Triple(?id, ex:day, ++?day), cross | ottr:Triple(?id, ex:at, ++?at),
+           cross | ottr:Triple(?id, ex:dur, ++?dur), cross | ottr:Triple(?id, ex:clock, ++?clock), cross | ottr:Triple(?id, ex:n, ++?n) } .";
+    let mut library = tarka::ottr::Library::new();
+    library.add(tarka::ottr::parse_stottr(lib, "inline").unwrap());
+    let plan = tarka::ottr::compile(&library, "http://example.com/Row", &Default::default()).unwrap();
+    let list = |name: &str, s: Series| Series::new(name.into(), [Some(s)]).into_column();
+    let day = NaiveDate::from_ymd_opt(2025, 3, 8).unwrap();
+    let mut df = df!("id" => ["ex:a"]).unwrap();
+    for column in [
+        list("d", Series::new("".into(), ["9.99", "10.50"]).cast(&DataType::Decimal(10, 2)).unwrap()),
+        list("day", Series::new("".into(), [day])),
+        list("at", Series::new("".into(), [day.and_hms_opt(10, 15, 0).unwrap()])),
+        list("dur", Series::new("".into(), [90_000_000i64]).cast(&DataType::Duration(TimeUnit::Microseconds)).unwrap()),
+        list("clock", Series::new("".into(), [NaiveTime::from_hms_opt(10, 15, 0).unwrap()])),
+        list("n", Series::new("".into(), [7i64, 8])),
+    ] {
+        df.with_column(column).unwrap();
+    }
+    assert!(matches!(df.column("d").unwrap().dtype(), DataType::List(inner) if matches!(**inner, DataType::Decimal(..))));
+    let text = run(&plan, &df).to_string();
+    let xsd = "http://www.w3.org/2001/XMLSchema#";
+    for expected in [
+        format!("<http://example.com/d> \"9.99\"^^<{xsd}decimal>"),
+        format!("<http://example.com/d> \"10.5\"^^<{xsd}decimal>"),
+        format!("<http://example.com/day> \"2025-03-08\"^^<{xsd}date>"),
+        format!("<http://example.com/at> \"2025-03-08T10:15:00\"^^<{xsd}dateTime>"),
+        format!("<http://example.com/dur> \"PT90S\"^^<{xsd}duration>"),
+        format!("<http://example.com/clock> \"10:15:00\"^^<{xsd}time>"),
+        format!("<http://example.com/n> \"8\"^^<{xsd}integer>"),
+    ] {
+        assert!(text.contains(&expected), "missing {expected} in\n{text}");
+    }
+}
+
 /// The column-by-column lifting gives the terms the cells would: every fast path and
 /// the edges around it (nulls, blanks, large and negative integers, floats as decimals),
 /// and leaves out, and reports, the same rows.

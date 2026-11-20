@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- A list column of typed values (Parquet, Arrow IPC or a Polars data frame) gives its items
+  as they are: a list of decimals `9.99`, of dates `2025-03-08`, of datetimes, durations and
+  times their XSD forms. Before, each item came through as Polars stores it: a decimal as its
+  scaled integer (`999`), a date as its day number (`20155`), a datetime, duration or time as
+  a count of microseconds or nanoseconds. Lists of strings, integers, floats and booleans were
+  right already, as were typed columns that are not lists.
 - bOTTR: a literal of a datatype OTTR does not have (`geo:wktLiteral` …), read from a cell with
   `ottr:datatypeSep`, fits an `rdfs:Literal` parameter, as in Lutra. tarka left the instance out
   ("does not fit ?wkt : rdfs:Literal"). The same literals in templates and instance files are
