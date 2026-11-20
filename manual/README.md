@@ -80,9 +80,10 @@ source: the web edition at <https://www.semantechs.co.uk/tarka_Manual/>, an EPUB
 and an A4 PDF for print, both attached to each [release](https://github.com/pwin/tarka/releases).
 [`tools/`](tools/) builds them; see its README.
 
-This edition describes **tarka 0.3.0** with one later fix (typed list columns, used in
-Chapter 9), measured against HOLOS (`holosdb` 0.26.3), SHACL_Engine (`shacl` 0.3.2) and the
-Ontology Quality Suite.
+This edition describes **tarka 0.3.0** with two fixes made since, for the next release: typed list
+columns (Chapter 9) and bOTTR literals of datatypes OTTR does not have (Chapter 8). It was
+checked with HOLOS (`holosdb` 0.26.4), SHACL_Engine (`shacl` 0.3.8), Polars 2.1.0 and the
+Ontology Quality Suite 0.27.0.
 
 <p align="center">
   <img src="assets/semantechs-logo-320.png" alt="" width="64"><br/>
