@@ -90,42 +90,76 @@ A typed literal is different. A cell `seven` for an `xsd:integer` parameter beco
 `"seven"^^xsd:integer`, kept as written, which is what OTTR says, and SHACL validation is how
 such cells are found ([Chapter 10](10-shapes-and-shacl.md)).
 
-## Three things a table cannot say, and one it must
+## What a table must say, and what it cannot
 
 `tarka run -l` is exact: it reads what is in the cells, as the parameters' types say, and
-nothing more. That has consequences worth knowing before they surprise you.
-
-**A column name is the parameter's name, exactly.** A parameter with no column of its name is
-`none` in every row. If the parameter is mandatory, no instance can be made, and the run makes
-nothing, quietly. Run `tt:Bookshop` over the prepared bookshops table, whose columns are named
-`floor_area` and `second_hand` where the template's parameters are `?floorArea` and
-`?secondHand`:
+nothing more. That has consequences worth knowing before they surprise you. The bookshops show
+them all. Run `tt:Bookshop` over the prepared bookshops table:
 
 ```sh
 tarka run -l ottr/ -T tt:Bookshop -i data/prepared/bookshops.csv --list stocks ";" --test 2 --stats
 ```
 
 ```text
-2 records, 2 solutions, 0 triples made, 0 written
+tarka: ?name is an rdf:langString, and a cell has no language tag: give the column's language (--lang name TAG, or languages={"name": TAG} in Python), or map the table with bOTTR and ottr:languageTag
 ```
 
-Nothing, and status 0. `--stats` is how to see it, and `0 triples made` is the sign: rename the
-columns, or put a row template between the table and the template, whose parameters are named
-for the columns.
+**A language tag comes from `--lang`, not from a cell.** A cell holds text, and an
+`rdf:langString` parameter needs a tag as well, so tarka refuses the template before it reads a
+row. Every shop's name is English, so one tag serves the whole column: `--lang name en` makes
+`"Bookbarrow"@en`. (`--lang` also tags an untyped or `rdfs:Literal` parameter's strings.) A
+column whose rows are in different languages needs bOTTR, which can read each cell's tag.
 
-**A language tag cannot come from a cell.** A cell for an `rdf:langString` parameter gives a
-plain string, `"Bookbarrow"`, not `"Bookbarrow"@en`. There is no type that adds a tag.
+With the language given, the run stops at the next problem:
+
+```sh
+tarka run -l ottr/ -T tt:Bookshop -i data/prepared/bookshops.csv --list stocks ";" --lang name en --test 2 --stats
+```
+
+```text
+tarka: the input has no column for the mandatory parameters floorArea (is it floor_area?), secondHand (is it second_hand?), so every instance would be left out (the columns: shop, name, town, founded, floor_area, staff, specialism, second_hand, cafe, website, lat, long, point, wkt, stocks). A parameter reads the column of its own name
+```
+
+**A column name is the parameter's name, exactly.** A parameter with no column of its name
+would be `none` in every row, and a mandatory one would then leave out every instance. So
+tarka checks the columns first, and refuses, with status 1 and the nearest names: here the
+table says `floor_area` and `second_hand` where the template says `?floorArea` and
+`?secondHand`. Rename the columns (the header row, or Polars' `rename`), or put a row template
+between the table and the template, whose parameters are named for the columns. A missing
+column for an *optional* parameter is only a warning, since the run can still make something.
+(Before tarka 0.3.1, both runs above made nothing, with status 0.)
+
+With the columns renamed, the run goes through, and shows what remains:
+
+```sh
+sed '1s/floor_area/floorArea/; 1s/second_hand/secondHand/' data/prepared/bookshops.csv > out/bookshops-renamed.csv
+tarka run -l ottr/ -T tt:Bookshop -i out/bookshops-renamed.csv --list stocks ";" --lang name en --test 2
+```
+
+```text
+shop:bookbarrow geo:hasDefaultGeometry <geom:shop-bookbarrow> ;
+	rdfs:label "Bookbarrow"@en ;
+	bs:hasCafe "no"^^xsd:boolean ;
+	bs:locatedIn <place:keswick> ;
+	…
+<geom:shop-bookbarrow> geo:asWKT "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT(-3.13089 54.60668)^^geo:wktLiteral" ;
+```
 
 **A datatype OTTR does not have cannot come from a parameter.** OTTR has no type for
-`geo:wktLiteral`, so `tt:Geometry` takes an `rdfs:Literal`, and a cell gives it a plain string.
+`geo:wktLiteral`, so `tt:Geometry` takes an `rdfs:Literal`, and a cell gives it a plain string,
+the `^^geo:wktLiteral` in the cell included.
+
+**A boolean is `true` or `false`.** The spreadsheet's `yes` and `no` become
+`"no"^^xsd:boolean`, kept as written and ill-typed, for SHACL to find
+([Chapter 10](10-shapes-and-shacl.md)).
 
 **Every prefix the cells use must be declared.** A cell `geom:shop-bookbarrow`, with no `geom:`
 prefix in the library, is still a valid IRI, with the scheme `geom`, and becomes
 `<geom:shop-bookbarrow>`, as bOTTR reads it. `ottr/rows.stottr` declares `shop:`, `book:` and
 `stock:` for exactly this reason.
 
-The first three are why the bookshops, with their English names and WKT points, are made
-through bOTTR in the next chapter: a bOTTR map says per column how a cell becomes a term, with
+A library can declare the prefixes, but no template can type the WKT or read `yes` as `true`.
+Those two are why the bookshops are made through bOTTR in the next chapter: a bOTTR map says per column how a cell becomes a term, with
 a language tag, a datatype from the cell, yes/no read as booleans. For a table whose cells are
 already right, like the stock, `tarka run -l` is the shortest way.
 

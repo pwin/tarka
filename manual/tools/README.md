@@ -34,9 +34,9 @@ puppeteer cache for Chromium).
   than committing them:
 
   ```bash
-  cp build/The-tarka-Manual.epub build/The-tarka-Manual-v0.3.0.epub
-  cp build/The-tarka-Manual-A4.pdf build/The-tarka-Manual-v0.3.0-A4.pdf
-  gh release upload v0.3.0 build/The-tarka-Manual-v0.3.0.epub build/The-tarka-Manual-v0.3.0-A4.pdf
+  cp build/The-tarka-Manual.epub build/The-tarka-Manual-v0.3.1.epub
+  cp build/The-tarka-Manual-A4.pdf build/The-tarka-Manual-v0.3.1-A4.pdf
+  gh release upload v0.3.1 build/The-tarka-Manual-v0.3.1.epub build/The-tarka-Manual-v0.3.1-A4.pdf
   ```
 
 ## Files

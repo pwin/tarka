@@ -15,7 +15,7 @@ A compiled mapping: a TARQL query, or OTTR templates.
 |---|---|
 | `Mapping.tarql(query, name="query")` | a mapping from the text of a TARQL query |
 | `Mapping.tarql_file(path)` | a mapping from a TARQL query file |
-| `Mapping.ottr(library, templates, lists=None)` | a mapping from OTTR templates: `library` is a list of stOTTR files or directories, `templates` the root templates to instantiate for every row, `lists` the separator of text cells for list parameters (`{"skills": ";"}`); list columns need none |
+| `Mapping.ottr(library, templates, lists=None, languages=None)` | a mapping from OTTR templates: `library` is a list of stOTTR files or directories, `templates` the root templates to instantiate for every row, `lists` the separator of text cells for list parameters (`{"skills": ";"}`; list columns need none), `languages` the language of a column's strings (`{"name": "en"}`; needed for `rdf:langString`) |
 | `.name` | the plan's name (the query, or the root templates) |
 | `.prefixes` | the prefixes, as `[(prefix, namespace), …]`, for Turtle output |
 

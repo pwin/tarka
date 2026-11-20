@@ -150,7 +150,10 @@ Schema({'shop': String, 'records': List(String), 'books': List(String), 'copies'
 ```
 
 The list columns go to the templates' list parameters as they are; a text column for a list
-parameter needs its separator instead, `Mapping.ottr(library, roots, lists={"records": ";"})`.
+parameter needs its separator instead, `Mapping.ottr(library, roots, lists={"records": ";"})`,
+as an `rdf:langString` parameter needs its column's language, `languages={"name": "en"}`
+([Chapter 7](07-ottr-over-tables.md)). A frame whose columns are not named for the parameters
+is refused before any row is made, with the nearest column named; Polars' `rename` is the cure.
 And because the triples are a frame, a question can be asked before any store sees them: which
 shops hold the most stock records?
 
@@ -192,9 +195,8 @@ The same rules apply to a frame in Python and to a Parquet or Arrow file given t
 
 A typed OTTR parameter reads a cell as its type, so an integer column feeding an `xsd:integer`
 parameter gives `"42"^^xsd:integer`, and a list keeps its items' types: a list of decimals gives
-`9.99`, a list of dates `2025-03-08`. (This edition relies on a fix to tarka 0.3.0, in which a
-list's items came through as Polars stores them, a decimal as its scaled integer; see the
-README.)
+`9.99`, a list of dates `2025-03-08`. (Before tarka 0.3.1, a list's items came through as
+Polars stores them, a decimal as its scaled integer.)
 
 ## When a row cannot be made
 

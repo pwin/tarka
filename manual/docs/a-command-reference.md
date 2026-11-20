@@ -13,6 +13,7 @@ Maps a table to RDF with a TARQL query (`-q`) or OTTR templates (`-l … -T …`
 | `-l`, `--library PATH` | an OTTR template file or directory (repeat for more) |
 | `-T`, `--template NAME` | a root template, by IRI or prefixed name; its parameters are columns (repeat for several roots per row) |
 | `--list COLUMN SEPARATOR` | the text cells of a list-typed parameter are split on `SEPARATOR` (repeat per column) |
+| `--lang COLUMN TAG` | the cells of a parameter are strings in the language `TAG`: needed for `rdf:langString`, allowed for untyped, `rdfs:Literal` and `ottr:string` (repeat per column) |
 | `-i`, `--input FILE` | the input: CSV, or Parquet (`.parquet`) or Arrow IPC (`.arrow`, `.ipc`, `.feather`); default: the query's `FROM`, else standard input |
 | `-d`, `--delimiter C` | the field delimiter (`,`) |
 | `-t`, `--tab` | fields are tab-separated |
@@ -73,7 +74,7 @@ Writes SHACL shapes for the RDF a mapping makes.
 | Option | Does |
 |---|---|
 | `-q`, `--query FILE` | a TARQL query |
-| `-l`, `--library PATH`, `-T`, `--template NAME`, `--list COLUMN SEPARATOR` | OTTR templates, as for `run` |
+| `-l`, `--library PATH`, `-T`, `--template NAME`, `--list COLUMN SEPARATOR`, `--lang COLUMN TAG` | OTTR templates, as for `run` |
 | `-o`, `--output FILE` | the output file (default: standard output) |
 | `--base IRI` | the namespace of the shapes' IRIs (`urn:tarka:shapes:`) |
 

@@ -14,7 +14,7 @@ any of three languages:
 |---|---|---|
 | **TARQL** | a SPARQL `CONSTRUCT` query, run once per row ([TARQL](https://tarql.github.io/), [oxi-gen](https://github.com/semanticarts/oxi-gen)) | computing: building IRIs from text, casting, splitting, reformatting dates. Anyone who knows SPARQL can read it |
 | **OTTR** | templates in stOTTR, the Reasonable Ontology Templates language ([ottr.xyz](https://ottr.xyz)) | structure: patterns named once and reused, nested, expanded over lists, checked by a type system before any data is read |
-| **bOTTR** | a Turtle file of instance maps, each a query whose rows become instances of a template ([spec](https://spec.ottr.xyz/bOTTR/0.1/)) | OTTR over sources whose cells are not yet terms: language tags, booleans written yes/no, lists in one cell, RDF files read with SPARQL |
+| **bOTTR** | a Turtle file of instance maps, each a query whose rows become instances of a template ([spec](https://spec.ottr.xyz/bOTTR/0.1/)) | OTTR over sources whose cells are not yet terms: a language tag per cell, booleans written yes/no, datatypes OTTR has no type for, RDF files read with SPARQL |
 
 The three are not three engines. tarka compiles each mapping to one **plan**, a description of
 which triples to make from which cells, and one engine runs every plan. So a mapping behaves

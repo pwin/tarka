@@ -11,9 +11,9 @@ its platform, in an archive with the licences and the README:
 
 | Platform | Archive |
 |---|---|
-| Linux, x86_64 | `tarka-0.3.0-x86_64-unknown-linux-gnu.tar.gz` |
-| macOS, Apple Silicon | `tarka-0.3.0-aarch64-apple-darwin.tar.gz` |
-| Windows, x86_64 | `tarka-0.3.0-x86_64-pc-windows-msvc.zip` |
+| Linux, x86_64 | `tarka-0.3.1-x86_64-unknown-linux-gnu.tar.gz` |
+| macOS, Apple Silicon | `tarka-0.3.1-aarch64-apple-darwin.tar.gz` |
+| Windows, x86_64 | `tarka-0.3.1-x86_64-pc-windows-msvc.zip` |
 
 Unpack it and put `tarka` (or `tarka.exe`) on your `PATH`. `SHA256SUMS`, beside the archives,
 lets you check what you downloaded:
@@ -24,7 +24,7 @@ tarka --version
 ```
 
 ```text
-tarka 0.3.0
+tarka 0.3.1
 ```
 
 The command needs nothing else installed: no Java, no Python.
@@ -54,7 +54,7 @@ another project. One wheel per platform serves every CPython from 3.10 on, and i
 
 ```python
 import tarka_rdf
-print(tarka_rdf.__version__)        # 0.3.0
+print(tarka_rdf.__version__)        # 0.3.1
 ```
 
 ## The companions
@@ -73,8 +73,7 @@ pip install holosdb shacl ontology-quality-suite
 ```
 
 `holosdb`, the suite and recent Polars need Python 3.11 or later. This edition was checked with
-tarka-rdf 0.3.0 (with the fixes noted in the README), polars 2.1.0, holosdb 0.26.4, shacl 0.3.8
-and ontology-quality-suite 0.27.0.
+tarka-rdf 0.3.1, polars 2.1.0, holosdb 0.27.0, shacl 0.3.9 and ontology-quality-suite 0.27.0.
 
 The store itself, `holos-server`, is a separate download from the
 [HOLOS releases](https://github.com/pwin/triplestore/releases); it is needed only for

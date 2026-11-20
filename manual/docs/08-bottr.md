@@ -1,9 +1,9 @@
 # 8. bOTTR
 
 `tarka run -l` reads cells exactly as the template's parameters say, which is right when the
-cells are already terms, and stuck when they are not: a name needs a language tag, a
-spreadsheet says `yes` for `true`, a value needs a datatype OTTR has no type for. bOTTR is
-OTTR's answer. A bOTTR file is Turtle, and holds **instance maps**: each takes the rows of a
+cells are already terms, and stuck when they are not: a spreadsheet says `yes` for `true`, a
+value needs a datatype OTTR has no type for, names in one column are in several languages.
+bOTTR is OTTR's answer. A bOTTR file is Turtle, and holds **instance maps**: each takes the rows of a
 query, from a CSV file, an RDF file or a SPARQL endpoint, and makes each row an instance of a
 template, with an **argument map** per column saying how that column's cell becomes a term.
 

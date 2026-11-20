@@ -135,6 +135,20 @@ def main() -> None:
           "-o", "out/shop-stock-parquet.ttl")
     same_triples("out/shop-stock-csv.ttl", ["out/stocks.ttl", "out/stock.ttl"])
     same_triples("out/shop-stock-parquet.ttl", ["out/shop-stock-csv.ttl"])
+    shops = ["run", "-l", "ottr/", "-T", "tt:Bookshop", "--list", "stocks", ";", "--test", "2"]
+    tarka("a language tag is not in a cell", *shops, "-i", "data/prepared/bookshops.csv", status=1,
+          needle="?name is an rdf:langString, and a cell has no language tag")
+    tarka("a column is named for its parameter", *shops, "-i", "data/prepared/bookshops.csv", "--lang", "name", "en",
+          status=1, needle="mandatory parameters floorArea (is it floor_area?), secondHand (is it second_hand?)")
+    header, rest_of_table = (HERE / "data/prepared/bookshops.csv").read_text(encoding="utf-8").split("\n", 1)
+    renamed = header.replace("floor_area", "floorArea").replace("second_hand", "secondHand")
+    (OUT / "bookshops-renamed.csv").write_text(f"{renamed}\n{rest_of_table}", encoding="utf-8")
+    said = tarka("renamed, the bookshops run", *shops, "-i", "out/bookshops-renamed.csv", "--lang", "name", "en",
+                 needle='rdfs:label "Bookbarrow"@en')
+    for what_remains in ['bs:hasCafe "no"^^xsd:boolean', "bs:locatedIn <place:keswick>", 'POINT(-3.13089 54.60668)^^geo:wktLiteral"']:
+        if what_remains not in said:
+            print(f"FAILED: the renamed run should show {what_remains}\n{said}")
+            sys.exit(1)
     tarka("two rivers, by hand", "expand", "-l", "ottr/", "instances/two-rivers.stottr", "-o", "out/two-rivers.ttl")
     tarka("bookshops through bOTTR", "bottr", "-l", "ottr/", "bottr/bookshops.bottr.ttl", "-o", "out/bookshops-bottr.ttl")
     same_values("out/bookshops-bottr.ttl", ["out/bookshops.ttl", "out/stocks.ttl"])
@@ -158,7 +172,7 @@ def main() -> None:
           status=3, needle="does not conform")
     rest = ["out/stocks.ttl", "out/stock.ttl", "out/events.ttl", "out/works.ttl", "out/segments.ttl", "out/connections.ttl"]
     python("no violations of s64", "python/validate.py", "out/bookshops.ttl", *rest, needle="0 violations, 6 warnings")
-    python("the faults, found by s64", "python/validate.py", "out/faulty.ttl", *rest, status=1, needle="4 violations, 6 warnings")
+    python("the faults, found by s64", "python/validate.py", "out/faulty.ttl", *rest, status=1, needle="5 violations, 6 warnings")
     python("cross-file checks find nothing", "tools/sparql.py", "sparql/cross-file-checks.rq", "out/bookshops.ttl",
            *rest, "--expect-none", needle="0 rows")
     python("cross-file checks find the unknown town", "tools/sparql.py", "sparql/cross-file-checks.rq", "out/faulty.ttl",

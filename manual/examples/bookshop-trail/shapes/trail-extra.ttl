@@ -36,7 +36,7 @@ bt:BookshopExtraShape a sh:NodeShape ;
                   sh:message "No yes or no for second-hand books: is the cell 'Yes', or empty?" ] ,
         [ sh:path bs:hasCafe ; sh:minCount 1 ;
           sh:message "No yes or no for a cafe: is the cell 'Yes', or empty?" ] ,
-        # sh:datatype xsd:gYear should reject "c.1972"^^xsd:gYear, but not every validator checks
-        # a gYear's lexical form (SHACL_Engine 0.3.8 and HOLOS 0.26.4 do not): say what a year is
+        # sh:datatype xsd:gYear rejects "c.1972"^^xsd:gYear in SHACL_Engine 0.3.9 and HOLOS 0.27.0,
+        # not in their earlier releases; the pattern says what a year is, with a message, in any
         [ sh:path bs:founded ; sh:pattern "^[0-9]{4}$" ;
           sh:message "A founding year is four digits: 'about 1972' belongs in a note, not in the year." ] .

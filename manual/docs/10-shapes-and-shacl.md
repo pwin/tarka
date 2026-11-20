@@ -83,9 +83,11 @@ tarka run -q tarql/bookshops.rq -i data/faulty/bookshops.csv --validate --shapes
 ```
 
 ```text
+  bt:shop-borderprint bs:founded sh:DatatypeConstraintComponent: "c.1972"^^xsd:gYear
+  bt:shop-borderprint bs:founded sh:DatatypeConstraintComponent: "c.1972"^^xsd:gYear
   bt:shop-borderprint bs:founded sh:PatternConstraintComponent: "c.1972"^^xsd:gYear
   bt:shop-castle-steps bs:sellsSecondHand sh:MinCountConstraintComponent
-tarka: the output does not conform to the shapes (2 results)
+tarka: the output does not conform to the shapes (4 results)
 ```
 
 tarka exits with status **3**, and the output is written all the same: a file that does not
@@ -102,17 +104,21 @@ _:r1 a sh:ValidationResult ;
 	sh:value "c.1972"^^xsd:gYear .
 ```
 
-Two of the five, found as the file was written. `Yes` made the mapping's `IF` give nothing, so
-the shop has no `bs:sellsSecondHand` at all, which only a shape that requires one can notice.
+Two of the five, found as the file was written. The year breaks the mapping's own shapes as
+well as the pattern: twice, because the shop is both a `geo:Feature` and a `bs:Bookshop`, and
+the mapping's shapes give each class its own rule for `bs:founded`. `Yes` made the mapping's
+`IF` give nothing, so the shop has no `bs:sellsSecondHand` at all, which only a shape that
+requires one can notice.
 
 ### Why a pattern for the year?
 
 `STRDT("c.1972", xsd:gYear)` writes `"c.1972"^^xsd:gYear`: an *ill-typed* literal, its text not
-in the datatype's lexical space. `sh:datatype xsd:gYear` should reject it, and the mapping's
-shapes say exactly that, but not every validator checks every datatype's lexical form:
-SHACL_Engine 0.3.8 and HOLOS 0.26.4 reject `"seven"^^xsd:integer`, `"2025-02-31"^^xsd:date` and
-`"yes"^^xsd:boolean`, and let `"c.1972"^^xsd:gYear` through. A pattern states the rule
-outright, whichever engine reads it. Where a value's form matters, say what the form is.
+in the datatype's lexical space. `sh:datatype xsd:gYear` rejects it, as above, but only in a
+validator that checks a gYear's lexical form. SHACL_Engine checks it from 0.3.9 (in tarka
+0.3.1) and HOLOS from 0.27.0. Their earlier releases rejected `"seven"^^xsd:integer`,
+`"2025-02-31"^^xsd:date` and `"yes"^^xsd:boolean`, and let `"c.1972"^^xsd:gYear` through, as
+other validators may still. A pattern states the rule outright, whichever engine reads it, and
+its message says what a year should be. Where a value's form matters, say what the form is.
 
 ## Validating with the trail's own shapes
 
@@ -164,25 +170,30 @@ python python/validate.py out/faulty.ttl out/stocks.ttl out/stock.ttl out/events
 ```
 
 ```text
-everything against s64, with the reference data: 4 violations, 6 warnings
+faulty.ttl against the mapping's shapes: does not conform
+   …shop-borderprint …schema#founded DatatypeConstraintComponent
+   …shop-borderprint …schema#founded DatatypeConstraintComponent
+everything against s64, with the reference data: 5 violations, 6 warnings
    Violation: …shop-bookbarrow …schema#website …PatternConstraintComponent: At most one website, with a scheme: {$value}.
    Violation: …shop-bookwyrm …schema#staffCount …MinInclusiveConstraintComponent: Staff count is a positive integer: {$value}.
+   Violation: …shop-borderprint …schema#founded …DatatypeConstraintComponent: A shop records the one year it opened, as an xsd:gYear.
    Violation: …shop-marginalia …schema#locatedIn …ClassConstraintComponent: A shop is in exactly one settlement.
    Violation: …shop-marginalia _:… …QualifiedMinCountConstraintComponent: {$this} is in some number of countries other than one.
 ```
 
-The other three mistakes, in four violations, found by the course's rules: the website without a
-scheme, the shop with no staff, and `wigton`, which breaks two rules, since it is not a settlement
-and so the shop is in no country at all.
-Only validation with the reference data could find that one: `bt:place-wigton` is a perfectly
-good IRI, and the shapes from the mapping, which know nothing of places, are content.
+Four of the five mistakes, in five violations, found by the course's rules: the website without
+a scheme, the shop with no staff, the year, and `wigton`, which breaks two rules, since it is not
+a settlement and so the shop is in no country at all. Only validation with the reference data
+could find `wigton`: `bt:place-wigton` is a perfectly good IRI, and the shapes from the mapping,
+which know nothing of places, are content. Only `Yes` gets past s64, which lets a shop say
+nothing about second-hand books.
 
 ## Who found what
 
 | Mistake | Mapping's shapes | `trail-extra.ttl` (`tarka --shapes`) | s64 with reference data |
 |---|---|---|---|
 | `wigton` |  |  | yes: not a settlement, no country |
-| `c.1972` | should, but the engine misses it | yes, by pattern |  |
+| `c.1972` | yes: datatype | yes, by pattern | yes: datatype |
 | staff `0` |  |  | yes: below 1 |
 | no `https://` |  |  | yes: pattern |
 | `Yes` |  | yes: required |  |

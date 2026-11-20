@@ -9,13 +9,26 @@ while this manual was written.
 2 records, 2 solutions, 0 triples made, 0 written
 ```
 
-`--stats` shows it. With OTTR templates over a table (`tarka run -l`), each parameter reads the
-column **of the same name**; a parameter with no column is `none` in every row, and a mandatory
-one then drops every instance. Check the column names against the root template's parameters
-(`floor_area` is not `?floorArea`), or use a bOTTR map, whose columns are positional.
+`--stats` shows it. With a TARQL query, a template variable that is never bound (a misspelt
+column name) leaves its triples out on every row. The Ontology Quality Suite's `sketch` reports
+such variables (TQL-003).
 
-With a TARQL query, a template variable that is never bound (a misspelt column name) leaves its
-triples out on every row. The Ontology Quality Suite's `sketch` reports such variables (TQL-003).
+With OTTR templates over a table, tarka 0.3.1 refuses instead (next entry). Before it, a
+mandatory parameter with no column made nothing like this.
+
+## the input has no column for the mandatory parameter floorArea (is it floor_area?)
+
+With OTTR templates over a table (`tarka run -l`, or `Mapping.ottr` in Python), each parameter
+reads the column **of the same name**. A mandatory parameter with no column would leave out
+every instance, so tarka stops before reading a row, names the nearest column, and lists them
+all. Rename the columns (`floor_area` is not `?floorArea`), or use a bOTTR map, whose columns
+are positional. The same message for an optional parameter is a warning, and the run goes on.
+
+## ?name is an rdf:langString, and a cell has no language tag
+
+A cell holds text, and an `rdf:langString` parameter needs a tag too. Give the column's
+language, `--lang name en` (`languages={"name": "en"}` in Python), or, when the rows are in
+different languages, use a bOTTR map with `ottr:languageTagSep`.
 
 ## -o didn't write the file
 
@@ -66,7 +79,7 @@ A bOTTR H2 query names a column after an SQL keyword (`from`, `to`, `order` …)
 OTTR has no type for that datatype, so the values are plain strings. Write the datatype in the
 cell (`…^^geo:wktLiteral`) and read it with `ottr:datatypeSep "^^"`.
 
-## the output does not conform to the shapes (2 results)
+## the output does not conform to the shapes (4 results)
 
 The output was written, and breaks the shapes; tarka exits with status 3. The lines above the
 message, and `--report FILE`, say which nodes and why.
@@ -74,9 +87,10 @@ message, and `--report FILE`, say which nodes and why.
 ## An ill-typed value got past sh:datatype
 
 `STRDT("c.1972", xsd:gYear)` writes `"c.1972"^^xsd:gYear`, and not every validator checks every
-datatype's lexical form: SHACL_Engine 0.3.8 and HOLOS 0.26.4 do not check `xsd:gYear`'s. Add a
-`sh:pattern` where the form matters, or cast where SPARQL has a cast for the type (a failed cast
-binds nothing, and a required-property shape then reports it).
+datatype's lexical form. SHACL_Engine before 0.3.9 (tarka before 0.3.1) and HOLOS before 0.27.0
+do not check `xsd:gYear`'s, nor the other gregorian types' and the duration subtypes'. Upgrade,
+or add a `sh:pattern` where the form matters, or cast where SPARQL has a cast for the type (a
+failed cast binds nothing, and a required-property shape then reports it).
 
 ## Validation with my own shapes reports a class constraint I am sure holds
 
