@@ -1,5 +1,11 @@
 # tarka
 
+> **tarka has moved to [pwin/SemopsSystem](https://github.com/pwin/SemopsSystem).** It is developed and released there, in
+> [`tarka/`](https://github.com/pwin/SemopsSystem/tree/main/tarka), with HOLOS and the SHACL engine. From 0.30.0, the
+> `tarka-rdf` wheel and the `tarka` command are published from there, at the workspace's
+> version. This repository keeps the history up to 0.3.1 and no longer releases. Please open
+> issues and pull requests [there](https://github.com/pwin/SemopsSystem/issues).
+
 tarka turns CSV, Parquet files and Polars data frames into RDF. The mapping can be a **TARQL query** (a SPARQL `CONSTRUCT`
 run once per row, as in [TARQL](https://tarql.github.io/) and
 [oxi-gen](https://github.com/semanticarts/oxi-gen)) or a set of **OTTR templates**
